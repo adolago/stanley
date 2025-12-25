@@ -930,6 +930,37 @@ class CloseTradeRequest(BaseModel):
     grade: str = Field(default="", description="Self-assessment grade")
 
 
+class CreateEventRequest(BaseModel):
+    """Request to create an event note."""
+
+    symbol: str = Field(..., description="Stock symbol")
+    company_name: str = Field(default="", description="Company name")
+    event_type: str = Field(default="conference", description="Event type (earnings_call, investor_day, conference, etc.)")
+    event_date: Optional[str] = Field(default=None, description="Event date (ISO format)")
+    host: str = Field(default="", description="Bank/broker hosting the event")
+    participants: List[str] = Field(default=[], description="List of participant names")
+    content: Optional[str] = Field(default=None, description="Custom content")
+
+
+class CreatePersonRequest(BaseModel):
+    """Request to create a person/executive profile."""
+
+    full_name: str = Field(..., description="Person's full name")
+    current_role: str = Field(default="", description="Current role (CEO, CFO, etc.)")
+    current_company: str = Field(default="", description="Current company name")
+    linkedin_url: str = Field(default="", description="LinkedIn profile URL")
+    content: Optional[str] = Field(default=None, description="Custom content")
+
+
+class CreateSectorRequest(BaseModel):
+    """Request to create a sector overview."""
+
+    sector_name: str = Field(..., description="Sector name")
+    sub_sectors: List[str] = Field(default=[], description="List of sub-sectors")
+    companies: List[str] = Field(default=[], description="List of companies covered")
+    content: Optional[str] = Field(default=None, description="Custom content")
+
+
 class UpdateNoteRequest(BaseModel):
     """Request to update a note."""
 
@@ -1234,6 +1265,167 @@ async def get_trade_stats():
         raise
     except Exception as e:
         logger.error(f"Error getting trade stats: {e}")
+        return create_response(error=str(e), success=False)
+
+
+# =============================================================================
+# Event Endpoints
+# =============================================================================
+
+
+@app.get("/api/events", response_model=ApiResponse, tags=["Notes"])
+async def list_events(
+    event_type: Optional[str] = None,
+    symbol: Optional[str] = None,
+    company: Optional[str] = None,
+):
+    """
+    List event notes (conference calls, investor days, etc.).
+
+    Args:
+        event_type: Filter by type (earnings_call, conference, investor_day, etc.)
+        symbol: Filter by stock symbol
+        company: Filter by company name
+    """
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        events = app_state.note_manager.get_events(
+            event_type=event_type, symbol=symbol, company=company
+        )
+        return create_response(data=[e.to_dict() for e in events])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing events: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.post("/api/events", response_model=ApiResponse, tags=["Notes"])
+async def create_event(request: CreateEventRequest):
+    """Create a new event note."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        event = app_state.note_manager.create_event(
+            symbol=request.symbol,
+            company_name=request.company_name,
+            event_type=request.event_type,
+            event_date=request.event_date,
+            host=request.host,
+            participants=request.participants,
+            content=request.content,
+        )
+
+        return create_response(data=event.to_dict())
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating event: {e}")
+        return create_response(error=str(e), success=False)
+
+
+# =============================================================================
+# People Endpoints
+# =============================================================================
+
+
+@app.get("/api/people", response_model=ApiResponse, tags=["Notes"])
+async def list_people(
+    company: Optional[str] = None,
+    role: Optional[str] = None,
+):
+    """
+    List person/executive profile notes.
+
+    Args:
+        company: Filter by company name
+        role: Filter by role (CEO, CFO, etc.)
+    """
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        people = app_state.note_manager.get_people(company=company, role=role)
+        return create_response(data=[p.to_dict() for p in people])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing people: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.post("/api/people", response_model=ApiResponse, tags=["Notes"])
+async def create_person(request: CreatePersonRequest):
+    """Create a new person/executive profile."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        person = app_state.note_manager.create_person(
+            full_name=request.full_name,
+            current_role=request.current_role,
+            current_company=request.current_company,
+            linkedin_url=request.linkedin_url,
+            content=request.content,
+        )
+
+        return create_response(data=person.to_dict())
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating person: {e}")
+        return create_response(error=str(e), success=False)
+
+
+# =============================================================================
+# Sector Endpoints
+# =============================================================================
+
+
+@app.get("/api/sectors", response_model=ApiResponse, tags=["Notes"])
+async def list_sectors():
+    """List all sector overview notes."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        sectors = app_state.note_manager.get_sectors()
+        return create_response(data=[s.to_dict() for s in sectors])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing sectors: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.post("/api/sectors", response_model=ApiResponse, tags=["Notes"])
+async def create_sector(request: CreateSectorRequest):
+    """Create a new sector overview."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        sector = app_state.note_manager.create_sector(
+            sector_name=request.sector_name,
+            sub_sectors=request.sub_sectors,
+            companies=request.companies,
+            content=request.content,
+        )
+
+        return create_response(data=sector.to_dict())
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating sector: {e}")
         return create_response(error=str(e), success=False)
 
 
