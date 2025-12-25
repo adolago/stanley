@@ -7,7 +7,6 @@ institutional flows, dark pool data, and block trade analysis.
 
 import logging
 from collections import deque
-from typing import Optional
 
 import numpy as np
 

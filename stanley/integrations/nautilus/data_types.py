@@ -22,7 +22,7 @@ from nautilus_trader.model.enums import (
 )
 from nautilus_trader.model.identifiers import InstrumentId, TradeId, Venue
 from nautilus_trader.model.instruments import Equity
-from nautilus_trader.model.objects import Money, Price, Quantity
+from nautilus_trader.model.objects import Price, Quantity
 
 from stanley.integrations.nautilus.config import InstrumentConfig
 

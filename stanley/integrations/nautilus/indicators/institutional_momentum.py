@@ -7,7 +7,7 @@ ownership trends, 13F filing changes, and smart money positioning.
 
 import logging
 from collections import deque
-from typing import Optional, Dict, List
+from typing import Dict, Optional
 
 import numpy as np
 

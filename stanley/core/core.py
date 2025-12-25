@@ -7,8 +7,8 @@ Main Stanley class that coordinates all functionality.
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union
+
 import pandas as pd
-from datetime import datetime, timedelta
 
 logger = logging.getLogger(__name__)
 

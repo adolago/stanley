@@ -8,19 +8,17 @@ economic cycle detection, and regime identification.
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
 
 from .dbnomics_adapter import DBnomicsAdapter
 from .indicators import (
-    EconomicIndicator,
     IndicatorCategory,
     Transformation,
-    INDICATOR_REGISTRY,
     get_indicators_by_category,
     get_indicator,
 )
@@ -336,14 +334,6 @@ class MacroAnalyzer:
         Returns:
             YieldCurve object
         """
-        tenors = {
-            "3M": "short",
-            "2Y": "short",
-            "5Y": "long",
-            "10Y": "long",
-            "30Y": "long",
-        }
-
         yields_data = {}
 
         # Get short-term rate

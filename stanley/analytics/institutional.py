@@ -6,10 +6,11 @@ No technical indicators, just institutional data analysis.
 """
 
 import logging
-import pandas as pd
+from datetime import datetime
+
 import numpy as np
-from typing import Dict, List, Optional
-from datetime import datetime, timedelta
+import pandas as pd
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 

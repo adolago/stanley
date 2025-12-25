@@ -8,19 +8,18 @@ and performance attribution. Integrates with DataManager for price data.
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 
-from .position import Holdings, Position, create_holdings_from_input, get_sector
+from .position import create_holdings_from_input, get_sector
 from .risk_metrics import (
     BetaResult,
     VaRResult,
     VolatilityMetrics,
     calculate_beta,
     calculate_correlation_matrix,
-    calculate_covariance_matrix,
     calculate_portfolio_var,
     calculate_returns,
     calculate_sharpe_ratio,

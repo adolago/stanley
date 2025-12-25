@@ -6,8 +6,7 @@ Handles company lookups, filing retrieval, XBRL parsing, and text extraction.
 """
 
 import logging
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
@@ -22,7 +21,7 @@ def _check_edgar_available():
     global _edgar_available
     if _edgar_available is None:
         try:
-            import edgar
+            import edgar  # noqa: F401
 
             _edgar_available = True
         except ImportError:
@@ -90,7 +89,7 @@ class EdgarAdapter:
         if not self._initialized:
             self.initialize()
 
-    def get_company(self, ticker: str) -> "Company":
+    def get_company(self, ticker: str):  # -> edgar.Company
         """
         Get a Company object for the given ticker.
 

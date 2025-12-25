@@ -15,9 +15,7 @@ import pandas as pd
 
 from .price_data import (
     COMMODITY_REGISTRY,
-    Commodity,
     CommodityCategory,
-    CommodityPrice,
     CommodityPriceProvider,
     get_commodities_by_category,
     get_commodity,
@@ -420,7 +418,7 @@ class CommoditiesAnalyzer:
             "commodity": commodity,
             "name": comm.name,
             "category": comm.category.value,
-            "linkages": [l.to_dict() for l in linkages],
+            "linkages": [link.to_dict() for link in linkages],
             "primaryDriver": linkages[0].macro_indicator if linkages else None,
         }
 

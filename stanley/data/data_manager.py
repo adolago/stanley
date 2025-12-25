@@ -6,12 +6,11 @@ Integrates with OpenBB, SEC filings, and other institutional data sources.
 """
 
 import logging
-import pandas as pd
+from datetime import datetime
+from typing import Any, Dict, Optional
+
 import numpy as np
-from typing import Any, Dict, List, Optional, Union
-from datetime import datetime, timedelta
-import asyncio
-from pathlib import Path
+import pandas as pd
 
 from .openbb_adapter import OpenBBAdapter
 from .providers import DataProviderError

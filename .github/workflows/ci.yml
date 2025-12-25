@@ -63,7 +63,7 @@ jobs:
         run: black --check stanley/ tests/
 
       - name: Lint with flake8
-        run: flake8 stanley/ --max-line-length=100 --ignore=E501,W503
+        run: flake8 stanley/ --max-line-length=100 --ignore=E501,W503,E203,E402
 
   rust-build:
     name: Rust GUI Build

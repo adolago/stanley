@@ -6,10 +6,11 @@ No technical indicators, no moon phases, just real money movement.
 """
 
 import logging
-import pandas as pd
-import numpy as np
-from typing import Dict, List, Optional, Tuple
 from datetime import datetime, timedelta
+
+import numpy as np
+import pandas as pd
+from typing import Dict, List
 
 logger = logging.getLogger(__name__)
 

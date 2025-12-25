@@ -7,11 +7,11 @@ Handles configuration, provider selection, and data transformation.
 
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-from .providers import OpenBBProvider, DataProviderError
+from .providers import OpenBBProvider
 
 logger = logging.getLogger(__name__)
 

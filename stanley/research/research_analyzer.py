@@ -7,24 +7,20 @@ and accounting analysis for comprehensive company research.
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-import pandas as pd
 
 from .earnings import (
     EarningsAnalysis,
     EarningsQuarter,
     EstimateRevision,
     analyze_earnings_quality,
-    analyze_estimate_revisions,
     calculate_beat_rate,
     calculate_cagr,
     calculate_earnings_consistency,
     calculate_earnings_surprise,
     calculate_growth_rate,
-    project_future_earnings,
 )
 from .valuation import (
     DCFResult,

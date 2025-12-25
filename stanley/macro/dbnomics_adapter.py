@@ -8,7 +8,7 @@ Eurostat, Fed, ECB, and national statistical offices.
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 
@@ -23,7 +23,7 @@ def _check_dbnomics_available():
     global _dbnomics_available
     if _dbnomics_available is None:
         try:
-            import dbnomics
+            import dbnomics  # noqa: F401
 
             _dbnomics_available = True
         except ImportError:

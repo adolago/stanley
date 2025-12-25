@@ -20,7 +20,6 @@ from . import (
     DataProvider,
     DataProviderError,
     RateLimiter,
-    RateLimitError,
 )
 
 logger = logging.getLogger(__name__)

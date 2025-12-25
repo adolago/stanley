@@ -7,14 +7,13 @@ and converts it to NautilusTrader format for backtesting and live trading.
 
 import asyncio
 import logging
-from datetime import datetime, timezone
-from typing import Callable, Optional
+from datetime import datetime
+from typing import Optional
 
 import pandas as pd
 
 from nautilus_trader.cache.cache import Cache
-from nautilus_trader.common.component import Clock, Logger, MessageBus
-from nautilus_trader.core.datetime import dt_to_unix_nanos
+from nautilus_trader.common.component import Clock, MessageBus
 from nautilus_trader.data.client import DataClient
 from nautilus_trader.model.data import Bar, BarType, DataType, QuoteTick, TradeTick
 from nautilus_trader.model.enums import BarAggregation
@@ -30,9 +29,6 @@ from stanley.integrations.nautilus.data_types import (
     OpenBBInstrumentProvider,
     OpenBBQuoteTickConverter,
     OpenBBTradeTickConverter,
-    create_bar_type,
-    create_instrument_id,
-    parse_aggregation_string,
 )
 
 logger = logging.getLogger(__name__)

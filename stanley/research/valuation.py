@@ -10,7 +10,6 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-import pandas as pd
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +237,7 @@ def calculate_dcf_sensitivity(
                 shares_outstanding=shares_outstanding,
             )
             row.append(round(result.intrinsic_value, 2))
-        matrix[f"dr_{int(dr*100)}"] = row
+        matrix[f"dr_{int(dr * 100)}"] = row
 
     matrix["growth_rates"] = [round(g * 100, 1) for g in growth_rates]
     matrix["discount_rates"] = [round(d * 100, 1) for d in discount_rates]
