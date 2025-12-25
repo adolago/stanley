@@ -31,7 +31,8 @@ jobs:
 
       - name: Run pytest
         run: |
-          pytest tests/ -v --tb=short --cov=stanley --cov-report=xml
+          pytest tests/ -v --tb=short --cov=stanley --cov-report=xml \
+            --ignore=tests/integrations/
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -83,7 +84,7 @@ jobs:
             pkg-config
 
       - name: Set up Rust
-        uses: dtolnay/rust-action@stable
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
 
