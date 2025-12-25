@@ -10,13 +10,18 @@ from typing import Optional
 
 from .models import (
     ConvictionLevel,
+    EventFrontmatter,
+    EventType,
     NoteFrontmatter,
     NoteType,
+    PersonFrontmatter,
+    SectorFrontmatter,
     ThesisFrontmatter,
     ThesisStatus,
     TradeFrontmatter,
     TradeDirection,
     TradeStatus,
+    MoatSource,
 )
 
 
@@ -735,5 +740,553 @@ _How does this affect your investment thesis?_
 
 - [[Companies/{company}]]
 - [[Theses/{company} Investment Thesis]]
+"""
+        return frontmatter, content
+
+    @staticmethod
+    def event_note(
+        symbol: str,
+        company_name: str = "",
+        event_type: EventType = EventType.CONFERENCE,
+        event_date: Optional[datetime] = None,
+        host: str = "",
+        participants: list = None,
+    ) -> tuple[EventFrontmatter, str]:
+        """
+        Create an event note template (conference call, investor day, etc.).
+
+        Args:
+            symbol: Stock symbol
+            company_name: Company name
+            event_type: Type of event
+            event_date: Event date
+            host: Bank/broker hosting the event
+            participants: List of participants (executives)
+
+        Returns:
+            Tuple of (frontmatter, content)
+        """
+        event_date = event_date or datetime.now()
+        participants = participants or []
+
+        event_type_names = {
+            EventType.EARNINGS_CALL: "Earnings Call",
+            EventType.INVESTOR_DAY: "Investor Day",
+            EventType.CONFERENCE: "Conference",
+            EventType.ANALYST_MEETING: "Analyst Meeting",
+            EventType.SITE_VISIT: "Site Visit",
+            EventType.AGM: "Annual General Meeting",
+            EventType.GUIDANCE_UPDATE: "Guidance Update",
+            EventType.M_AND_A: "M&A Announcement",
+            EventType.OTHER: "Event",
+        }
+
+        event_name = event_type_names.get(event_type, "Event")
+        title = f"{symbol} - {event_name} - {event_date.strftime('%Y-%m-%d')}"
+        if host:
+            title = f"{symbol} - {host} {event_name}"
+
+        frontmatter = EventFrontmatter(
+            title=title,
+            event_type=event_type,
+            event_date=event_date,
+            company=f"[[{company_name or symbol}]]",
+            symbol=symbol.upper(),
+            participants=[f"[[{p}]]" for p in participants],
+            host=host,
+            tags=["event", event_type.value, f"company/{symbol.lower()}"],
+        )
+
+        participants_md = "\n".join([f"- [[{p}]]" for p in participants]) if participants else "- _Add participants_"
+
+        content = f"""# {title}
+
+## Event Details
+
+**Date:** {event_date.strftime("%Y-%m-%d")}
+**Company:** [[{company_name or symbol}]]
+**Type:** {event_name}
+**Host:** {host or "_Bank/Broker_"}
+
+## Participants
+
+{participants_md}
+
+---
+
+## Key Takeaways
+
+1. **Takeaway 1:**
+2. **Takeaway 2:**
+3. **Takeaway 3:**
+
+## Detailed Notes
+
+### Opening Remarks
+
+_Management's opening statement_
+
+### Business Update
+
+_Operational and financial highlights_
+
+### Strategic Priorities
+
+_Key strategic initiatives discussed_
+
+### Guidance & Outlook
+
+_Forward-looking statements and guidance_
+
+| Metric | Previous | Current | Change |
+|--------|----------|---------|--------|
+| Revenue | | | |
+| EBITDA | | | |
+| Margins | | | |
+
+## Q&A Session
+
+### Q1: _Question Topic_
+
+**Analyst:** _Name @ Firm_
+**Q:** _Question_
+**A:** _Management response_
+
+### Q2: _Question Topic_
+
+**Analyst:** _Name @ Firm_
+**Q:** _Question_
+**A:** _Management response_
+
+### Q3: _Question Topic_
+
+**Analyst:** _Name @ Firm_
+**Q:** _Question_
+**A:** _Management response_
+
+## Management Tone Assessment
+
+| Aspect | Rating | Notes |
+|--------|--------|-------|
+| Confidence | /10 | |
+| Transparency | /10 | |
+| Defensiveness | /10 | |
+| Forward Outlook | Bullish / Neutral / Cautious | |
+
+## Competitive Commentary
+
+_Any mentions of competitors, market dynamics_
+
+## Thesis Implications
+
+### Supporting Evidence
+
+-
+
+### Challenging Evidence
+
+-
+
+### Thesis Update Required?
+
+- [ ] Yes - Update [[Theses/{symbol} Investment Thesis]]
+- [ ] No - Thesis remains intact
+
+## Action Items
+
+- [ ] Update financial model
+- [ ] Review competitor commentary
+- [ ] Follow up on specific metrics
+- [ ] Schedule next touchpoint
+
+## Key Quotes
+
+> "_Important management quote_"
+> — _Executive Name, Role_
+
+## Related Notes
+
+- [[{company_name or symbol}]]
+- [[Theses/{symbol} Investment Thesis]]
+- [[Sectors/_Sector Name_]]
+"""
+        return frontmatter, content
+
+    @staticmethod
+    def person_profile(
+        full_name: str,
+        current_role: str = "",
+        current_company: str = "",
+        linkedin_url: str = "",
+    ) -> tuple[PersonFrontmatter, str]:
+        """
+        Create a person/executive profile template.
+
+        Args:
+            full_name: Person's full name
+            current_role: Current role (CEO, CFO, IR, etc.)
+            current_company: Current company
+            linkedin_url: LinkedIn profile URL
+
+        Returns:
+            Tuple of (frontmatter, content)
+        """
+        frontmatter = PersonFrontmatter(
+            title=full_name,
+            full_name=full_name,
+            current_role=current_role,
+            current_company=f"[[{current_company}]]" if current_company else "",
+            linkedin_url=linkedin_url,
+            tags=["person", "executive", f"company/{current_company.lower().replace(' ', '_')}"] if current_company else ["person"],
+        )
+
+        content = f"""# {full_name}
+
+## Profile
+
+**Name:** {full_name}
+**Current Role:** {current_role or "_Role_"}
+**Company:** [[{current_company}]]
+**LinkedIn:** [{linkedin_url}]({linkedin_url}) {{{{ if linkedin_url }}}}
+
+---
+
+## Career History
+
+| Period | Role | Company | Notes |
+|--------|------|---------|-------|
+| Present | {current_role} | [[{current_company}]] | Current position |
+| | | | |
+| | | | |
+
+## Background
+
+### Education
+
+-
+
+### Professional Experience
+
+_Key career highlights before current role_
+
+---
+
+## Assessment
+
+### Management Style
+
+_How do they lead? Operational focus vs strategic? Hands-on vs delegator?_
+
+### Communication Style
+
+| Aspect | Assessment |
+|--------|------------|
+| Transparency | High / Medium / Low |
+| Candor on Challenges | |
+| Forward Guidance | Conservative / Balanced / Aggressive |
+| Analyst Relations | |
+
+### Track Record
+
+#### Promises vs. Delivery
+
+| What They Said | When | Outcome | Score |
+|----------------|------|---------|-------|
+| | | | |
+
+#### Capital Allocation Decisions
+
+_Key decisions on M&A, buybacks, dividends, capex_
+
+### Red Flags
+
+- [ ] Frequent narrative changes
+- [ ] Over-promising, under-delivering
+- [ ] Defensive in Q&A
+- [ ] Avoiding difficult questions
+- [ ] High turnover in team
+- [ ] Related party transactions
+
+**Notes:**
+
+### Green Flags
+
+- [ ] Consistent messaging over time
+- [ ] Acknowledges mistakes
+- [ ] Skin in the game (ownership)
+- [ ] Long tenure
+- [ ] Strong team stability
+- [ ] Clear capital allocation framework
+
+**Notes:**
+
+---
+
+## Key Quotes
+
+> "_Notable quote from this person_"
+> — {full_name}, _Context/Event_
+
+---
+
+## Event Appearances
+
+_Events where this person presented or participated:_
+
+- [[Events/YYYY-MM-DD - Event]]
+
+---
+
+## Network
+
+### Associated Executives
+
+_Other executives frequently appearing with this person:_
+
+- [[Person Name]] - _Role @ Company_
+
+### Board Positions
+
+_Other boards this person serves on:_
+
+---
+
+## Notes
+
+_Personal observations, insights from meetings, etc._
+
+---
+
+## Related
+
+- [[{current_company}]]
+- [[Theses/{current_company} Investment Thesis]]
+"""
+        return frontmatter, content
+
+    @staticmethod
+    def sector_overview_enhanced(
+        sector_name: str,
+        sub_sectors: list = None,
+        companies: list = None,
+    ) -> tuple[SectorFrontmatter, str]:
+        """
+        Create an enhanced sector overview template with moat analysis.
+
+        Args:
+            sector_name: Sector name (e.g., "Health Care", "Financials")
+            sub_sectors: List of sub-sectors
+            companies: List of companies covered
+
+        Returns:
+            Tuple of (frontmatter, content)
+        """
+        sub_sectors = sub_sectors or []
+        companies = companies or []
+
+        frontmatter = SectorFrontmatter(
+            title=f"{sector_name} Sector Overview",
+            sector_name=sector_name,
+            sub_sectors=sub_sectors,
+            companies_covered=[f"[[{c}]]" for c in companies],
+            tags=["sector", sector_name.lower().replace(" ", "-")],
+        )
+
+        companies_md = "\n".join([f"| [[{c}]] | | | | |" for c in companies]) if companies else "| | | | | |"
+        sub_sectors_md = "\n".join([f"- {s}" for s in sub_sectors]) if sub_sectors else "- _Add sub-sectors_"
+
+        content = f"""# {sector_name} Sector Overview
+
+## Sector Profile
+
+**Sector:** {sector_name}
+**Last Updated:** {datetime.now().strftime("%Y-%m-%d")}
+
+### Sub-Sectors
+
+{sub_sectors_md}
+
+---
+
+## Market Structure
+
+### Size & Growth
+
+| Metric | Value | Source |
+|--------|-------|--------|
+| Market Size (TAM) | $ | |
+| Growth Rate (CAGR) | % | |
+| Penetration | % | |
+
+### Industry Characteristics
+
+| Characteristic | Assessment |
+|----------------|------------|
+| Cyclicality | Cyclical / Defensive / Mixed |
+| Capital Intensity | High / Medium / Low |
+| Regulatory Environment | Heavy / Moderate / Light |
+| Growth Profile | High Growth / Mature / Declining |
+| Concentration | Fragmented / Oligopoly / Monopoly |
+
+---
+
+## Competitive Landscape
+
+### Key Players
+
+| Company | Market Cap | Market Share | Moat Rating | Status |
+|---------|------------|--------------|-------------|--------|
+{companies_md}
+
+### Business Model Comparison
+
+| Model | Players | Pros | Cons | Typical Margins |
+|-------|---------|------|------|-----------------|
+| Model A | | | | |
+| Model B | | | | |
+
+---
+
+## Moat Analysis
+
+### Common Moat Sources in {sector_name}
+
+| Moat Source | Prevalence | Key Examples |
+|-------------|------------|--------------|
+| Intangible Assets (brands, patents) | | |
+| Cost Advantages (scale, process) | | |
+| Switching Costs | | |
+| Network Effects | | |
+| Efficient Scale | | |
+
+### Moat Sustainability Factors
+
+_What determines whether moats persist in this sector?_
+
+---
+
+## Valuation Benchmarks
+
+| Metric | Sector Avg | Range | Premium Players | Discount Players |
+|--------|------------|-------|-----------------|------------------|
+| P/E | x | - | | |
+| EV/EBITDA | x | - | | |
+| P/B | x | - | | |
+| Div Yield | % | - | | |
+| EV/Revenue | x | - | | |
+
+### What Justifies Premium Valuations?
+
+1.
+2.
+3.
+
+---
+
+## Key Value Drivers
+
+### Demand Drivers
+
+1.
+2.
+3.
+
+### Supply Factors
+
+1.
+2.
+
+### Macro Sensitivity
+
+| Factor | Impact | Direction |
+|--------|--------|-----------|
+| Interest Rates | High / Medium / Low | |
+| GDP Growth | | |
+| Currency | | |
+| Commodity Prices | | |
+| Regulation | | |
+
+---
+
+## Investment Themes & Debates
+
+### Theme 1: _Theme Name_
+
+**Bulls:**
+-
+
+**Bears:**
+-
+
+### Theme 2: _Theme Name_
+
+**Bulls:**
+-
+
+**Bears:**
+-
+
+### Key Questions
+
+1. _Open question about the sector_
+2.
+3.
+
+---
+
+## Current Sector View
+
+**Outlook:** Bullish / Neutral / Bearish
+**Conviction:** High / Medium / Low
+
+### Rationale
+
+_Why this view?_
+
+### Catalysts
+
+| Catalyst | Timeline | Impact |
+|----------|----------|--------|
+| | | |
+
+### Risks
+
+| Risk | Probability | Impact |
+|------|-------------|--------|
+| | | |
+
+---
+
+## Companies Coverage
+
+### Detailed Coverage
+
+```dataview
+TABLE symbol, status, conviction, moat_rating
+FROM "Theses"
+WHERE sector = "{sector_name}"
+SORT modified DESC
+```
+
+### Quick Reference
+
+| Company | Thesis Status | Conviction | Key Debate |
+|---------|---------------|------------|------------|
+{companies_md}
+
+---
+
+## Recent Developments
+
+### {datetime.now().strftime("%Y-%m")}
+
+-
+
+---
+
+## Related Notes
+
+- [[Macro Environment]]
+- [[Market Overview]]
 """
         return frontmatter, content

@@ -34,15 +34,28 @@ Example usage:
 """
 
 from .models import (
+    # Core
+    AssetClass,
     ConvictionLevel,
     Note,
     NoteFrontmatter,
     NoteType,
+    # Thesis
     ThesisFrontmatter,
     ThesisStatus,
+    MoatRating,
+    MoatSource,
+    # Trade
     TradeFrontmatter,
     TradeDirection,
     TradeStatus,
+    # Event
+    EventFrontmatter,
+    EventType,
+    # Person
+    PersonFrontmatter,
+    # Sector
+    SectorFrontmatter,
 )
 from .templates import Templates
 from .vault import Vault
@@ -57,12 +70,19 @@ __all__ = [
     "NoteFrontmatter",
     "ThesisFrontmatter",
     "TradeFrontmatter",
+    "EventFrontmatter",
+    "PersonFrontmatter",
+    "SectorFrontmatter",
     # Enums
     "NoteType",
+    "AssetClass",
     "ThesisStatus",
     "TradeStatus",
     "TradeDirection",
     "ConvictionLevel",
+    "MoatRating",
+    "MoatSource",
+    "EventType",
 ]
 
 
@@ -266,6 +286,138 @@ class NoteManager:
             frontmatter=frontmatter,
         )
 
+    def create_event(
+        self,
+        symbol: str,
+        company_name: str = "",
+        event_type: str = "conference",
+        event_date: str = None,
+        host: str = "",
+        participants: list = None,
+        content: str = None,
+    ) -> Note:
+        """
+        Create an event note (conference call, investor day, etc.).
+
+        Args:
+            symbol: Stock symbol
+            company_name: Company name
+            event_type: Type of event (earnings_call, investor_day, conference,
+                       analyst_meeting, site_visit, agm, guidance_update, m_and_a, other)
+            event_date: Event date (ISO format, defaults to today)
+            host: Bank/broker hosting the event
+            participants: List of participant names
+            content: Optional custom content
+
+        Returns:
+            Created Note
+        """
+        from datetime import datetime
+
+        from .models import EventType as ET
+
+        evt_type = ET(event_type)
+        evt_date = datetime.fromisoformat(event_date) if event_date else datetime.now()
+
+        frontmatter, template_content = self.templates.event_note(
+            symbol=symbol,
+            company_name=company_name,
+            event_type=evt_type,
+            event_date=evt_date,
+            host=host,
+            participants=participants or [],
+        )
+
+        # Name format: YYYY-MM-DD - SYMBOL - Event Type
+        event_type_names = {
+            ET.EARNINGS_CALL: "Earnings Call",
+            ET.INVESTOR_DAY: "Investor Day",
+            ET.CONFERENCE: "Conference",
+            ET.ANALYST_MEETING: "Analyst Meeting",
+            ET.SITE_VISIT: "Site Visit",
+            ET.AGM: "AGM",
+            ET.GUIDANCE_UPDATE: "Guidance Update",
+            ET.M_AND_A: "M&A",
+            ET.OTHER: "Event",
+        }
+        event_name = event_type_names.get(evt_type, "Event")
+        if host:
+            note_name = f"{evt_date.strftime('%Y-%m-%d')} - {symbol.upper()} - {host} {event_name}"
+        else:
+            note_name = f"{evt_date.strftime('%Y-%m-%d')} - {symbol.upper()} - {event_name}"
+
+        return self.vault.create_note(
+            name=note_name,
+            content=content or template_content,
+            frontmatter=frontmatter,
+        )
+
+    def create_person(
+        self,
+        full_name: str,
+        current_role: str = "",
+        current_company: str = "",
+        linkedin_url: str = "",
+        content: str = None,
+    ) -> Note:
+        """
+        Create a person/executive profile note.
+
+        Args:
+            full_name: Person's full name
+            current_role: Current role (CEO, CFO, IR, etc.)
+            current_company: Current company name
+            linkedin_url: LinkedIn profile URL
+            content: Optional custom content
+
+        Returns:
+            Created Note
+        """
+        frontmatter, template_content = self.templates.person_profile(
+            full_name=full_name,
+            current_role=current_role,
+            current_company=current_company,
+            linkedin_url=linkedin_url,
+        )
+
+        return self.vault.create_note(
+            name=full_name,
+            content=content or template_content,
+            frontmatter=frontmatter,
+        )
+
+    def create_sector(
+        self,
+        sector_name: str,
+        sub_sectors: list = None,
+        companies: list = None,
+        content: str = None,
+    ) -> Note:
+        """
+        Create a sector overview note.
+
+        Args:
+            sector_name: Sector name (e.g., "Health Care", "Financials")
+            sub_sectors: List of sub-sectors
+            companies: List of companies covered
+            content: Optional custom content
+
+        Returns:
+            Created Note
+        """
+        frontmatter, template_content = self.templates.sector_overview_enhanced(
+            sector_name=sector_name,
+            sub_sectors=sub_sectors or [],
+            companies=companies or [],
+        )
+
+        return self.vault.create_note(
+            name=f"{sector_name} Sector",
+            content=content or template_content,
+            frontmatter=frontmatter,
+            folder="sectors",
+        )
+
     def search(self, query: str, limit: int = 50) -> list:
         """
         Full-text search across notes.
@@ -306,6 +458,50 @@ class NoteManager:
         """
         trade_status = TradeStatus(status) if status else None
         return self.vault.get_trades(status=trade_status, symbol=symbol)
+
+    def get_events(
+        self,
+        event_type: str = None,
+        symbol: str = None,
+        company: str = None,
+    ) -> list:
+        """
+        Get event notes (conference calls, investor days, etc.).
+
+        Args:
+            event_type: Filter by type (earnings_call, conference, investor_day, etc.)
+            symbol: Filter by stock symbol
+            company: Filter by company name
+
+        Returns:
+            List of event notes sorted by date (most recent first)
+        """
+        from .models import EventType as ET
+
+        evt_type = ET(event_type) if event_type else None
+        return self.vault.get_events(event_type=evt_type, symbol=symbol, company=company)
+
+    def get_people(self, company: str = None, role: str = None) -> list:
+        """
+        Get person/executive profile notes.
+
+        Args:
+            company: Filter by company name
+            role: Filter by role (CEO, CFO, etc.)
+
+        Returns:
+            List of person notes sorted alphabetically
+        """
+        return self.vault.get_people(company=company, role=role)
+
+    def get_sectors(self) -> list:
+        """
+        Get all sector overview notes.
+
+        Returns:
+            List of sector notes sorted alphabetically
+        """
+        return self.vault.get_sectors()
 
     def get_trade_stats(self) -> dict:
         """

@@ -13,11 +13,15 @@ from stanley.notes import (
     NoteFrontmatter,
     ThesisFrontmatter,
     TradeFrontmatter,
+    EventFrontmatter,
+    PersonFrontmatter,
+    SectorFrontmatter,
     NoteType,
     ThesisStatus,
     TradeStatus,
     TradeDirection,
     ConvictionLevel,
+    EventType,
 )
 
 
@@ -243,6 +247,48 @@ class TestTemplates:
         assert fm.note_type == NoteType.DAILY
         assert "Market Overview" in content
 
+    def test_event_note_template(self):
+        fm, content = Templates.event_note(
+            symbol="AAPL",
+            company_name="Apple Inc.",
+            event_type=EventType.EARNINGS_CALL,
+            host="JPMorgan",
+            participants=["Tim Cook", "Luca Maestri"],
+        )
+        assert fm.note_type == NoteType.EVENT
+        assert fm.event_type == EventType.EARNINGS_CALL
+        assert fm.symbol == "AAPL"
+        assert "[[Tim Cook]]" in fm.participants
+        assert "Key Takeaways" in content
+        assert "Q&A Session" in content
+
+    def test_person_profile_template(self):
+        fm, content = Templates.person_profile(
+            full_name="Tim Cook",
+            current_role="CEO",
+            current_company="Apple",
+            linkedin_url="https://linkedin.com/in/timcook",
+        )
+        assert fm.note_type == NoteType.PERSON
+        assert fm.full_name == "Tim Cook"
+        assert fm.current_role == "CEO"
+        assert "[[Apple]]" in fm.current_company
+        assert "Career History" in content
+        assert "Red Flags" in content
+        assert "Green Flags" in content
+
+    def test_sector_overview_enhanced_template(self):
+        fm, content = Templates.sector_overview_enhanced(
+            sector_name="Technology",
+            sub_sectors=["Software", "Hardware"],
+            companies=["Apple", "Microsoft"],
+        )
+        assert fm.note_type == NoteType.SECTOR
+        assert fm.sector_name == "Technology"
+        assert "[[Apple]]" in fm.companies_covered
+        assert "Moat Analysis" in content
+        assert "Valuation Benchmarks" in content
+
 
 class TestVault:
     """Tests for Vault."""
@@ -253,6 +299,10 @@ class TestVault:
             assert vault.path.exists()
             assert (vault.path / "Theses").exists()
             assert (vault.path / "Trades").exists()
+            assert (vault.path / "Events").exists()
+            assert (vault.path / "People").exists()
+            assert (vault.path / "Companies").exists()
+            assert (vault.path / "Sectors").exists()
 
     def test_vault_create_note(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -370,3 +420,91 @@ class TestNoteManager:
             manager.create_thesis(symbol="AAPL", company_name="Apple Inc.")
             results = manager.search("Apple")
             assert len(results) > 0
+
+    def test_create_event(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = NoteManager(tmpdir)
+            event = manager.create_event(
+                symbol="AAPL",
+                company_name="Apple Inc.",
+                event_type="earnings_call",
+                host="JPMorgan",
+                participants=["Tim Cook", "Luca Maestri"],
+            )
+            assert "AAPL" in event.name
+            assert "Earnings Call" in event.name
+            assert event.path.exists()
+            # Verify created in Events folder
+            assert "Events" in str(event.path)
+
+    def test_create_person(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = NoteManager(tmpdir)
+            person = manager.create_person(
+                full_name="Tim Cook",
+                current_role="CEO",
+                current_company="Apple",
+                linkedin_url="https://linkedin.com/in/timcook",
+            )
+            assert person.name == "Tim Cook"
+            assert person.path.exists()
+            # Verify created in People folder
+            assert "People" in str(person.path)
+
+    def test_create_sector(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = NoteManager(tmpdir)
+            sector = manager.create_sector(
+                sector_name="Technology",
+                sub_sectors=["Software", "Hardware"],
+                companies=["Apple", "Microsoft"],
+            )
+            assert "Technology" in sector.name
+            assert sector.path.exists()
+
+    def test_get_events(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = NoteManager(tmpdir)
+            manager.create_event(symbol="AAPL", event_type="earnings_call")
+            manager.create_event(symbol="GOOGL", event_type="conference")
+            manager.create_event(symbol="AAPL", event_type="investor_day")
+
+            # Get all events
+            all_events = manager.get_events()
+            assert len(all_events) == 3
+
+            # Filter by symbol
+            aapl_events = manager.get_events(symbol="AAPL")
+            assert len(aapl_events) == 2
+
+            # Filter by event type
+            earnings = manager.get_events(event_type="earnings_call")
+            assert len(earnings) == 1
+
+    def test_get_people(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = NoteManager(tmpdir)
+            manager.create_person(full_name="Tim Cook", current_role="CEO", current_company="Apple")
+            manager.create_person(full_name="Satya Nadella", current_role="CEO", current_company="Microsoft")
+            manager.create_person(full_name="Luca Maestri", current_role="CFO", current_company="Apple")
+
+            # Get all people
+            all_people = manager.get_people()
+            assert len(all_people) == 3
+
+            # Filter by company
+            apple_people = manager.get_people(company="Apple")
+            assert len(apple_people) == 2
+
+            # Filter by role
+            ceos = manager.get_people(role="CEO")
+            assert len(ceos) == 2
+
+    def test_get_sectors(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = NoteManager(tmpdir)
+            manager.create_sector(sector_name="Technology")
+            manager.create_sector(sector_name="Healthcare")
+
+            sectors = manager.get_sectors()
+            assert len(sectors) == 2

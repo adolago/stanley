@@ -13,9 +13,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 from .models import (
+    EventFrontmatter,
+    EventType,
     Note,
     NoteFrontmatter,
     NoteType,
+    PersonFrontmatter,
     ThesisFrontmatter,
     ThesisStatus,
     TradeFrontmatter,
@@ -52,6 +55,8 @@ class Vault:
             "trades": self.path / "Trades",
             "companies": self.path / "Companies",
             "sectors": self.path / "Sectors",
+            "events": self.path / "Events",
+            "people": self.path / "People",
             "daily": self.path / "Daily",
             "templates": self.path / "Templates",
         }
@@ -325,6 +330,10 @@ class Vault:
             target_folder = self._folders["companies"]
         elif frontmatter.note_type == NoteType.SECTOR:
             target_folder = self._folders["sectors"]
+        elif frontmatter.note_type == NoteType.EVENT:
+            target_folder = self._folders["events"]
+        elif frontmatter.note_type == NoteType.PERSON:
+            target_folder = self._folders["people"]
         elif frontmatter.note_type == NoteType.DAILY:
             target_folder = self._folders["daily"]
         else:
@@ -536,6 +545,116 @@ class Vault:
             ]
 
         return trades
+
+    def get_events(
+        self,
+        event_type: Optional[EventType] = None,
+        symbol: Optional[str] = None,
+        company: Optional[str] = None,
+    ) -> List[Note]:
+        """
+        Get event notes with optional filters.
+
+        Args:
+            event_type: Filter by event type (earnings_call, conference, etc.)
+            symbol: Filter by stock symbol
+            company: Filter by company name
+
+        Returns:
+            List of event notes sorted by event date (most recent first)
+        """
+        if not self._loaded:
+            self.load()
+
+        events = self.list_notes(note_type=NoteType.EVENT)
+
+        if event_type:
+            events = [
+                e
+                for e in events
+                if isinstance(e.frontmatter, EventFrontmatter)
+                and e.frontmatter.event_type == event_type
+            ]
+
+        if symbol:
+            events = [
+                e
+                for e in events
+                if isinstance(e.frontmatter, EventFrontmatter)
+                and e.frontmatter.symbol.upper() == symbol.upper()
+            ]
+
+        if company:
+            events = [
+                e
+                for e in events
+                if isinstance(e.frontmatter, EventFrontmatter)
+                and company.lower() in e.frontmatter.company.lower()
+            ]
+
+        # Sort by event date (most recent first)
+        events.sort(
+            key=lambda e: e.frontmatter.event_date if isinstance(e.frontmatter, EventFrontmatter) and e.frontmatter.event_date else datetime.min,
+            reverse=True,
+        )
+
+        return events
+
+    def get_people(
+        self,
+        company: Optional[str] = None,
+        role: Optional[str] = None,
+    ) -> List[Note]:
+        """
+        Get person/executive profile notes with optional filters.
+
+        Args:
+            company: Filter by company name
+            role: Filter by role (CEO, CFO, etc.)
+
+        Returns:
+            List of person notes sorted alphabetically by name
+        """
+        if not self._loaded:
+            self.load()
+
+        people = self.list_notes(note_type=NoteType.PERSON)
+
+        if company:
+            people = [
+                p
+                for p in people
+                if isinstance(p.frontmatter, PersonFrontmatter)
+                and company.lower() in p.frontmatter.current_company.lower()
+            ]
+
+        if role:
+            people = [
+                p
+                for p in people
+                if isinstance(p.frontmatter, PersonFrontmatter)
+                and role.lower() in p.frontmatter.current_role.lower()
+            ]
+
+        # Sort alphabetically by name
+        people.sort(key=lambda p: p.frontmatter.full_name if isinstance(p.frontmatter, PersonFrontmatter) else p.name)
+
+        return people
+
+    def get_sectors(self) -> List[Note]:
+        """
+        Get all sector overview notes.
+
+        Returns:
+            List of sector notes sorted alphabetically
+        """
+        if not self._loaded:
+            self.load()
+
+        sectors = self.list_notes(note_type=NoteType.SECTOR)
+        sectors.sort(key=lambda s: s.frontmatter.title)
+
+        return sectors
 
     def get_trade_stats(self) -> Dict[str, Any]:
         """

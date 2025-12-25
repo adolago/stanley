@@ -21,11 +21,57 @@ class NoteType(Enum):
     GENERAL = "general"
     THESIS = "thesis"  # Investment thesis
     TRADE = "trade"  # Trade journal entry
-    COMPANY = "company"  # Company research
+    COMPANY = "company"  # Company research (MOC)
     SECTOR = "sector"  # Sector analysis
     MACRO = "macro"  # Macro research
     MEETING = "meeting"  # Meeting notes
     DAILY = "daily"  # Daily notes
+    EVENT = "event"  # Conference call, investor day, earnings
+    PERSON = "person"  # Management/executive profile
+
+
+class AssetClass(Enum):
+    """Asset classes for multi-asset support."""
+
+    EQUITY = "equity"
+    FIXED_INCOME = "fixed_income"
+    COMMODITY = "commodity"
+    CURRENCY = "currency"
+    CRYPTO = "crypto"
+    REAL_ESTATE = "real_estate"
+    DERIVATIVE = "derivative"
+
+
+class MoatSource(Enum):
+    """Morningstar's 5 sources of competitive advantage."""
+
+    INTANGIBLE_ASSETS = "intangible_assets"  # Brands, patents, licenses
+    COST_ADVANTAGE = "cost_advantage"  # Scale, process, location
+    SWITCHING_COSTS = "switching_costs"  # Customer lock-in
+    NETWORK_EFFECT = "network_effect"  # Platform value
+    EFFICIENT_SCALE = "efficient_scale"  # Limited market size
+
+
+class MoatRating(Enum):
+    """Morningstar moat rating based on ROIC sustainability."""
+
+    NONE = "none"  # <10 years excess returns
+    NARROW = "narrow"  # 10-20 years excess returns
+    WIDE = "wide"  # >20 years excess returns
+
+
+class EventType(Enum):
+    """Types of corporate events."""
+
+    EARNINGS_CALL = "earnings_call"
+    INVESTOR_DAY = "investor_day"
+    CONFERENCE = "conference"
+    ANALYST_MEETING = "analyst_meeting"
+    SITE_VISIT = "site_visit"
+    AGM = "agm"  # Annual General Meeting
+    GUIDANCE_UPDATE = "guidance_update"
+    M_AND_A = "m_and_a"  # M&A announcement
+    OTHER = "other"
 
 
 class ConvictionLevel(Enum):
@@ -131,6 +177,8 @@ class ThesisFrontmatter(NoteFrontmatter):
     symbol: str = ""
     company_name: str = ""
     sector: str = ""
+    asset_class: AssetClass = AssetClass.EQUITY
+    currency: str = "USD"  # Base currency for valuation
     status: ThesisStatus = ThesisStatus.RESEARCH
     conviction: ConvictionLevel = ConvictionLevel.MEDIUM
     entry_price: Optional[float] = None
@@ -143,9 +191,25 @@ class ThesisFrontmatter(NoteFrontmatter):
     bull_case: str = ""
     bear_case: str = ""
     base_case: str = ""
+    # Moat analysis (Morningstar framework)
+    moat_rating: MoatRating = MoatRating.NONE
+    moat_sources: List[MoatSource] = field(default_factory=list)
+    moat_trend: str = ""  # "stable", "positive", "negative"
+    # Fundamental metrics
+    roic: Optional[float] = None  # Return on Invested Capital
+    wacc: Optional[float] = None  # Weighted Average Cost of Capital
+    roic_wacc_spread: Optional[float] = None  # Excess returns
+    # Management quality
+    management_quality: Optional[int] = None  # 1-10 rating
+    capital_allocation_score: Optional[int] = None  # 1-10 rating
+    # Competitors for comparison
+    competitors: List[str] = field(default_factory=list)  # [[Competitor A]]
 
     def __post_init__(self):
         self.note_type = NoteType.THESIS
+        # Calculate ROIC-WACC spread if both values are present
+        if self.roic is not None and self.wacc is not None:
+            self.roic_wacc_spread = self.roic - self.wacc
 
     def to_yaml(self) -> str:
         """Convert to YAML string."""
@@ -155,6 +219,8 @@ class ThesisFrontmatter(NoteFrontmatter):
             "symbol": self.symbol,
             "company_name": self.company_name,
             "sector": self.sector,
+            "asset_class": self.asset_class.value,
+            "currency": self.currency,
             "status": self.status.value,
             "conviction": self.conviction.value,
             "entry_price": self.entry_price,
@@ -167,14 +233,26 @@ class ThesisFrontmatter(NoteFrontmatter):
             "bull_case": self.bull_case,
             "bear_case": self.bear_case,
             "base_case": self.base_case,
+            # Moat analysis
+            "moat_rating": self.moat_rating.value,
+            "moat_sources": [m.value for m in self.moat_sources],
+            "moat_trend": self.moat_trend,
+            # Fundamentals
+            "roic": self.roic,
+            "wacc": self.wacc,
+            "roic_wacc_spread": self.roic_wacc_spread,
+            # Management
+            "management_quality": self.management_quality,
+            "capital_allocation_score": self.capital_allocation_score,
+            "competitors": self.competitors,
             "created": self.created.isoformat(),
             "modified": self.modified.isoformat(),
             "tags": self.tags,
             "aliases": self.aliases,
             **self.extra,
         }
-        # Remove None values
-        data = {k: v for k, v in data.items() if v is not None}
+        # Remove None values and empty lists
+        data = {k: v for k, v in data.items() if v is not None and v != []}
         return yaml.dump(data, default_flow_style=False, sort_keys=False)
 
     @classmethod
@@ -396,6 +474,316 @@ class TradeFrontmatter(NoteFrontmatter):
 
 
 @dataclass
+class EventFrontmatter(NoteFrontmatter):
+    """Frontmatter for corporate event notes (conference calls, investor days, etc.)."""
+
+    event_type: EventType = EventType.OTHER
+    event_date: Optional[datetime] = None
+    company: str = ""  # [[Company]] link
+    symbol: str = ""
+    participants: List[str] = field(default_factory=list)  # [[Person]] links
+    host: str = ""  # Bank/broker hosting the event
+    key_takeaways: List[str] = field(default_factory=list)
+    management_tone: str = ""  # e.g., "confident", "cautious", "defensive"
+    guidance_change: str = ""  # "raised", "lowered", "maintained", "none"
+    recording_url: str = ""
+    transcript_url: str = ""
+
+    def __post_init__(self):
+        self.note_type = NoteType.EVENT
+
+    def to_yaml(self) -> str:
+        """Convert to YAML string."""
+        data = {
+            "title": self.title,
+            "type": self.note_type.value,
+            "event_type": self.event_type.value,
+            "event_date": self.event_date.isoformat() if self.event_date else None,
+            "company": self.company,
+            "symbol": self.symbol,
+            "participants": self.participants,
+            "host": self.host,
+            "key_takeaways": self.key_takeaways,
+            "management_tone": self.management_tone,
+            "guidance_change": self.guidance_change,
+            "recording_url": self.recording_url,
+            "transcript_url": self.transcript_url,
+            "created": self.created.isoformat(),
+            "modified": self.modified.isoformat(),
+            "tags": self.tags,
+            "aliases": self.aliases,
+            **self.extra,
+        }
+        data = {k: v for k, v in data.items() if v is not None and v != [] and v != ""}
+        return yaml.dump(data, default_flow_style=False, sort_keys=False)
+
+    @classmethod
+    def from_yaml(cls, yaml_str: str) -> "EventFrontmatter":
+        """Parse from YAML string."""
+        data = yaml.safe_load(yaml_str) or {}
+
+        event_type = EventType.OTHER
+        if "event_type" in data:
+            try:
+                event_type = EventType(data.pop("event_type"))
+            except ValueError:
+                pass
+
+        event_date = None
+        if "event_date" in data and data["event_date"]:
+            try:
+                event_date = datetime.fromisoformat(data.pop("event_date"))
+            except (ValueError, TypeError):
+                data.pop("event_date", None)
+
+        created = datetime.now()
+        if "created" in data:
+            try:
+                created = datetime.fromisoformat(data.pop("created"))
+            except (ValueError, TypeError):
+                pass
+
+        modified = datetime.now()
+        if "modified" in data:
+            try:
+                modified = datetime.fromisoformat(data.pop("modified"))
+            except (ValueError, TypeError):
+                pass
+
+        return cls(
+            title=data.pop("title", "Untitled"),
+            event_type=event_type,
+            event_date=event_date,
+            company=data.pop("company", ""),
+            symbol=data.pop("symbol", ""),
+            participants=data.pop("participants", []),
+            host=data.pop("host", ""),
+            key_takeaways=data.pop("key_takeaways", []),
+            management_tone=data.pop("management_tone", ""),
+            guidance_change=data.pop("guidance_change", ""),
+            recording_url=data.pop("recording_url", ""),
+            transcript_url=data.pop("transcript_url", ""),
+            created=created,
+            modified=modified,
+            tags=data.pop("tags", []),
+            aliases=data.pop("aliases", []),
+            extra=data,
+        )
+
+
+@dataclass
+class PersonFrontmatter(NoteFrontmatter):
+    """Frontmatter for person/executive profiles."""
+
+    full_name: str = ""
+    current_role: str = ""  # e.g., "CEO", "CFO", "IRO"
+    current_company: str = ""  # [[Company]] link
+    linkedin_url: str = ""
+    email: str = ""
+    phone: str = ""
+    # Role history for tracking executive transitions
+    role_history: List[Dict[str, str]] = field(default_factory=list)
+    # Associated people (network mapping)
+    associated_people: List[str] = field(default_factory=list)  # [[Person]] links
+    # Notes about the person
+    reputation: str = ""  # e.g., "strong operator", "financial engineer"
+    communication_style: str = ""  # e.g., "transparent", "guarded"
+    track_record: str = ""  # Summary of past performance
+    red_flags: List[str] = field(default_factory=list)
+    green_flags: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        self.note_type = NoteType.PERSON
+
+    def to_yaml(self) -> str:
+        """Convert to YAML string."""
+        data = {
+            "title": self.title,
+            "type": self.note_type.value,
+            "full_name": self.full_name,
+            "current_role": self.current_role,
+            "current_company": self.current_company,
+            "linkedin_url": self.linkedin_url,
+            "email": self.email,
+            "phone": self.phone,
+            "role_history": self.role_history,
+            "associated_people": self.associated_people,
+            "reputation": self.reputation,
+            "communication_style": self.communication_style,
+            "track_record": self.track_record,
+            "red_flags": self.red_flags,
+            "green_flags": self.green_flags,
+            "created": self.created.isoformat(),
+            "modified": self.modified.isoformat(),
+            "tags": self.tags,
+            "aliases": self.aliases,
+            **self.extra,
+        }
+        data = {k: v for k, v in data.items() if v is not None and v != [] and v != ""}
+        return yaml.dump(data, default_flow_style=False, sort_keys=False)
+
+    @classmethod
+    def from_yaml(cls, yaml_str: str) -> "PersonFrontmatter":
+        """Parse from YAML string."""
+        data = yaml.safe_load(yaml_str) or {}
+
+        created = datetime.now()
+        if "created" in data:
+            try:
+                created = datetime.fromisoformat(data.pop("created"))
+            except (ValueError, TypeError):
+                pass
+
+        modified = datetime.now()
+        if "modified" in data:
+            try:
+                modified = datetime.fromisoformat(data.pop("modified"))
+            except (ValueError, TypeError):
+                pass
+
+        return cls(
+            title=data.pop("title", "Untitled"),
+            full_name=data.pop("full_name", ""),
+            current_role=data.pop("current_role", ""),
+            current_company=data.pop("current_company", ""),
+            linkedin_url=data.pop("linkedin_url", ""),
+            email=data.pop("email", ""),
+            phone=data.pop("phone", ""),
+            role_history=data.pop("role_history", []),
+            associated_people=data.pop("associated_people", []),
+            reputation=data.pop("reputation", ""),
+            communication_style=data.pop("communication_style", ""),
+            track_record=data.pop("track_record", ""),
+            red_flags=data.pop("red_flags", []),
+            green_flags=data.pop("green_flags", []),
+            created=created,
+            modified=modified,
+            tags=data.pop("tags", []),
+            aliases=data.pop("aliases", []),
+            extra=data,
+        )
+
+
+@dataclass
+class SectorFrontmatter(NoteFrontmatter):
+    """Frontmatter for sector/industry analysis notes."""
+
+    sector_name: str = ""
+    sub_sectors: List[str] = field(default_factory=list)
+    companies_covered: List[str] = field(default_factory=list)  # [[Company]] links
+    # Sector characteristics
+    cyclicality: str = ""  # "cyclical", "defensive", "mixed"
+    capital_intensity: str = ""  # "high", "medium", "low"
+    regulatory_environment: str = ""  # "heavy", "moderate", "light"
+    growth_profile: str = ""  # "high_growth", "mature", "declining"
+    # Market structure
+    market_size: Optional[float] = None
+    market_size_currency: str = "USD"
+    market_growth_rate: Optional[float] = None  # Annual %
+    concentration: str = ""  # "fragmented", "oligopoly", "monopoly"
+    # Key dynamics
+    key_value_drivers: List[str] = field(default_factory=list)
+    key_risks: List[str] = field(default_factory=list)
+    # Typical moat sources for the sector
+    common_moat_sources: List[MoatSource] = field(default_factory=list)
+    # Valuation benchmarks
+    typical_pe_range: str = ""  # e.g., "15-25x"
+    typical_ev_ebitda_range: str = ""  # e.g., "8-12x"
+    # Sector outlook
+    outlook: str = ""  # "bullish", "neutral", "bearish"
+    outlook_rationale: str = ""
+
+    def __post_init__(self):
+        self.note_type = NoteType.SECTOR
+
+    def to_yaml(self) -> str:
+        """Convert to YAML string."""
+        data = {
+            "title": self.title,
+            "type": self.note_type.value,
+            "sector_name": self.sector_name,
+            "sub_sectors": self.sub_sectors,
+            "companies_covered": self.companies_covered,
+            "cyclicality": self.cyclicality,
+            "capital_intensity": self.capital_intensity,
+            "regulatory_environment": self.regulatory_environment,
+            "growth_profile": self.growth_profile,
+            "market_size": self.market_size,
+            "market_size_currency": self.market_size_currency,
+            "market_growth_rate": self.market_growth_rate,
+            "concentration": self.concentration,
+            "key_value_drivers": self.key_value_drivers,
+            "key_risks": self.key_risks,
+            "common_moat_sources": [m.value for m in self.common_moat_sources],
+            "typical_pe_range": self.typical_pe_range,
+            "typical_ev_ebitda_range": self.typical_ev_ebitda_range,
+            "outlook": self.outlook,
+            "outlook_rationale": self.outlook_rationale,
+            "created": self.created.isoformat(),
+            "modified": self.modified.isoformat(),
+            "tags": self.tags,
+            "aliases": self.aliases,
+            **self.extra,
+        }
+        data = {k: v for k, v in data.items() if v is not None and v != [] and v != ""}
+        return yaml.dump(data, default_flow_style=False, sort_keys=False)
+
+    @classmethod
+    def from_yaml(cls, yaml_str: str) -> "SectorFrontmatter":
+        """Parse from YAML string."""
+        data = yaml.safe_load(yaml_str) or {}
+
+        created = datetime.now()
+        if "created" in data:
+            try:
+                created = datetime.fromisoformat(data.pop("created"))
+            except (ValueError, TypeError):
+                pass
+
+        modified = datetime.now()
+        if "modified" in data:
+            try:
+                modified = datetime.fromisoformat(data.pop("modified"))
+            except (ValueError, TypeError):
+                pass
+
+        moat_sources = []
+        if "common_moat_sources" in data:
+            for m in data.pop("common_moat_sources", []):
+                try:
+                    moat_sources.append(MoatSource(m))
+                except ValueError:
+                    pass
+
+        return cls(
+            title=data.pop("title", "Untitled"),
+            sector_name=data.pop("sector_name", ""),
+            sub_sectors=data.pop("sub_sectors", []),
+            companies_covered=data.pop("companies_covered", []),
+            cyclicality=data.pop("cyclicality", ""),
+            capital_intensity=data.pop("capital_intensity", ""),
+            regulatory_environment=data.pop("regulatory_environment", ""),
+            growth_profile=data.pop("growth_profile", ""),
+            market_size=data.pop("market_size", None),
+            market_size_currency=data.pop("market_size_currency", "USD"),
+            market_growth_rate=data.pop("market_growth_rate", None),
+            concentration=data.pop("concentration", ""),
+            key_value_drivers=data.pop("key_value_drivers", []),
+            key_risks=data.pop("key_risks", []),
+            common_moat_sources=moat_sources,
+            typical_pe_range=data.pop("typical_pe_range", ""),
+            typical_ev_ebitda_range=data.pop("typical_ev_ebitda_range", ""),
+            outlook=data.pop("outlook", ""),
+            outlook_rationale=data.pop("outlook_rationale", ""),
+            created=created,
+            modified=modified,
+            tags=data.pop("tags", []),
+            aliases=data.pop("aliases", []),
+            extra=data,
+        )
+
+
+@dataclass
 class Note:
     """A note in the vault."""
 
@@ -453,6 +841,12 @@ class Note:
                 frontmatter = ThesisFrontmatter.from_yaml(yaml_str)
             elif note_type == "trade":
                 frontmatter = TradeFrontmatter.from_yaml(yaml_str)
+            elif note_type == "event":
+                frontmatter = EventFrontmatter.from_yaml(yaml_str)
+            elif note_type == "person":
+                frontmatter = PersonFrontmatter.from_yaml(yaml_str)
+            elif note_type == "sector":
+                frontmatter = SectorFrontmatter.from_yaml(yaml_str)
             else:
                 frontmatter = NoteFrontmatter.from_yaml(yaml_str)
         else:
