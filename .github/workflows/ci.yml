@@ -77,6 +77,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libxcb1-dev \
             libwayland-dev \
             libvulkan-dev \
             libasound2-dev \
