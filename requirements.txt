@@ -19,6 +19,8 @@ redis==5.0.1
 openbb>=4.0.0
 yfinance==0.2.24
 sec-downloader==1.4.0
+edgartools>=3.0.0
+dbnomics>=1.2.0
 requests==2.31.0
 aiohttp==3.9.1
 

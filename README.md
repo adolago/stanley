@@ -1,15 +1,14 @@
 # Stanley - Institutional Investment Analysis Platform
 
-Stanley is a sophisticated investment analysis platform focused on institutional-grade metrics, money flow analysis, and fundamental research. No moon phases, no Fibonacci retracements, no crystal balls - just real financial analysis.
+Stanley is a sophisticated investment analysis platform focused on institutional-grade metrics, money flow analysis, fundamental research, macro analysis, and commodities.
 
 ## Philosophy
 
-Stanley is built for serious investors who understand that:
-- Money flow drives markets, not chart patterns
-- Fundamental analysis trumps technical indicators
-- Institutional positioning matters more than retail sentiment
-- Risk management is paramount
-- Data quality is everything
+Stanley is built for investors who value:
+- Money flow and institutional positioning data
+- Fundamental and macro analysis
+- Risk management
+- Data quality
 
 ## Features
 
@@ -115,11 +114,12 @@ black stanley/
 ## Contributing
 
 1. Focus on institutional-grade analysis
-2. No technical indicators or chart patterns
-3. Emphasize data quality and reliability
-4. Include comprehensive tests
-5. Document all assumptions and methodologies
+2. Emphasize data quality and reliability
+3. Include comprehensive tests
+4. Document all assumptions and methodologies
 
 ## License
 
-MIT License - See LICENSE file for details
+GNU Affero General Public License v3.0 (AGPL-3.0) - See LICENSE file for details
+
+This project uses OpenBB (AGPL-3.0) and dbnomics (AGPL-3.0), which require the entire project to be licensed under AGPL-3.0. When running this software as a network service, you must provide source code to users of that service.

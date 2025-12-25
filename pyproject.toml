@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "stanley"
 version = "0.1.0"
-description = "Institutional Investment Analysis Platform - No Technical Indicators, Just Real Data"
+description = "Institutional Investment Analysis Platform - Money Flow, Macro, Commodities, Fundamentals"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
+license = {text = "AGPL-3.0-only"}
 authors = [
     {name = "Stanley Development Team", email = "contact@stanley.com"}
 ]
@@ -16,7 +16,7 @@ keywords = ["finance", "investment", "institutional", "money-flow", "analysis"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Financial and Insurance Industry",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",

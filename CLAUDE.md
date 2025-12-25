@@ -1,10 +1,354 @@
-# CLAUDE.md
+# Claude Code Configuration - SPARC Development Environment
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## 🚨 CRITICAL: CONCURRENT EXECUTION & FILE MANAGEMENT
+
+**ABSOLUTE RULES**:
+1. ALL operations MUST be concurrent/parallel in a single message
+2. **NEVER save working files, text/mds and tests to the root folder**
+3. ALWAYS organize files in appropriate subdirectories
+4. **USE CLAUDE CODE'S TASK TOOL** for spawning agents concurrently, not just MCP
+
+### ⚡ GOLDEN RULE: "1 MESSAGE = ALL RELATED OPERATIONS"
+
+**MANDATORY PATTERNS:**
+- **TodoWrite**: ALWAYS batch ALL todos in ONE call (5-10+ todos minimum)
+- **Task tool (Claude Code)**: ALWAYS spawn ALL agents in ONE message with full instructions
+- **File operations**: ALWAYS batch ALL reads/writes/edits in ONE message
+- **Bash commands**: ALWAYS batch ALL terminal operations in ONE message
+- **Memory operations**: ALWAYS batch ALL memory store/retrieve in ONE message
+
+### 🎯 CRITICAL: Claude Code Task Tool for Agent Execution
+
+**Claude Code's Task tool is the PRIMARY way to spawn agents:**
+```javascript
+// ✅ CORRECT: Use Claude Code's Task tool for parallel agent execution
+[Single Message]:
+  Task("Research agent", "Analyze requirements and patterns...", "researcher")
+  Task("Coder agent", "Implement core features...", "coder")
+  Task("Tester agent", "Create comprehensive tests...", "tester")
+  Task("Reviewer agent", "Review code quality...", "reviewer")
+  Task("Architect agent", "Design system architecture...", "system-architect")
+```
+
+**MCP tools are ONLY for coordination setup:**
+- `mcp__claude-flow__swarm_init` - Initialize coordination topology
+- `mcp__claude-flow__agent_spawn` - Define agent types for coordination
+- `mcp__claude-flow__task_orchestrate` - Orchestrate high-level workflows
+
+### 📁 File Organization Rules
+
+**NEVER save to root folder. Use these directories:**
+- `/src` - Source code files
+- `/tests` - Test files
+- `/docs` - Documentation and markdown files
+- `/config` - Configuration files
+- `/scripts` - Utility scripts
+- `/examples` - Example code
 
 ## Project Overview
 
-Stanley is an institutional investment analysis platform focused on money flow analysis, institutional positioning, and fundamental research. The platform explicitly avoids technical indicators (RSI, MACD, Fibonacci, etc.) in favor of institutional data sources like 13F filings, dark pool activity, and options flow.
+This project uses SPARC (Specification, Pseudocode, Architecture, Refinement, Completion) methodology with Claude-Flow orchestration for systematic Test-Driven Development.
+
+## SPARC Commands
+
+### Core Commands
+- `npx claude-flow sparc modes` - List available modes
+- `npx claude-flow sparc run <mode> "<task>"` - Execute specific mode
+- `npx claude-flow sparc tdd "<feature>"` - Run complete TDD workflow
+- `npx claude-flow sparc info <mode>` - Get mode details
+
+### Batchtools Commands
+- `npx claude-flow sparc batch <modes> "<task>"` - Parallel execution
+- `npx claude-flow sparc pipeline "<task>"` - Full pipeline processing
+- `npx claude-flow sparc concurrent <mode> "<tasks-file>"` - Multi-task processing
+
+### Build Commands
+- `npm run build` - Build project
+- `npm run test` - Run tests
+- `npm run lint` - Linting
+- `npm run typecheck` - Type checking
+
+## SPARC Workflow Phases
+
+1. **Specification** - Requirements analysis (`sparc run spec-pseudocode`)
+2. **Pseudocode** - Algorithm design (`sparc run spec-pseudocode`)
+3. **Architecture** - System design (`sparc run architect`)
+4. **Refinement** - TDD implementation (`sparc tdd`)
+5. **Completion** - Integration (`sparc run integration`)
+
+## Code Style & Best Practices
+
+- **Modular Design**: Files under 500 lines
+- **Environment Safety**: Never hardcode secrets
+- **Test-First**: Write tests before implementation
+- **Clean Architecture**: Separate concerns
+- **Documentation**: Keep updated
+
+## 🚀 Available Agents (54 Total)
+
+### Core Development
+`coder`, `reviewer`, `tester`, `planner`, `researcher`
+
+### Swarm Coordination
+`hierarchical-coordinator`, `mesh-coordinator`, `adaptive-coordinator`, `collective-intelligence-coordinator`, `swarm-memory-manager`
+
+### Consensus & Distributed
+`byzantine-coordinator`, `raft-manager`, `gossip-coordinator`, `consensus-builder`, `crdt-synchronizer`, `quorum-manager`, `security-manager`
+
+### Performance & Optimization
+`perf-analyzer`, `performance-benchmarker`, `task-orchestrator`, `memory-coordinator`, `smart-agent`
+
+### GitHub & Repository
+`github-modes`, `pr-manager`, `code-review-swarm`, `issue-tracker`, `release-manager`, `workflow-automation`, `project-board-sync`, `repo-architect`, `multi-repo-swarm`
+
+### SPARC Methodology
+`sparc-coord`, `sparc-coder`, `specification`, `pseudocode`, `architecture`, `refinement`
+
+### Specialized Development
+`backend-dev`, `mobile-dev`, `ml-developer`, `cicd-engineer`, `api-docs`, `system-architect`, `code-analyzer`, `base-template-generator`
+
+### Testing & Validation
+`tdd-london-swarm`, `production-validator`
+
+### Migration & Planning
+`migration-planner`, `swarm-init`
+
+## 🎯 Claude Code vs MCP Tools
+
+### Claude Code Handles ALL EXECUTION:
+- **Task tool**: Spawn and run agents concurrently for actual work
+- File operations (Read, Write, Edit, MultiEdit, Glob, Grep)
+- Code generation and programming
+- Bash commands and system operations
+- Implementation work
+- Project navigation and analysis
+- TodoWrite and task management
+- Git operations
+- Package management
+- Testing and debugging
+
+### MCP Tools ONLY COORDINATE:
+- Swarm initialization (topology setup)
+- Agent type definitions (coordination patterns)
+- Task orchestration (high-level planning)
+- Memory management
+- Neural features
+- Performance tracking
+- GitHub integration
+
+**KEY**: MCP coordinates the strategy, Claude Code's Task tool executes with real agents.
+
+## 🚀 Quick Setup
+
+```bash
+# Add MCP servers (Claude Flow required, others optional)
+claude mcp add claude-flow npx claude-flow@alpha mcp start
+claude mcp add ruv-swarm npx ruv-swarm mcp start  # Optional: Enhanced coordination
+claude mcp add flow-nexus npx flow-nexus@latest mcp start  # Optional: Cloud features
+```
+
+## MCP Tool Categories
+
+### Coordination
+`swarm_init`, `agent_spawn`, `task_orchestrate`
+
+### Monitoring
+`swarm_status`, `agent_list`, `agent_metrics`, `task_status`, `task_results`
+
+### Memory & Neural
+`memory_usage`, `neural_status`, `neural_train`, `neural_patterns`
+
+### GitHub Integration
+`github_swarm`, `repo_analyze`, `pr_enhance`, `issue_triage`, `code_review`
+
+### System
+`benchmark_run`, `features_detect`, `swarm_monitor`
+
+### Flow-Nexus MCP Tools (Optional Advanced Features)
+Flow-Nexus extends MCP capabilities with 70+ cloud-based orchestration tools:
+
+**Key MCP Tool Categories:**
+- **Swarm & Agents**: `swarm_init`, `swarm_scale`, `agent_spawn`, `task_orchestrate`
+- **Sandboxes**: `sandbox_create`, `sandbox_execute`, `sandbox_upload` (cloud execution)
+- **Templates**: `template_list`, `template_deploy` (pre-built project templates)
+- **Neural AI**: `neural_train`, `neural_patterns`, `seraphina_chat` (AI assistant)
+- **GitHub**: `github_repo_analyze`, `github_pr_manage` (repository management)
+- **Real-time**: `execution_stream_subscribe`, `realtime_subscribe` (live monitoring)
+- **Storage**: `storage_upload`, `storage_list` (cloud file management)
+
+**Authentication Required:**
+- Register: `mcp__flow-nexus__user_register` or `npx flow-nexus@latest register`
+- Login: `mcp__flow-nexus__user_login` or `npx flow-nexus@latest login`
+- Access 70+ specialized MCP tools for advanced orchestration
+
+## 🚀 Agent Execution Flow with Claude Code
+
+### The Correct Pattern:
+
+1. **Optional**: Use MCP tools to set up coordination topology
+2. **REQUIRED**: Use Claude Code's Task tool to spawn agents that do actual work
+3. **REQUIRED**: Each agent runs hooks for coordination
+4. **REQUIRED**: Batch all operations in single messages
+
+### Example Full-Stack Development:
+
+```javascript
+// Single message with all agent spawning via Claude Code's Task tool
+[Parallel Agent Execution]:
+  Task("Backend Developer", "Build REST API with Express. Use hooks for coordination.", "backend-dev")
+  Task("Frontend Developer", "Create React UI. Coordinate with backend via memory.", "coder")
+  Task("Database Architect", "Design PostgreSQL schema. Store schema in memory.", "code-analyzer")
+  Task("Test Engineer", "Write Jest tests. Check memory for API contracts.", "tester")
+  Task("DevOps Engineer", "Setup Docker and CI/CD. Document in memory.", "cicd-engineer")
+  Task("Security Auditor", "Review authentication. Report findings via hooks.", "reviewer")
+  
+  // All todos batched together
+  TodoWrite { todos: [...8-10 todos...] }
+  
+  // All file operations together
+  Write "backend/server.js"
+  Write "frontend/App.jsx"
+  Write "database/schema.sql"
+```
+
+## 📋 Agent Coordination Protocol
+
+### Every Agent Spawned via Task Tool MUST:
+
+**1️⃣ BEFORE Work:**
+```bash
+npx claude-flow@alpha hooks pre-task --description "[task]"
+npx claude-flow@alpha hooks session-restore --session-id "swarm-[id]"
+```
+
+**2️⃣ DURING Work:**
+```bash
+npx claude-flow@alpha hooks post-edit --file "[file]" --memory-key "swarm/[agent]/[step]"
+npx claude-flow@alpha hooks notify --message "[what was done]"
+```
+
+**3️⃣ AFTER Work:**
+```bash
+npx claude-flow@alpha hooks post-task --task-id "[task]"
+npx claude-flow@alpha hooks session-end --export-metrics true
+```
+
+## 🎯 Concurrent Execution Examples
+
+### ✅ CORRECT WORKFLOW: MCP Coordinates, Claude Code Executes
+
+```javascript
+// Step 1: MCP tools set up coordination (optional, for complex tasks)
+[Single Message - Coordination Setup]:
+  mcp__claude-flow__swarm_init { topology: "mesh", maxAgents: 6 }
+  mcp__claude-flow__agent_spawn { type: "researcher" }
+  mcp__claude-flow__agent_spawn { type: "coder" }
+  mcp__claude-flow__agent_spawn { type: "tester" }
+
+// Step 2: Claude Code Task tool spawns ACTUAL agents that do the work
+[Single Message - Parallel Agent Execution]:
+  // Claude Code's Task tool spawns real agents concurrently
+  Task("Research agent", "Analyze API requirements and best practices. Check memory for prior decisions.", "researcher")
+  Task("Coder agent", "Implement REST endpoints with authentication. Coordinate via hooks.", "coder")
+  Task("Database agent", "Design and implement database schema. Store decisions in memory.", "code-analyzer")
+  Task("Tester agent", "Create comprehensive test suite with 90% coverage.", "tester")
+  Task("Reviewer agent", "Review code quality and security. Document findings.", "reviewer")
+  
+  // Batch ALL todos in ONE call
+  TodoWrite { todos: [
+    {id: "1", content: "Research API patterns", status: "in_progress", priority: "high"},
+    {id: "2", content: "Design database schema", status: "in_progress", priority: "high"},
+    {id: "3", content: "Implement authentication", status: "pending", priority: "high"},
+    {id: "4", content: "Build REST endpoints", status: "pending", priority: "high"},
+    {id: "5", content: "Write unit tests", status: "pending", priority: "medium"},
+    {id: "6", content: "Integration tests", status: "pending", priority: "medium"},
+    {id: "7", content: "API documentation", status: "pending", priority: "low"},
+    {id: "8", content: "Performance optimization", status: "pending", priority: "low"}
+  ]}
+  
+  // Parallel file operations
+  Bash "mkdir -p app/{src,tests,docs,config}"
+  Write "app/package.json"
+  Write "app/src/server.js"
+  Write "app/tests/server.test.js"
+  Write "app/docs/API.md"
+```
+
+### ❌ WRONG (Multiple Messages):
+```javascript
+Message 1: mcp__claude-flow__swarm_init
+Message 2: Task("agent 1")
+Message 3: TodoWrite { todos: [single todo] }
+Message 4: Write "file.js"
+// This breaks parallel coordination!
+```
+
+## Performance Benefits
+
+- **84.8% SWE-Bench solve rate**
+- **32.3% token reduction**
+- **2.8-4.4x speed improvement**
+- **27+ neural models**
+
+## Hooks Integration
+
+### Pre-Operation
+- Auto-assign agents by file type
+- Validate commands for safety
+- Prepare resources automatically
+- Optimize topology by complexity
+- Cache searches
+
+### Post-Operation
+- Auto-format code
+- Train neural patterns
+- Update memory
+- Analyze performance
+- Track token usage
+
+### Session Management
+- Generate summaries
+- Persist state
+- Track metrics
+- Restore context
+- Export workflows
+
+## Advanced Features (v2.0.0)
+
+- 🚀 Automatic Topology Selection
+- ⚡ Parallel Execution (2.8-4.4x speed)
+- 🧠 Neural Training
+- 📊 Bottleneck Analysis
+- 🤖 Smart Auto-Spawning
+- 🛡️ Self-Healing Workflows
+- 💾 Cross-Session Memory
+- 🔗 GitHub Integration
+
+## Integration Tips
+
+1. Start with basic swarm init
+2. Scale agents gradually
+3. Use memory for context
+4. Monitor progress regularly
+5. Train patterns from success
+6. Enable hooks automation
+7. Use GitHub tools first
+
+## Support
+
+- Documentation: https://github.com/ruvnet/claude-flow
+- Issues: https://github.com/ruvnet/claude-flow/issues
+- Flow-Nexus Platform: https://flow-nexus.ruv.io (registration required for cloud features)
+
+---
+
+Remember: **Claude Flow coordinates, Claude Code creates!**
+
+# Stanley Project Documentation
+
+## Project Overview
+
+Stanley is an institutional investment analysis platform focused on money flow analysis, institutional positioning, and fundamental research.
 
 ## Development Commands
 
@@ -12,11 +356,11 @@ Stanley is an institutional investment analysis platform focused on money flow a
 # Install dependencies
 pip install -r requirements.txt
 
+# Run API server
+python -m stanley.api.main
+
 # Run tests
 pytest tests/
-
-# Run a single test
-pytest tests/test_core.py::test_basic -v
 
 # Linting
 flake8 stanley/
@@ -26,72 +370,82 @@ black stanley/
 
 # Type checking
 mypy stanley/
+
+# Build Rust GUI
+cd stanley-gui && cargo build --release
 ```
 
 ## Architecture
 
 ### Core Components
 
-- **`stanley/core/core.py`**: Main `Stanley` class that coordinates all functionality and provides the primary API entry point
-- **`stanley/data/data_manager.py`**: `DataManager` class handles all data fetching from external sources (OpenBB, SEC, options flow providers). Uses async methods for data retrieval.
-- **`stanley/analytics/money_flow.py`**: `MoneyFlowAnalyzer` for sector and equity money flow analysis, dark pool activity tracking
-- **`stanley/analytics/institutional.py`**: `InstitutionalAnalyzer` for 13F filing analysis, institutional sentiment, and smart money tracking
+- **`stanley/core/`**: Main Stanley class and coordination
+- **`stanley/data/`**: DataManager and OpenBB adapter for data fetching
+- **`stanley/analytics/`**: MoneyFlowAnalyzer and InstitutionalAnalyzer
 
-### Data Flow
+### New MVP Modules
 
-1. `Stanley` class is the main entry point
-2. Analytics modules (`MoneyFlowAnalyzer`, `InstitutionalAnalyzer`) receive a `DataManager` instance
-3. `DataManager` fetches from external APIs (OpenBB, SEC filings, options flow providers)
-4. Results are returned as pandas DataFrames or dictionaries
+- **`stanley/portfolio/`**: PortfolioAnalyzer with VaR, beta, sector exposure
+- **`stanley/research/`**: ResearchAnalyzer with valuation, earnings, DCF
+- **`stanley/commodities/`**: CommoditiesAnalyzer with price data and macro linkages
+- **`stanley/accounting/`**: AccountingAnalyzer with SEC filings via edgartools
+- **`stanley/macro/`**: MacroAnalyzer with economic data via DBnomics
 
-### Configuration
+### API Endpoints
 
-Configuration is in `config/stanley.yaml` with sections for:
-- Data source API keys (OpenBB, options flow, dark pool providers)
-- Database connections (PostgreSQL, Redis)
-- Risk parameters (position limits, VaR settings, stress scenarios)
-- Analytics settings (lookback periods, thresholds)
+```
+GET  /api/health                    - Health check
+GET  /api/market/{symbol}           - Market data
+GET  /api/institutional/{symbol}    - 13F institutional holdings
+POST /api/money-flow                - Sector money flow analysis
+POST /api/portfolio-analytics       - Portfolio VaR, beta, sector exposure
+GET  /api/dark-pool/{symbol}        - Dark pool activity
+GET  /api/equity-flow/{symbol}      - Equity money flow
+GET  /api/research/{symbol}         - Comprehensive research report
+GET  /api/valuation/{symbol}        - Valuation analysis with DCF
+GET  /api/earnings/{symbol}         - Earnings analysis
+GET  /api/peers/{symbol}            - Peer comparison
+GET  /api/commodities               - Commodity market overview
+GET  /api/commodities/{symbol}      - Commodity detail
+GET  /api/commodities/{symbol}/macro - Macro-commodity linkages
+GET  /api/commodities/correlations  - Commodity correlation matrix
+```
 
-### Module Status
+### Rust GUI (stanley-gui)
 
-Active/implemented:
+GPUI-based graphical interface using Zed's UI framework.
+
+- `src/api.rs` - HTTP client for Python backend (uses `/api/` paths)
+- `src/app.rs` - Main application state and rendering
+
+### NautilusTrader Integration
+
+Located in `stanley/integrations/nautilus/` for algorithmic trading.
+
+## Module Status
+
+**Active/Implemented:**
 - `core/` - Main Stanley class
 - `analytics/` - Money flow and institutional analysis
-- `data/` - Data management layer
-
-Placeholder/scaffolded:
-- `api/` - FastAPI endpoints (not implemented)
-- `portfolio/` - Portfolio analytics (not implemented)
-- `research/` - Fundamental research tools (not implemented)
+- `data/` - Data management layer and OpenBB adapter
+- `accounting/` - SEC filings, financial statements, footnotes (edgartools)
+- `macro/` - Macroeconomic analysis, regime detection (DBnomics)
+- `portfolio/` - VaR, beta, sector exposure, performance attribution
+- `research/` - Valuation, earnings, DCF, peer comparison
+- `commodities/` - Commodity prices, correlations, macro linkages
+- `api/` - FastAPI REST endpoints (all modules connected)
+- `integrations/nautilus/` - NautilusTrader integration
 
 ## Key Design Principles
 
-- No technical indicators or chart patterns - focus on institutional data
-- Data sources: SEC filings (13F, Forms 4), ETF flows, dark pool volume, options flow
-- All analytics methods return pandas DataFrames or typed dictionaries
 - Async methods in DataManager for external API calls
+- All analytics return pandas DataFrames or typed dictionaries
+- Pydantic models for API request/response validation
+- Mock data fallback when real data unavailable
 
-## Rust GUI (stanley-gui)
-
-A GPUI-based graphical interface for Stanley using Zed's UI framework.
-
-### Building the GUI
-
-```bash
-cd stanley-gui
-cargo build --release
-cargo run
-```
-
-### GUI Architecture
-
-- `src/main.rs` - Application entry point and window setup
-- `src/app.rs` - Main `StanleyApp` state and rendering logic
-- `src/theme.rs` - Dark/light theme color definitions
-- `src/components/` - Reusable UI components (sidebar, charts, tables)
-- `src/api.rs` - HTTP client for Python backend communication
-
-### GPUI Resources
-
-- [GPUI Documentation](https://www.gpui.rs/)
-- [Zed GPUI Examples](https://github.com/zed-industries/zed/tree/main/crates/gpui/examples)
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+Never save working files, text/mds and tests to the root folder.

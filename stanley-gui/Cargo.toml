@@ -3,7 +3,7 @@ name = "stanley-gui"
 version = "0.1.0"
 edition = "2021"
 description = "GPUI-based GUI for Stanley Investment Analysis Platform"
-license = "MIT"
+license = "AGPL-3.0-only"
 
 [dependencies]
 gpui = { git = "https://github.com/zed-industries/zed", branch = "main" }

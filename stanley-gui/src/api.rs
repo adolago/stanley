@@ -29,7 +29,7 @@ impl StanleyClient {
 
     /// Get sector money flow analysis
     pub fn get_sector_money_flow(&self, sectors: Vec<String>) -> Result<SectorFlowResponse, ApiError> {
-        let url = format!("{}/api/v1/money-flow/sectors", self.base_url);
+        let url = format!("{}/api/money-flow", self.base_url);
         let response = self.client
             .post(&url)
             .json(&SectorFlowRequest { sectors })
@@ -41,7 +41,7 @@ impl StanleyClient {
 
     /// Get institutional holdings for a symbol
     pub fn get_institutional_holdings(&self, symbol: &str) -> Result<InstitutionalHoldingsResponse, ApiError> {
-        let url = format!("{}/api/v1/institutional/{}", self.base_url, symbol);
+        let url = format!("{}/api/institutional/{}", self.base_url, symbol);
         let response = self.client
             .get(&url)
             .send()
@@ -52,7 +52,7 @@ impl StanleyClient {
 
     /// Get equity money flow analysis
     pub fn get_equity_flow(&self, symbol: &str) -> Result<EquityFlowResponse, ApiError> {
-        let url = format!("{}/api/v1/money-flow/equity/{}", self.base_url, symbol);
+        let url = format!("{}/api/equity-flow/{}", self.base_url, symbol);
         let response = self.client
             .get(&url)
             .send()
@@ -63,7 +63,7 @@ impl StanleyClient {
 
     /// Get dark pool activity
     pub fn get_dark_pool_activity(&self, symbol: &str) -> Result<DarkPoolResponse, ApiError> {
-        let url = format!("{}/api/v1/dark-pool/{}", self.base_url, symbol);
+        let url = format!("{}/api/dark-pool/{}", self.base_url, symbol);
         let response = self.client
             .get(&url)
             .send()
@@ -74,7 +74,7 @@ impl StanleyClient {
 
     /// Health check
     pub fn health_check(&self) -> Result<HealthResponse, ApiError> {
-        let url = format!("{}/api/v1/health", self.base_url);
+        let url = format!("{}/api/health", self.base_url);
         let response = self.client
             .get(&url)
             .send()

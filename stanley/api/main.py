@@ -18,7 +18,10 @@ from pydantic import BaseModel, Field
 
 from ..analytics.institutional import InstitutionalAnalyzer
 from ..analytics.money_flow import MoneyFlowAnalyzer
+from ..commodities import CommoditiesAnalyzer
 from ..data.data_manager import DataManager
+from ..portfolio import PortfolioAnalyzer
+from ..research import ResearchAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +153,9 @@ class AppState:
         self.data_manager: Optional[DataManager] = None
         self.money_flow_analyzer: Optional[MoneyFlowAnalyzer] = None
         self.institutional_analyzer: Optional[InstitutionalAnalyzer] = None
+        self.portfolio_analyzer: Optional[PortfolioAnalyzer] = None
+        self.research_analyzer: Optional[ResearchAnalyzer] = None
+        self.commodities_analyzer: Optional[CommoditiesAnalyzer] = None
 
 
 app_state = AppState()
@@ -178,6 +184,9 @@ async def lifespan(app: FastAPI):
     # Initialize analyzers
     app_state.money_flow_analyzer = MoneyFlowAnalyzer(app_state.data_manager)
     app_state.institutional_analyzer = InstitutionalAnalyzer(app_state.data_manager)
+    app_state.portfolio_analyzer = PortfolioAnalyzer(app_state.data_manager)
+    app_state.research_analyzer = ResearchAnalyzer(app_state.data_manager)
+    app_state.commodities_analyzer = CommoditiesAnalyzer(app_state.data_manager)
 
     logger.info("Stanley API ready")
 
@@ -256,6 +265,9 @@ async def health_check():
         "data_manager": False,
         "money_flow_analyzer": False,
         "institutional_analyzer": False,
+        "portfolio_analyzer": False,
+        "research_analyzer": False,
+        "commodities_analyzer": False,
     }
 
     try:
@@ -268,6 +280,18 @@ async def health_check():
         if app_state.institutional_analyzer:
             components["institutional_analyzer"] = (
                 app_state.institutional_analyzer.health_check()
+            )
+        if app_state.portfolio_analyzer:
+            components["portfolio_analyzer"] = (
+                app_state.portfolio_analyzer.health_check()
+            )
+        if app_state.research_analyzer:
+            components["research_analyzer"] = (
+                app_state.research_analyzer.health_check()
+            )
+        if app_state.commodities_analyzer:
+            components["commodities_analyzer"] = (
+                app_state.commodities_analyzer.health_check()
             )
     except Exception as e:
         logger.error(f"Health check error: {e}")
@@ -480,106 +504,45 @@ async def analyze_portfolio(request: PortfolioAnalyticsRequest):
         request: PortfolioAnalyticsRequest with list of holdings
     """
     try:
-        if not app_state.data_manager:
-            raise HTTPException(status_code=503, detail="Data manager not initialized")
+        if not app_state.portfolio_analyzer:
+            raise HTTPException(status_code=503, detail="Portfolio analyzer not initialized")
 
         if not request.holdings:
             return create_response(data=None, error="No holdings provided")
 
-        # Calculate portfolio analytics
-        end_date = datetime.now()
-        start_date = datetime(end_date.year, end_date.month, 1)  # Start of month
-
-        holdings_data = []
-        total_value = 0.0
-        total_cost = 0.0
-
-        # Fetch current prices for all holdings
-        for holding in request.holdings:
-            symbol = holding.symbol.upper()
-
-            try:
-                stock_data = await app_state.data_manager.get_stock_data(
-                    symbol, start_date, end_date
-                )
-                if not stock_data.empty:
-                    current_price = float(stock_data.iloc[-1]["close"])
-                else:
-                    # Fallback mock price
-                    current_price = 100.0 + np.random.uniform(-20, 50)
-            except Exception as e:
-                logger.warning(f"Failed to fetch price for {symbol}: {e}")
-                current_price = 100.0 + np.random.uniform(-20, 50)
-
-            average_cost = holding.average_cost if holding.average_cost else current_price
-            market_value = holding.shares * current_price
-            cost_basis = holding.shares * average_cost
-
-            holdings_data.append({
-                "symbol": symbol,
-                "shares": holding.shares,
-                "averageCost": average_cost,
-                "currentPrice": current_price,
-                "marketValue": market_value,
-                "costBasis": cost_basis,
-            })
-
-            total_value += market_value
-            total_cost += cost_basis
-
-        # Calculate weights
-        for h in holdings_data:
-            h["weight"] = (h["marketValue"] / total_value * 100) if total_value > 0 else 0
-
-        # Calculate returns
-        total_return = total_value - total_cost
-        total_return_percent = (
-            (total_return / total_cost * 100) if total_cost > 0 else 0
-        )
-
-        # Calculate portfolio metrics (simplified/mock for now)
-        # In production, these would use proper risk calculations
-        portfolio_beta = 1.0 + np.random.uniform(-0.3, 0.3)
-        var_95 = total_value * 0.02  # 2% VaR estimate
-        var_99 = total_value * 0.035  # 3.5% VaR estimate
-
-        # Mock sector exposure based on common sector allocations
-        sector_exposure = {
-            "Technology": np.random.uniform(20, 40),
-            "Healthcare": np.random.uniform(10, 20),
-            "Financial": np.random.uniform(10, 20),
-            "Consumer": np.random.uniform(5, 15),
-            "Industrial": np.random.uniform(5, 15),
-            "Other": 0,
-        }
-        # Normalize to 100%
-        total_sector = sum(sector_exposure.values())
-        sector_exposure = {k: round(v / total_sector * 100, 2) for k, v in sector_exposure.items()}
-
-        # Sort holdings by market value for top holdings
-        sorted_holdings = sorted(holdings_data, key=lambda x: x["marketValue"], reverse=True)
-
-        top_holdings = [
-            PortfolioHolding(
-                symbol=h["symbol"],
-                shares=h["shares"],
-                averageCost=round(h["averageCost"], 2),
-                currentPrice=round(h["currentPrice"], 2),
-                marketValue=round(h["marketValue"], 2),
-                weight=round(h["weight"], 2),
-            ).model_dump()
-            for h in sorted_holdings[:10]  # Top 10 holdings
+        # Convert request holdings to analyzer format
+        holdings_input = [
+            {
+                "symbol": h.symbol.upper(),
+                "shares": h.shares,
+                "average_cost": h.average_cost or 0,
+            }
+            for h in request.holdings
         ]
 
+        # Use real portfolio analyzer
+        summary = await app_state.portfolio_analyzer.analyze(holdings_input)
+
+        # Convert to API response format
         analytics = PortfolioAnalytics(
-            totalValue=round(total_value, 2),
-            totalReturn=round(total_return, 2),
-            totalReturnPercent=round(total_return_percent, 2),
-            beta=round(portfolio_beta, 3),
-            var95=round(var_95, 2),
-            var99=round(var_99, 2),
-            sectorExposure=sector_exposure,
-            topHoldings=top_holdings,
+            totalValue=summary.total_value,
+            totalReturn=summary.total_return,
+            totalReturnPercent=summary.total_return_percent,
+            beta=summary.beta,
+            var95=summary.var_95,
+            var99=summary.var_99,
+            sectorExposure=summary.sector_exposure,
+            topHoldings=[
+                PortfolioHolding(
+                    symbol=h["symbol"],
+                    shares=h["shares"],
+                    averageCost=h.get("average_cost", h.get("averageCost", 0)),
+                    currentPrice=h.get("current_price", h.get("currentPrice", 0)),
+                    marketValue=h.get("market_value", h.get("marketValue", 0)),
+                    weight=h.get("weight", 0),
+                ).model_dump()
+                for h in summary.top_holdings
+            ],
         )
 
         return create_response(data=analytics.model_dump())
@@ -680,6 +643,245 @@ async def get_equity_flow(symbol: str, lookback_days: int = 20):
         raise
     except Exception as e:
         logger.error(f"Error fetching equity flow for {symbol}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+# =============================================================================
+# Research Endpoints
+# =============================================================================
+
+
+@app.get("/api/research/{symbol}", response_model=ApiResponse, tags=["Research"])
+async def get_research(symbol: str):
+    """
+    Get comprehensive research analysis for a symbol.
+
+    Returns valuation, earnings analysis, and fundamental metrics.
+
+    Args:
+        symbol: Stock ticker symbol
+    """
+    try:
+        symbol = symbol.upper()
+
+        if not app_state.research_analyzer:
+            raise HTTPException(
+                status_code=503, detail="Research analyzer not initialized"
+            )
+
+        report = await app_state.research_analyzer.generate_report(symbol)
+
+        return create_response(data=report.to_dict())
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error generating research for {symbol}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/valuation/{symbol}", response_model=ApiResponse, tags=["Research"])
+async def get_valuation(symbol: str, include_dcf: bool = True):
+    """
+    Get valuation analysis for a symbol.
+
+    Returns valuation multiples and optional DCF analysis.
+
+    Args:
+        symbol: Stock ticker symbol
+        include_dcf: Whether to include DCF analysis
+    """
+    try:
+        symbol = symbol.upper()
+
+        if not app_state.research_analyzer:
+            raise HTTPException(
+                status_code=503, detail="Research analyzer not initialized"
+            )
+
+        valuation = await app_state.research_analyzer.get_valuation(symbol, include_dcf)
+
+        return create_response(data=valuation)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching valuation for {symbol}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/earnings/{symbol}", response_model=ApiResponse, tags=["Research"])
+async def get_earnings(symbol: str, quarters: int = 12):
+    """
+    Get earnings analysis for a symbol.
+
+    Returns earnings history, trends, and surprise metrics.
+
+    Args:
+        symbol: Stock ticker symbol
+        quarters: Number of quarters to analyze
+    """
+    try:
+        symbol = symbol.upper()
+
+        if not app_state.research_analyzer:
+            raise HTTPException(
+                status_code=503, detail="Research analyzer not initialized"
+            )
+
+        earnings = await app_state.research_analyzer.analyze_earnings(symbol, quarters)
+
+        return create_response(data=earnings.to_dict())
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error analyzing earnings for {symbol}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/peers/{symbol}", response_model=ApiResponse, tags=["Research"])
+async def get_peer_comparison(symbol: str):
+    """
+    Get peer comparison analysis for a symbol.
+
+    Returns relative valuation vs peer group.
+
+    Args:
+        symbol: Stock ticker symbol
+    """
+    try:
+        symbol = symbol.upper()
+
+        if not app_state.research_analyzer:
+            raise HTTPException(
+                status_code=503, detail="Research analyzer not initialized"
+            )
+
+        comparison = await app_state.research_analyzer.get_peer_comparison(symbol)
+
+        return create_response(data=comparison)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching peer comparison for {symbol}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+# =============================================================================
+# Commodities Endpoints
+# =============================================================================
+
+
+@app.get("/api/commodities", response_model=ApiResponse, tags=["Commodities"])
+async def get_commodities_overview():
+    """
+    Get commodity market overview.
+
+    Returns prices and trends across all commodity categories.
+    """
+    try:
+        if not app_state.commodities_analyzer:
+            raise HTTPException(
+                status_code=503, detail="Commodities analyzer not initialized"
+            )
+
+        overview = await app_state.commodities_analyzer.get_market_overview()
+
+        return create_response(data=overview)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching commodities overview: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/commodities/{symbol}", response_model=ApiResponse, tags=["Commodities"])
+async def get_commodity_detail(symbol: str):
+    """
+    Get detailed analysis for a specific commodity.
+
+    Args:
+        symbol: Commodity symbol (e.g., CL, GC, NG)
+    """
+    try:
+        symbol = symbol.upper()
+
+        if not app_state.commodities_analyzer:
+            raise HTTPException(
+                status_code=503, detail="Commodities analyzer not initialized"
+            )
+
+        summary = await app_state.commodities_analyzer.get_summary(symbol)
+
+        return create_response(data=summary.to_dict())
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching commodity data for {symbol}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/commodities/{symbol}/macro", response_model=ApiResponse, tags=["Commodities"])
+async def get_commodity_macro_linkage(symbol: str):
+    """
+    Get macro-commodity linkage analysis.
+
+    Args:
+        symbol: Commodity symbol
+    """
+    try:
+        symbol = symbol.upper()
+
+        if not app_state.commodities_analyzer:
+            raise HTTPException(
+                status_code=503, detail="Commodities analyzer not initialized"
+            )
+
+        linkage = await app_state.commodities_analyzer.analyze_macro_linkage(symbol)
+
+        return create_response(data=linkage)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error analyzing macro linkage for {symbol}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/commodities/correlations", response_model=ApiResponse, tags=["Commodities"])
+async def get_commodity_correlations(commodities: Optional[str] = None):
+    """
+    Get correlation matrix for commodities.
+
+    Args:
+        commodities: Comma-separated list of symbols (optional)
+    """
+    try:
+        if not app_state.commodities_analyzer:
+            raise HTTPException(
+                status_code=503, detail="Commodities analyzer not initialized"
+            )
+
+        symbols = commodities.split(",") if commodities else None
+        corr_matrix = await app_state.commodities_analyzer.get_correlations(symbols)
+
+        if corr_matrix.empty:
+            return create_response(data={})
+
+        # Convert to JSON-serializable format
+        return create_response(data={
+            "commodities": list(corr_matrix.columns),
+            "matrix": corr_matrix.round(3).to_dict(),
+        })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching commodity correlations: {e}")
         return create_response(error=str(e), success=False)
 
 
