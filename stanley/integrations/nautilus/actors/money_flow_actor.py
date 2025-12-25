@@ -82,9 +82,21 @@ class MoneyFlowActorConfig(ActorConfig):
     confidence_threshold: float = 0.5  # Minimum confidence to emit event
 
     # Sector ETFs for sector flow analysis
-    sector_etfs: List[str] = field(default_factory=lambda: [
-        'XLK', 'XLF', 'XLE', 'XLV', 'XLI', 'XLP', 'XLY', 'XLB', 'XLU', 'XLRE', 'XLC'
-    ])
+    sector_etfs: List[str] = field(
+        default_factory=lambda: [
+            "XLK",
+            "XLF",
+            "XLE",
+            "XLV",
+            "XLI",
+            "XLP",
+            "XLY",
+            "XLB",
+            "XLU",
+            "XLRE",
+            "XLC",
+        ]
+    )
 
     # Async data refresh interval (seconds)
     data_refresh_interval: int = 300  # 5 minutes
@@ -139,7 +151,9 @@ class MoneyFlowActor(Actor):
         # Initialize buffers for each symbol
         for symbol in self._config.symbols:
             instrument_id = InstrumentId.from_str(symbol)
-            self._bar_buffers[instrument_id] = deque(maxlen=self._config.lookback_bars * 2)
+            self._bar_buffers[instrument_id] = deque(
+                maxlen=self._config.lookback_bars * 2
+            )
             self._bar_counts[instrument_id] = 0
 
             # Subscribe to bar data
@@ -177,7 +191,9 @@ class MoneyFlowActor(Actor):
 
         # Add bar to buffer
         if instrument_id not in self._bar_buffers:
-            self._bar_buffers[instrument_id] = deque(maxlen=self._config.lookback_bars * 2)
+            self._bar_buffers[instrument_id] = deque(
+                maxlen=self._config.lookback_bars * 2
+            )
             self._bar_counts[instrument_id] = 0
 
         self._bar_buffers[instrument_id].append(bar)
@@ -215,62 +231,72 @@ class MoneyFlowActor(Actor):
         try:
             # Get money flow analysis from Stanley
             flow_analysis = self._analyzer.analyze_equity_flow(
-                symbol=symbol,
-                lookback_days=self._config.lookback_bars
+                symbol=symbol, lookback_days=self._config.lookback_bars
             )
 
             # Get dark pool analysis if enabled
             dark_pool_signal = None
             if self._config.enable_dark_pool:
                 dark_pool_data = self._analyzer.get_dark_pool_activity(
-                    symbol=symbol,
-                    lookback_days=self._config.dark_pool_lookback_days
+                    symbol=symbol, lookback_days=self._config.dark_pool_lookback_days
                 )
                 self._dark_pool_cache[symbol] = dark_pool_data
 
-                if not dark_pool_data.empty and 'dark_pool_signal' in dark_pool_data.columns:
-                    dark_pool_signal = int(dark_pool_data['dark_pool_signal'].iloc[-1])
+                if (
+                    not dark_pool_data.empty
+                    and "dark_pool_signal" in dark_pool_data.columns
+                ):
+                    dark_pool_signal = int(dark_pool_data["dark_pool_signal"].iloc[-1])
 
             # Cache the analysis
             self._flow_cache[symbol] = flow_analysis
             self._last_flow_analysis[symbol] = datetime.now()
 
             # Calculate signal strength and type
-            signal_strength = flow_analysis.get('money_flow_score', 0.0)
-            confidence = flow_analysis.get('confidence', 0.0)
+            signal_strength = flow_analysis.get("money_flow_score", 0.0)
+            confidence = flow_analysis.get("confidence", 0.0)
 
             # Determine signal type
             signal_type = self._determine_signal_type(flow_analysis, dark_pool_signal)
 
             # Emit event if thresholds are met
-            if abs(signal_strength) >= self._config.signal_threshold and \
-               confidence >= self._config.confidence_threshold:
+            if (
+                abs(signal_strength) >= self._config.signal_threshold
+                and confidence >= self._config.confidence_threshold
+            ):
 
                 event = MoneyFlowSignalEvent(
                     symbol=symbol,
                     signal_type=signal_type,
                     signal_strength=signal_strength,
                     confidence=confidence,
-                    money_flow_score=flow_analysis.get('money_flow_score', 0.0),
-                    institutional_sentiment=flow_analysis.get('institutional_sentiment', 0.0),
-                    smart_money_activity=flow_analysis.get('smart_money_activity', 0.0),
+                    money_flow_score=flow_analysis.get("money_flow_score", 0.0),
+                    institutional_sentiment=flow_analysis.get(
+                        "institutional_sentiment", 0.0
+                    ),
+                    smart_money_activity=flow_analysis.get("smart_money_activity", 0.0),
                     dark_pool_signal=dark_pool_signal,
                     timestamp=unix_nanos_to_dt(latest_bar.ts_event),
                     metadata={
-                        'accumulation_distribution': flow_analysis.get('accumulation_distribution', 0.0),
-                        'short_pressure': flow_analysis.get('short_pressure', 0.0),
-                    }
+                        "accumulation_distribution": flow_analysis.get(
+                            "accumulation_distribution", 0.0
+                        ),
+                        "short_pressure": flow_analysis.get("short_pressure", 0.0),
+                    },
                 )
 
                 self.publish_event(event)
-                logger.info(f"Emitted MoneyFlowSignalEvent for {symbol}: {signal_type} "
-                           f"(strength={signal_strength:.2f}, confidence={confidence:.2f})")
+                logger.info(
+                    f"Emitted MoneyFlowSignalEvent for {symbol}: {signal_type} "
+                    f"(strength={signal_strength:.2f}, confidence={confidence:.2f})"
+                )
 
         except Exception as e:
             logger.error(f"Error analyzing money flow for {symbol}: {e}")
 
-    def _determine_signal_type(self, flow_analysis: Dict,
-                                dark_pool_signal: Optional[int]) -> str:
+    def _determine_signal_type(
+        self, flow_analysis: Dict, dark_pool_signal: Optional[int]
+    ) -> str:
         """
         Determine the type of money flow signal.
 
@@ -281,24 +307,24 @@ class MoneyFlowActor(Actor):
         Returns:
             Signal type string
         """
-        acc_dist = flow_analysis.get('accumulation_distribution', 0.0)
-        smart_money = flow_analysis.get('smart_money_activity', 0.0)
+        acc_dist = flow_analysis.get("accumulation_distribution", 0.0)
+        smart_money = flow_analysis.get("smart_money_activity", 0.0)
 
         # Check dark pool signal first (high priority)
         if dark_pool_signal is not None and dark_pool_signal != 0:
-            return 'dark_pool'
+            return "dark_pool"
 
         # Check smart money activity
         if abs(smart_money) > 0.5:
-            return 'smart_money'
+            return "smart_money"
 
         # Check accumulation/distribution
         if acc_dist > 0.3:
-            return 'accumulation'
+            return "accumulation"
         elif acc_dist < -0.3:
-            return 'distribution'
+            return "distribution"
 
-        return 'neutral'
+        return "neutral"
 
     def _update_sector_flow(self) -> None:
         """
@@ -306,8 +332,7 @@ class MoneyFlowActor(Actor):
         """
         try:
             self._sector_flow_cache = self._analyzer.analyze_sector_flow(
-                sectors=self._config.sector_etfs,
-                lookback_days=63  # 3 months
+                sectors=self._config.sector_etfs, lookback_days=63  # 3 months
             )
             self._last_sector_analysis = datetime.now()
 
@@ -381,7 +406,7 @@ class MoneyFlowActor(Actor):
         """
         analysis = self._flow_cache.get(symbol)
         if analysis:
-            return analysis.get('money_flow_score', 0.0)
+            return analysis.get("money_flow_score", 0.0)
         return 0.0
 
     def get_confidence(self, symbol: str) -> float:
@@ -396,5 +421,5 @@ class MoneyFlowActor(Actor):
         """
         analysis = self._flow_cache.get(symbol)
         if analysis:
-            return analysis.get('confidence', 0.0)
+            return analysis.get("confidence", 0.0)
         return 0.0

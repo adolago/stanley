@@ -6,11 +6,10 @@ Handles file operations, indexing, and bi-directional linking.
 """
 
 import logging
-import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 from .models import (
     EventFrontmatter,
@@ -80,7 +79,8 @@ class Vault:
         cursor = conn.cursor()
 
         # Notes table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS notes (
                 path TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -91,10 +91,12 @@ class Vault:
                 tags TEXT,
                 content TEXT
             )
-        """)
+        """
+        )
 
         # Full-text search virtual table
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
                 name,
                 title,
@@ -103,40 +105,49 @@ class Vault:
                 content='notes',
                 content_rowid='rowid'
             )
-        """)
+        """
+        )
 
         # Links table for graph
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TABLE IF NOT EXISTS links (
                 source TEXT NOT NULL,
                 target TEXT NOT NULL,
                 PRIMARY KEY (source, target)
             )
-        """)
+        """
+        )
 
         # Triggers to keep FTS in sync
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
                 INSERT INTO notes_fts(rowid, name, title, tags, content)
                 VALUES (NEW.rowid, NEW.name, NEW.title, NEW.tags, NEW.content);
             END
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TRIGGER IF NOT EXISTS notes_ad AFTER DELETE ON notes BEGIN
                 INSERT INTO notes_fts(notes_fts, rowid, name, title, tags, content)
                 VALUES ('delete', OLD.rowid, OLD.name, OLD.title, OLD.tags, OLD.content);
             END
-        """)
+        """
+        )
 
-        cursor.execute("""
+        cursor.execute(
+            """
             CREATE TRIGGER IF NOT EXISTS notes_au AFTER UPDATE ON notes BEGIN
                 INSERT INTO notes_fts(notes_fts, rowid, name, title, tags, content)
                 VALUES ('delete', OLD.rowid, OLD.name, OLD.title, OLD.tags, OLD.content);
                 INSERT INTO notes_fts(rowid, name, title, tags, content)
                 VALUES (NEW.rowid, NEW.name, NEW.title, NEW.tags, NEW.content);
             END
-        """)
+        """
+        )
 
         conn.commit()
         conn.close()
@@ -355,7 +366,9 @@ class Vault:
         logger.info(f"Created note: {name}")
         return note
 
-    def update_note(self, name: str, content: str, frontmatter: Optional[NoteFrontmatter] = None) -> Note:
+    def update_note(
+        self, name: str, content: str, frontmatter: Optional[NoteFrontmatter] = None
+    ) -> Note:
         """
         Update an existing note.
 
@@ -463,7 +476,9 @@ class Vault:
         if not note:
             return []
 
-        return [self._notes[link] for link in note.incoming_links if link in self._notes]
+        return [
+            self._notes[link] for link in note.incoming_links if link in self._notes
+        ]
 
     def get_graph(self) -> Dict[str, Any]:
         """
@@ -594,7 +609,12 @@ class Vault:
 
         # Sort by event date (most recent first)
         events.sort(
-            key=lambda e: e.frontmatter.event_date if isinstance(e.frontmatter, EventFrontmatter) and e.frontmatter.event_date else datetime.min,
+            key=lambda e: (
+                e.frontmatter.event_date
+                if isinstance(e.frontmatter, EventFrontmatter)
+                and e.frontmatter.event_date
+                else datetime.min
+            ),
             reverse=True,
         )
 
@@ -637,7 +657,13 @@ class Vault:
             ]
 
         # Sort alphabetically by name
-        people.sort(key=lambda p: p.frontmatter.full_name if isinstance(p.frontmatter, PersonFrontmatter) else p.name)
+        people.sort(
+            key=lambda p: (
+                p.frontmatter.full_name
+                if isinstance(p.frontmatter, PersonFrontmatter)
+                else p.name
+            )
+        )
 
         return people
 
@@ -692,7 +718,11 @@ class Vault:
 
         avg_win = sum(winners) / len(winners) if winners else 0
         avg_loss = abs(sum(losers) / len(losers)) if losers else 0
-        profit_factor = (sum(winners) / abs(sum(losers))) if losers and sum(losers) != 0 else float("inf")
+        profit_factor = (
+            (sum(winners) / abs(sum(losers)))
+            if losers and sum(losers) != 0
+            else float("inf")
+        )
 
         return {
             "total_trades": len(trades),
@@ -702,7 +732,9 @@ class Vault:
             "total_pnl": round(total_pnl, 2),
             "avg_win": round(avg_win, 2),
             "avg_loss": round(avg_loss, 2),
-            "profit_factor": round(profit_factor, 2) if profit_factor != float("inf") else "∞",
+            "profit_factor": (
+                round(profit_factor, 2) if profit_factor != float("inf") else "∞"
+            ),
         }
 
     def health_check(self) -> bool:

@@ -23,6 +23,7 @@ def _check_edgar_available():
     if _edgar_available is None:
         try:
             import edgar
+
             _edgar_available = True
         except ImportError:
             _edgar_available = False
@@ -209,7 +210,7 @@ class EdgarAdapter:
 
         try:
             bs = financials.balance_sheet
-            if hasattr(bs, 'to_dataframe'):
+            if hasattr(bs, "to_dataframe"):
                 return bs.to_dataframe()
             return pd.DataFrame(bs) if bs else pd.DataFrame()
         except Exception as e:
@@ -237,7 +238,7 @@ class EdgarAdapter:
 
         try:
             inc = financials.income_statement
-            if hasattr(inc, 'to_dataframe'):
+            if hasattr(inc, "to_dataframe"):
                 return inc.to_dataframe()
             return pd.DataFrame(inc) if inc else pd.DataFrame()
         except Exception as e:
@@ -265,7 +266,7 @@ class EdgarAdapter:
 
         try:
             cf = financials.cash_flow_statement
-            if hasattr(cf, 'to_dataframe'):
+            if hasattr(cf, "to_dataframe"):
                 return cf.to_dataframe()
             return pd.DataFrame(cf) if cf else pd.DataFrame()
         except Exception as e:
@@ -304,7 +305,7 @@ class EdgarAdapter:
 
         try:
             doc = self.get_filing_document(filing)
-            if doc and hasattr(doc, 'xbrl'):
+            if doc and hasattr(doc, "xbrl"):
                 return doc.xbrl
             return None
         except Exception as e:
@@ -326,7 +327,7 @@ class EdgarAdapter:
             return pd.DataFrame()
 
         try:
-            if hasattr(xbrl, 'facts'):
+            if hasattr(xbrl, "facts"):
                 return xbrl.facts
             return pd.DataFrame()
         except Exception as e:
@@ -354,7 +355,7 @@ class EdgarAdapter:
             if section and hasattr(doc, section):
                 return getattr(doc, section)
 
-            if hasattr(doc, 'text'):
+            if hasattr(doc, "text"):
                 return doc.text
 
             return str(doc)
@@ -379,7 +380,7 @@ class EdgarAdapter:
             from edgar import find_company
 
             results = find_company(query)
-            if hasattr(results, 'to_dataframe'):
+            if hasattr(results, "to_dataframe"):
                 df = results.to_dataframe()
             else:
                 df = pd.DataFrame(results)
@@ -405,13 +406,13 @@ class EdgarAdapter:
             company = self.get_company(ticker)
             return {
                 "ticker": ticker,
-                "name": getattr(company, 'name', None),
-                "cik": getattr(company, 'cik', None),
-                "sic": getattr(company, 'sic', None),
-                "sic_description": getattr(company, 'sic_description', None),
-                "industry": getattr(company, 'industry', None),
-                "state": getattr(company, 'state', None),
-                "exchange": getattr(company, 'exchange', None),
+                "name": getattr(company, "name", None),
+                "cik": getattr(company, "cik", None),
+                "sic": getattr(company, "sic", None),
+                "sic_description": getattr(company, "sic_description", None),
+                "industry": getattr(company, "industry", None),
+                "state": getattr(company, "state", None),
+                "exchange": getattr(company, "exchange", None),
             }
         except Exception as e:
             logger.error(f"Failed to get company info for {ticker}: {e}")
@@ -437,6 +438,7 @@ class EdgarAdapter:
             self._ensure_initialized()
             # Try a simple operation
             from edgar import Company
+
             Company("AAPL")
             return True
         except Exception as e:

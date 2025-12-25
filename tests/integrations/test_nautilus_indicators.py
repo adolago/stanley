@@ -16,6 +16,7 @@ from unittest.mock import Mock, MagicMock, patch
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def sample_bar_series():
     """Create a sample bar series for indicator testing."""
@@ -35,7 +36,7 @@ def sample_bar_series():
         bar.low = Mock(as_double=Mock(return_value=low))
         bar.close = Mock(as_double=Mock(return_value=close))
         bar.volume = Mock(as_double=Mock(return_value=1000000 + i * 10000))
-        bar.ts_event = int((datetime.now() - timedelta(days=50-i)).timestamp() * 1e9)
+        bar.ts_event = int((datetime.now() - timedelta(days=50 - i)).timestamp() * 1e9)
 
         bars.append(bar)
         base_price = close
@@ -47,12 +48,12 @@ def sample_bar_series():
 def mock_money_flow_data():
     """Mock money flow data for indicator testing."""
     return {
-        'money_flow_score': 0.65,
-        'institutional_sentiment': 0.7,
-        'smart_money_activity': 0.5,
-        'short_pressure': -0.2,
-        'accumulation_distribution': 0.4,
-        'confidence': 0.65,
+        "money_flow_score": 0.65,
+        "institutional_sentiment": 0.7,
+        "smart_money_activity": 0.5,
+        "short_pressure": -0.2,
+        "accumulation_distribution": 0.4,
+        "confidence": 0.65,
     }
 
 
@@ -60,31 +61,34 @@ def mock_money_flow_data():
 def mock_institutional_data():
     """Mock institutional data for indicator testing."""
     return {
-        'institutional_ownership': 0.75,
-        'ownership_trend': 0.05,
-        'smart_money_score': 0.6,
-        'concentration_risk': 0.3,
-        'number_of_institutions': 250,
+        "institutional_ownership": 0.75,
+        "ownership_trend": 0.05,
+        "smart_money_score": 0.6,
+        "concentration_risk": 0.3,
+        "number_of_institutions": 250,
     }
 
 
 @pytest.fixture
 def mock_dark_pool_data():
     """Mock dark pool data for indicator testing."""
-    dates = pd.date_range(end=datetime.now(), periods=20, freq='D')
-    return pd.DataFrame({
-        'date': dates,
-        'dark_pool_volume': np.random.randint(400000, 600000, 20),
-        'total_volume': np.random.randint(4000000, 6000000, 20),
-        'dark_pool_percentage': np.random.uniform(0.20, 0.30, 20),
-        'large_block_activity': np.random.uniform(0.08, 0.15, 20),
-        'dark_pool_signal': np.random.choice([1, 0, -1], 20),
-    })
+    dates = pd.date_range(end=datetime.now(), periods=20, freq="D")
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "dark_pool_volume": np.random.randint(400000, 600000, 20),
+            "total_volume": np.random.randint(4000000, 6000000, 20),
+            "dark_pool_percentage": np.random.uniform(0.20, 0.30, 20),
+            "large_block_activity": np.random.uniform(0.08, 0.15, 20),
+            "dark_pool_signal": np.random.choice([1, 0, -1], 20),
+        }
+    )
 
 
 # =============================================================================
 # SmartMoneyIndicator Tests
 # =============================================================================
+
 
 class TestSmartMoneyIndicatorInitialization:
     """Test SmartMoneyIndicator initialization."""
@@ -201,7 +205,7 @@ class TestSmartMoneyIndicatorSignals:
 
         signal = indicator.signal
 
-        assert signal in ['BULLISH', 'BEARISH', 'NEUTRAL']
+        assert signal in ["BULLISH", "BEARISH", "NEUTRAL"]
 
     def test_signal_changes_with_data(self, sample_bar_series):
         """Test that signal can change with new data."""
@@ -217,19 +221,22 @@ class TestSmartMoneyIndicatorSignals:
 
         # Signals should be consistent type
         for signal in signals:
-            assert signal in ['BULLISH', 'BEARISH', 'NEUTRAL', None]
+            assert signal in ["BULLISH", "BEARISH", "NEUTRAL", None]
 
 
 # =============================================================================
 # InstitutionalMomentumIndicator Tests
 # =============================================================================
 
+
 class TestInstitutionalMomentumIndicatorInitialization:
     """Test InstitutionalMomentumIndicator initialization."""
 
     def test_indicator_initializes_with_defaults(self):
         """Test indicator initializes with default parameters."""
-        from stanley.integrations.nautilus.indicators import InstitutionalMomentumIndicator
+        from stanley.integrations.nautilus.indicators import (
+            InstitutionalMomentumIndicator,
+        )
 
         indicator = InstitutionalMomentumIndicator()
 
@@ -238,7 +245,9 @@ class TestInstitutionalMomentumIndicatorInitialization:
 
     def test_indicator_initializes_with_data_manager(self):
         """Test indicator initializes with data manager."""
-        from stanley.integrations.nautilus.indicators import InstitutionalMomentumIndicator
+        from stanley.integrations.nautilus.indicators import (
+            InstitutionalMomentumIndicator,
+        )
 
         mock_data_manager = Mock()
         indicator = InstitutionalMomentumIndicator(data_manager=mock_data_manager)
@@ -247,27 +256,29 @@ class TestInstitutionalMomentumIndicatorInitialization:
 
     def test_indicator_initializes_with_symbol(self):
         """Test indicator initializes with symbol."""
-        from stanley.integrations.nautilus.indicators import InstitutionalMomentumIndicator
+        from stanley.integrations.nautilus.indicators import (
+            InstitutionalMomentumIndicator,
+        )
 
-        indicator = InstitutionalMomentumIndicator(symbol='AAPL')
+        indicator = InstitutionalMomentumIndicator(symbol="AAPL")
 
-        assert indicator.symbol == 'AAPL'
+        assert indicator.symbol == "AAPL"
 
 
 class TestInstitutionalMomentumIndicatorCalculation:
     """Test InstitutionalMomentumIndicator calculations."""
 
-    def test_calculates_momentum_from_institutional_data(
-        self, mock_institutional_data
-    ):
+    def test_calculates_momentum_from_institutional_data(self, mock_institutional_data):
         """Test momentum calculation from institutional data."""
-        from stanley.integrations.nautilus.indicators import InstitutionalMomentumIndicator
+        from stanley.integrations.nautilus.indicators import (
+            InstitutionalMomentumIndicator,
+        )
 
         mock_analyzer = Mock()
         mock_analyzer.get_holdings.return_value = mock_institutional_data
 
         indicator = InstitutionalMomentumIndicator(
-            symbol='AAPL',
+            symbol="AAPL",
             analyzer=mock_analyzer,
         )
 
@@ -278,18 +289,20 @@ class TestInstitutionalMomentumIndicatorCalculation:
 
     def test_momentum_reflects_ownership_trend(self, mock_institutional_data):
         """Test that momentum reflects ownership trend."""
-        from stanley.integrations.nautilus.indicators import InstitutionalMomentumIndicator
+        from stanley.integrations.nautilus.indicators import (
+            InstitutionalMomentumIndicator,
+        )
 
         mock_analyzer = Mock()
 
         # Positive trend
         positive_data = mock_institutional_data.copy()
-        positive_data['ownership_trend'] = 0.10
+        positive_data["ownership_trend"] = 0.10
 
         mock_analyzer.get_holdings.return_value = positive_data
 
         indicator = InstitutionalMomentumIndicator(
-            symbol='AAPL',
+            symbol="AAPL",
             analyzer=mock_analyzer,
         )
 
@@ -298,7 +311,7 @@ class TestInstitutionalMomentumIndicatorCalculation:
 
         # Negative trend
         negative_data = mock_institutional_data.copy()
-        negative_data['ownership_trend'] = -0.10
+        negative_data["ownership_trend"] = -0.10
 
         mock_analyzer.get_holdings.return_value = negative_data
         indicator.update()
@@ -309,13 +322,15 @@ class TestInstitutionalMomentumIndicatorCalculation:
 
     def test_combines_multiple_factors(self, mock_institutional_data):
         """Test that indicator combines multiple institutional factors."""
-        from stanley.integrations.nautilus.indicators import InstitutionalMomentumIndicator
+        from stanley.integrations.nautilus.indicators import (
+            InstitutionalMomentumIndicator,
+        )
 
         mock_analyzer = Mock()
         mock_analyzer.get_holdings.return_value = mock_institutional_data
 
         indicator = InstitutionalMomentumIndicator(
-            symbol='AAPL',
+            symbol="AAPL",
             analyzer=mock_analyzer,
         )
 
@@ -330,54 +345,59 @@ class TestInstitutionalMomentumIndicatorSignals:
 
     def test_generates_accumulation_signal(self):
         """Test generation of accumulation signal."""
-        from stanley.integrations.nautilus.indicators import InstitutionalMomentumIndicator
+        from stanley.integrations.nautilus.indicators import (
+            InstitutionalMomentumIndicator,
+        )
 
         mock_analyzer = Mock()
         mock_analyzer.get_holdings.return_value = {
-            'institutional_ownership': 0.80,
-            'ownership_trend': 0.15,
-            'smart_money_score': 0.8,
-            'concentration_risk': 0.2,
-            'number_of_institutions': 300,
+            "institutional_ownership": 0.80,
+            "ownership_trend": 0.15,
+            "smart_money_score": 0.8,
+            "concentration_risk": 0.2,
+            "number_of_institutions": 300,
         }
 
         indicator = InstitutionalMomentumIndicator(
-            symbol='AAPL',
+            symbol="AAPL",
             analyzer=mock_analyzer,
             accumulation_threshold=0.5,
         )
 
         indicator.update()
 
-        assert indicator.signal == 'ACCUMULATION'
+        assert indicator.signal == "ACCUMULATION"
 
     def test_generates_distribution_signal(self):
         """Test generation of distribution signal."""
-        from stanley.integrations.nautilus.indicators import InstitutionalMomentumIndicator
+        from stanley.integrations.nautilus.indicators import (
+            InstitutionalMomentumIndicator,
+        )
 
         mock_analyzer = Mock()
         mock_analyzer.get_holdings.return_value = {
-            'institutional_ownership': 0.60,
-            'ownership_trend': -0.15,
-            'smart_money_score': -0.6,
-            'concentration_risk': 0.4,
-            'number_of_institutions': 150,
+            "institutional_ownership": 0.60,
+            "ownership_trend": -0.15,
+            "smart_money_score": -0.6,
+            "concentration_risk": 0.4,
+            "number_of_institutions": 150,
         }
 
         indicator = InstitutionalMomentumIndicator(
-            symbol='AAPL',
+            symbol="AAPL",
             analyzer=mock_analyzer,
             distribution_threshold=-0.5,
         )
 
         indicator.update()
 
-        assert indicator.signal == 'DISTRIBUTION'
+        assert indicator.signal == "DISTRIBUTION"
 
 
 # =============================================================================
 # Dark Pool Indicator Tests
 # =============================================================================
+
 
 class TestDarkPoolIndicator:
     """Test dark pool activity indicator."""
@@ -407,7 +427,7 @@ class TestDarkPoolIndicator:
         )
 
         # Should use dark pool data in calculation
-        indicator.update_from_analyzer('AAPL')
+        indicator.update_from_analyzer("AAPL")
 
         assert indicator.dark_pool_signal is not None
 
@@ -415,6 +435,7 @@ class TestDarkPoolIndicator:
 # =============================================================================
 # Indicator Edge Cases
 # =============================================================================
+
 
 class TestIndicatorEdgeCases:
     """Test indicator edge cases and error handling."""
@@ -427,7 +448,7 @@ class TestIndicatorEdgeCases:
 
         # Insert bar with NaN
         nan_bar = Mock()
-        nan_bar.close = Mock(as_double=Mock(return_value=float('nan')))
+        nan_bar.close = Mock(as_double=Mock(return_value=float("nan")))
         nan_bar.volume = Mock(as_double=Mock(return_value=1000000))
         nan_bar.ts_event = int(datetime.now().timestamp() * 1e9)
 
@@ -521,6 +542,7 @@ class TestIndicatorEdgeCases:
 # Indicator Serialization Tests
 # =============================================================================
 
+
 class TestIndicatorSerialization:
     """Test indicator serialization for state management."""
 
@@ -536,20 +558,20 @@ class TestIndicatorSerialization:
         state = indicator.to_dict()
 
         assert isinstance(state, dict)
-        assert 'period' in state
-        assert 'value' in state
-        assert 'initialized' in state
+        assert "period" in state
+        assert "value" in state
+        assert "initialized" in state
 
     def test_from_dict(self):
         """Test creation from dictionary."""
         from stanley.integrations.nautilus.indicators import SmartMoneyIndicator
 
         state = {
-            'period': 20,
-            'value': 0.65,
-            'initialized': True,
-            'bullish_threshold': 0.5,
-            'bearish_threshold': -0.5,
+            "period": 20,
+            "value": 0.65,
+            "initialized": True,
+            "bullish_threshold": 0.5,
+            "bearish_threshold": -0.5,
         }
 
         indicator = SmartMoneyIndicator.from_dict(state)
@@ -562,6 +584,7 @@ class TestIndicatorSerialization:
 # Indicator Combination Tests
 # =============================================================================
 
+
 class TestIndicatorCombination:
     """Test combining multiple indicators."""
 
@@ -573,7 +596,7 @@ class TestIndicatorCombination:
         )
 
         smart_money = SmartMoneyIndicator(period=20)
-        institutional = InstitutionalMomentumIndicator(symbol='AAPL')
+        institutional = InstitutionalMomentumIndicator(symbol="AAPL")
 
         for bar in sample_bar_series:
             smart_money.handle_bar(bar)
@@ -581,20 +604,17 @@ class TestIndicatorCombination:
         # Mock institutional data
         mock_analyzer = Mock()
         mock_analyzer.get_holdings.return_value = {
-            'institutional_ownership': 0.75,
-            'ownership_trend': 0.05,
-            'smart_money_score': 0.6,
-            'concentration_risk': 0.3,
-            'number_of_institutions': 250,
+            "institutional_ownership": 0.75,
+            "ownership_trend": 0.05,
+            "smart_money_score": 0.6,
+            "concentration_risk": 0.3,
+            "number_of_institutions": 250,
         }
         institutional._analyzer = mock_analyzer
         institutional.update()
 
         # Combine signals
-        combined_score = (
-            0.5 * smart_money.value +
-            0.5 * institutional.value
-        )
+        combined_score = 0.5 * smart_money.value + 0.5 * institutional.value
 
         assert -1 <= combined_score <= 1
 
@@ -613,13 +633,15 @@ class TestIndicatorCombination:
             long_term.handle_bar(bar)
 
         # Weighted combination
-        weights = {'short': 0.2, 'medium': 0.5, 'long': 0.3}
+        weights = {"short": 0.2, "medium": 0.5, "long": 0.3}
 
-        if all([short_term.initialized, medium_term.initialized, long_term.initialized]):
+        if all(
+            [short_term.initialized, medium_term.initialized, long_term.initialized]
+        ):
             weighted_value = (
-                weights['short'] * short_term.value +
-                weights['medium'] * medium_term.value +
-                weights['long'] * long_term.value
+                weights["short"] * short_term.value
+                + weights["medium"] * medium_term.value
+                + weights["long"] * long_term.value
             )
 
             assert -1 <= weighted_value <= 1
@@ -628,6 +650,7 @@ class TestIndicatorCombination:
 # =============================================================================
 # Indicator Performance Tests
 # =============================================================================
+
 
 class TestIndicatorPerformance:
     """Test indicator performance characteristics."""
@@ -639,6 +662,7 @@ class TestIndicatorPerformance:
         indicator = SmartMoneyIndicator(period=20)
 
         import time
+
         start = time.time()
 
         for _ in range(1000):

@@ -14,21 +14,25 @@ import pandas as pd
 
 class DataProviderError(Exception):
     """Base exception for data provider errors."""
+
     pass
 
 
 class RateLimitError(DataProviderError):
     """Raised when rate limit is exceeded."""
+
     pass
 
 
 class DataNotFoundError(DataProviderError):
     """Raised when requested data is not found."""
+
     pass
 
 
 class AuthenticationError(DataProviderError):
     """Raised when authentication fails."""
+
     pass
 
 
@@ -74,11 +78,7 @@ class DataProvider(ABC):
 
     @abstractmethod
     async def get_stock_data(
-        self,
-        symbol: str,
-        start_date: datetime,
-        end_date: datetime,
-        **kwargs
+        self, symbol: str, start_date: datetime, end_date: datetime, **kwargs
     ) -> pd.DataFrame:
         """
         Get historical stock price data.
@@ -95,11 +95,7 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_institutional_holdings(
-        self,
-        symbol: str,
-        **kwargs
-    ) -> pd.DataFrame:
+    async def get_institutional_holdings(self, symbol: str, **kwargs) -> pd.DataFrame:
         """
         Get institutional holdings from 13F filings.
 
@@ -113,11 +109,7 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_options_chain(
-        self,
-        symbol: str,
-        **kwargs
-    ) -> pd.DataFrame:
+    async def get_options_chain(self, symbol: str, **kwargs) -> pd.DataFrame:
         """
         Get options chain data.
 
@@ -131,11 +123,7 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_fundamentals(
-        self,
-        symbol: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    async def get_fundamentals(self, symbol: str, **kwargs) -> Dict[str, Any]:
         """
         Get fundamental data for a stock.
 
@@ -149,11 +137,7 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_insider_transactions(
-        self,
-        symbol: str,
-        **kwargs
-    ) -> pd.DataFrame:
+    async def get_insider_transactions(self, symbol: str, **kwargs) -> pd.DataFrame:
         """
         Get insider trading transactions.
 
@@ -167,11 +151,7 @@ class DataProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_etf_holdings(
-        self,
-        symbol: str,
-        **kwargs
-    ) -> pd.DataFrame:
+    async def get_etf_holdings(self, symbol: str, **kwargs) -> pd.DataFrame:
         """
         Get ETF holdings data.
 
@@ -186,11 +166,7 @@ class DataProvider(ABC):
 
     @abstractmethod
     async def get_economic_indicator(
-        self,
-        indicator: str,
-        start_date: datetime,
-        end_date: datetime,
-        **kwargs
+        self, indicator: str, start_date: datetime, end_date: datetime, **kwargs
     ) -> pd.DataFrame:
         """
         Get economic indicator data.

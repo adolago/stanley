@@ -123,9 +123,7 @@ class OpenBBDataClientConfigFull:
         default_bar_config: Default bar subscription configuration.
     """
 
-    base_config: OpenBBDataClientConfig = field(
-        default_factory=OpenBBDataClientConfig
-    )
+    base_config: OpenBBDataClientConfig = field(default_factory=OpenBBDataClientConfig)
     providers: list[OpenBBProviderConfig] = field(default_factory=list)
     instruments: list[InstrumentConfig] = field(default_factory=list)
     default_bar_config: BarSubscriptionConfig = field(

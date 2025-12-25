@@ -6,7 +6,9 @@ for use in NautilusTrader strategies.
 """
 
 from stanley.integrations.nautilus.indicators.smart_money import SmartMoneyIndicator
-from stanley.integrations.nautilus.indicators.institutional_momentum import InstitutionalMomentumIndicator
+from stanley.integrations.nautilus.indicators.institutional_momentum import (
+    InstitutionalMomentumIndicator,
+)
 
 __all__ = [
     "SmartMoneyIndicator",

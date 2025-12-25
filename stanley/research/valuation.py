@@ -308,9 +308,13 @@ def calculate_valuation_multiples(
 
     # Book value ratios
     book_per_share = book_value / shares_outstanding if shares_outstanding > 0 else 0
-    tangible_book_per_share = tangible_book_value / shares_outstanding if shares_outstanding > 0 else 0
+    tangible_book_per_share = (
+        tangible_book_value / shares_outstanding if shares_outstanding > 0 else 0
+    )
     price_to_book = price / book_per_share if book_per_share > 0 else float("inf")
-    price_to_tangible_book = price / tangible_book_per_share if tangible_book_per_share > 0 else float("inf")
+    price_to_tangible_book = (
+        price / tangible_book_per_share if tangible_book_per_share > 0 else float("inf")
+    )
 
     # EV multiples
     ev_to_ebitda = enterprise_value / ebitda if ebitda > 0 else float("inf")
@@ -318,7 +322,9 @@ def calculate_valuation_multiples(
     # FCF ratios
     fcf_per_share = free_cash_flow / shares_outstanding if shares_outstanding > 0 else 0
     price_to_fcf = price / fcf_per_share if fcf_per_share > 0 else float("inf")
-    ev_to_fcf = enterprise_value / free_cash_flow if free_cash_flow > 0 else float("inf")
+    ev_to_fcf = (
+        enterprise_value / free_cash_flow if free_cash_flow > 0 else float("inf")
+    )
 
     # Yields
     earnings_yield = (eps / price) * 100 if price > 0 else 0
@@ -336,7 +342,9 @@ def calculate_valuation_multiples(
         price_to_sales=price_to_sales if price_to_sales < 1000 else float("inf"),
         ev_to_sales=ev_to_sales if ev_to_sales < 1000 else float("inf"),
         price_to_book=price_to_book if price_to_book < 1000 else float("inf"),
-        price_to_tangible_book=price_to_tangible_book if price_to_tangible_book < 1000 else float("inf"),
+        price_to_tangible_book=(
+            price_to_tangible_book if price_to_tangible_book < 1000 else float("inf")
+        ),
         ev_to_ebitda=ev_to_ebitda if ev_to_ebitda < 1000 else float("inf"),
         price_to_fcf=price_to_fcf if price_to_fcf < 1000 else float("inf"),
         ev_to_fcf=ev_to_fcf if ev_to_fcf < 1000 else float("inf"),
@@ -360,11 +368,19 @@ def compare_to_peers(
         return {"target": target.to_dict(), "peers": [], "premium_discount": {}}
 
     # Calculate peer averages for key metrics
-    metrics = ["pe_ratio", "forward_pe", "ev_to_ebitda", "price_to_sales", "price_to_book"]
+    metrics = [
+        "pe_ratio",
+        "forward_pe",
+        "ev_to_ebitda",
+        "price_to_sales",
+        "price_to_book",
+    ]
 
     peer_averages = {}
     for metric in metrics:
-        values = [getattr(p, metric) for p in peers if getattr(p, metric) < float("inf")]
+        values = [
+            getattr(p, metric) for p in peers if getattr(p, metric) < float("inf")
+        ]
         if values:
             peer_averages[metric] = np.mean(values)
         else:
@@ -384,7 +400,9 @@ def compare_to_peers(
 
     return {
         "target": target.to_dict(),
-        "peerAverages": {k: round(v, 2) if v else None for k, v in peer_averages.items()},
+        "peerAverages": {
+            k: round(v, 2) if v else None for k, v in peer_averages.items()
+        },
         "premiumDiscount": premium_discount,
         "peers": [p.to_dict() for p in peers],
     }
@@ -405,7 +423,11 @@ def estimate_fair_value_range(
 
     # Method 1: P/E based
     if "pe_ratio" in peer_averages and peer_averages["pe_ratio"]:
-        eps = valuation.price / valuation.pe_ratio if valuation.pe_ratio < float("inf") else 0
+        eps = (
+            valuation.price / valuation.pe_ratio
+            if valuation.pe_ratio < float("inf")
+            else 0
+        )
         if eps > 0:
             pe_value = eps * peer_averages["pe_ratio"]
             values.append(("P/E", pe_value))
@@ -417,7 +439,9 @@ def estimate_fair_value_range(
             ev = ebitda * peer_averages["ev_to_ebitda"]
             # Convert EV to equity value (simplified)
             equity_value = ev - (valuation.enterprise_value - valuation.market_cap)
-            shares = valuation.market_cap / valuation.price if valuation.price > 0 else 1
+            shares = (
+                valuation.market_cap / valuation.price if valuation.price > 0 else 1
+            )
             ebitda_value = equity_value / shares
             if ebitda_value > 0:
                 values.append(("EV/EBITDA", ebitda_value))

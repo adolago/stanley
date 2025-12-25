@@ -39,7 +39,7 @@ class TestGetStockData:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
-        result = run_async(manager.get_stock_data('AAPL', start_date, end_date))
+        result = run_async(manager.get_stock_data("AAPL", start_date, end_date))
         assert isinstance(result, pd.DataFrame)
 
     def test_has_expected_columns(self, sample_config):
@@ -47,8 +47,8 @@ class TestGetStockData:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
-        result = run_async(manager.get_stock_data('AAPL', start_date, end_date))
-        expected_cols = ['date', 'open', 'high', 'low', 'close', 'volume']
+        result = run_async(manager.get_stock_data("AAPL", start_date, end_date))
+        expected_cols = ["date", "open", "high", "low", "close", "volume"]
         for col in expected_cols:
             assert col in result.columns
 
@@ -57,34 +57,34 @@ class TestGetStockData:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
-        result = run_async(manager.get_stock_data('AAPL', start_date, end_date))
+        result = run_async(manager.get_stock_data("AAPL", start_date, end_date))
         # High should always be >= Low
-        assert all(result['high'] >= result['low'])
+        assert all(result["high"] >= result["low"])
 
     def test_prices_positive(self, sample_config):
         """Test that all prices are positive."""
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
-        result = run_async(manager.get_stock_data('AAPL', start_date, end_date))
-        assert all(result['close'] > 0)
-        assert all(result['open'] > 0)
-        assert all(result['high'] > 0)
-        assert all(result['low'] > 0)
+        result = run_async(manager.get_stock_data("AAPL", start_date, end_date))
+        assert all(result["close"] > 0)
+        assert all(result["open"] > 0)
+        assert all(result["high"] > 0)
+        assert all(result["low"] > 0)
 
     def test_volume_positive(self, sample_config):
         """Test that volume is positive."""
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
-        result = run_async(manager.get_stock_data('AAPL', start_date, end_date))
-        assert all(result['volume'] > 0)
+        result = run_async(manager.get_stock_data("AAPL", start_date, end_date))
+        assert all(result["volume"] > 0)
 
     def test_single_day_data(self, sample_config):
         """Test fetching single day of data."""
         manager = DataManager(config=sample_config)
         date = datetime.now()
-        result = run_async(manager.get_stock_data('AAPL', date, date))
+        result = run_async(manager.get_stock_data("AAPL", date, date))
         assert len(result) >= 1
 
 
@@ -96,7 +96,7 @@ class TestGetETFFlows:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
-        result = run_async(manager.get_etf_flows('SPY', start_date, end_date))
+        result = run_async(manager.get_etf_flows("SPY", start_date, end_date))
         assert isinstance(result, pd.DataFrame)
 
     def test_has_expected_columns(self, sample_config):
@@ -104,8 +104,8 @@ class TestGetETFFlows:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
-        result = run_async(manager.get_etf_flows('SPY', start_date, end_date))
-        expected_cols = ['date', 'net_flow', 'creation_units', 'redemption_units']
+        result = run_async(manager.get_etf_flows("SPY", start_date, end_date))
+        expected_cols = ["date", "net_flow", "creation_units", "redemption_units"]
         for col in expected_cols:
             assert col in result.columns
 
@@ -114,11 +114,11 @@ class TestGetETFFlows:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=30)
-        result = run_async(manager.get_etf_flows('SPY', start_date, end_date))
+        result = run_async(manager.get_etf_flows("SPY", start_date, end_date))
         # When net_flow > 0, creation_units should be > 0
-        positive_flow = result[result['net_flow'] > 0]
+        positive_flow = result[result["net_flow"] > 0]
         if len(positive_flow) > 0:
-            assert all(positive_flow['creation_units'] > 0)
+            assert all(positive_flow["creation_units"] > 0)
 
 
 class TestGetInstitutionalHoldings:
@@ -127,23 +127,28 @@ class TestGetInstitutionalHoldings:
     def test_returns_dataframe(self, sample_config):
         """Test that method returns a DataFrame."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_institutional_holdings('AAPL'))
+        result = run_async(manager.get_institutional_holdings("AAPL"))
         assert isinstance(result, pd.DataFrame)
 
     def test_has_expected_columns(self, sample_config):
         """Test that DataFrame has expected columns."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_institutional_holdings('AAPL'))
-        expected_cols = ['manager_name', 'manager_cik', 'shares_held',
-                        'value_held', 'ownership_percentage']
+        result = run_async(manager.get_institutional_holdings("AAPL"))
+        expected_cols = [
+            "manager_name",
+            "manager_cik",
+            "shares_held",
+            "value_held",
+            "ownership_percentage",
+        ]
         for col in expected_cols:
             assert col in result.columns
 
     def test_shares_positive(self, sample_config):
         """Test that shares_held is positive."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_institutional_holdings('AAPL'))
-        assert all(result['shares_held'] > 0)
+        result = run_async(manager.get_institutional_holdings("AAPL"))
+        assert all(result["shares_held"] > 0)
 
 
 class TestGetOptionsFlow:
@@ -152,21 +157,27 @@ class TestGetOptionsFlow:
     def test_returns_dataframe(self, sample_config):
         """Test that method returns a DataFrame."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_options_flow('AAPL'))
+        result = run_async(manager.get_options_flow("AAPL"))
         assert isinstance(result, pd.DataFrame)
 
     def test_unusual_only_parameter(self, sample_config):
         """Test unusual_only parameter."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_options_flow('AAPL', unusual_only=False))
+        result = run_async(manager.get_options_flow("AAPL", unusual_only=False))
         assert isinstance(result, pd.DataFrame)
 
     def test_has_expected_columns(self, sample_config):
         """Test that DataFrame has expected columns."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_options_flow('AAPL'))
-        expected_cols = ['date', 'contract_symbol', 'volume', 'open_interest',
-                        'notional_value', 'unusual_activity']
+        result = run_async(manager.get_options_flow("AAPL"))
+        expected_cols = [
+            "date",
+            "contract_symbol",
+            "volume",
+            "open_interest",
+            "notional_value",
+            "unusual_activity",
+        ]
         for col in expected_cols:
             assert col in result.columns
 
@@ -177,21 +188,21 @@ class TestGetDarkPoolVolume:
     def test_returns_dataframe(self, sample_config):
         """Test that method returns a DataFrame."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_dark_pool_volume('AAPL'))
+        result = run_async(manager.get_dark_pool_volume("AAPL"))
         assert isinstance(result, pd.DataFrame)
 
     def test_lookback_days_parameter(self, sample_config):
         """Test lookback_days parameter."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_dark_pool_volume('AAPL', lookback_days=10))
+        result = run_async(manager.get_dark_pool_volume("AAPL", lookback_days=10))
         assert len(result) == 10
 
     def test_dark_pool_percentage_bounded(self, sample_config):
         """Test that dark_pool_percentage is in expected range."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_dark_pool_volume('AAPL'))
-        assert all(result['dark_pool_percentage'] >= 0)
-        assert all(result['dark_pool_percentage'] <= 1)
+        result = run_async(manager.get_dark_pool_volume("AAPL"))
+        assert all(result["dark_pool_percentage"] >= 0)
+        assert all(result["dark_pool_percentage"] <= 1)
 
 
 class TestGetShortInterest:
@@ -200,23 +211,27 @@ class TestGetShortInterest:
     def test_returns_dataframe(self, sample_config):
         """Test that method returns a DataFrame."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_short_interest('AAPL'))
+        result = run_async(manager.get_short_interest("AAPL"))
         assert isinstance(result, pd.DataFrame)
 
     def test_has_expected_columns(self, sample_config):
         """Test that DataFrame has expected columns."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_short_interest('AAPL'))
-        expected_cols = ['current_short_interest', 'previous_short_interest',
-                        'days_to_cover', 'short_ratio']
+        result = run_async(manager.get_short_interest("AAPL"))
+        expected_cols = [
+            "current_short_interest",
+            "previous_short_interest",
+            "days_to_cover",
+            "short_ratio",
+        ]
         for col in expected_cols:
             assert col in result.columns
 
     def test_days_to_cover_positive(self, sample_config):
         """Test that days_to_cover is positive."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_short_interest('AAPL'))
-        assert all(result['days_to_cover'] > 0)
+        result = run_async(manager.get_short_interest("AAPL"))
+        assert all(result["days_to_cover"] > 0)
 
 
 class TestGetInsiderTrading:
@@ -225,20 +240,20 @@ class TestGetInsiderTrading:
     def test_returns_dataframe(self, sample_config):
         """Test that method returns a DataFrame."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_insider_trading('AAPL'))
+        result = run_async(manager.get_insider_trading("AAPL"))
         assert isinstance(result, pd.DataFrame)
 
     def test_lookback_days_parameter(self, sample_config):
         """Test lookback_days parameter."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_insider_trading('AAPL', lookback_days=30))
+        result = run_async(manager.get_insider_trading("AAPL", lookback_days=30))
         assert len(result) == 30
 
     def test_transaction_types(self, sample_config):
         """Test that transaction_type is Buy or Sell."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_insider_trading('AAPL'))
-        assert all(result['transaction_type'].isin(['Buy', 'Sell']))
+        result = run_async(manager.get_insider_trading("AAPL"))
+        assert all(result["transaction_type"].isin(["Buy", "Sell"]))
 
 
 class TestGetEconomicData:
@@ -249,7 +264,9 @@ class TestGetEconomicData:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=365)
-        result = run_async(manager.get_economic_data('unemployment_rate', start_date, end_date))
+        result = run_async(
+            manager.get_economic_data("unemployment_rate", start_date, end_date)
+        )
         assert isinstance(result, pd.DataFrame)
 
     def test_unemployment_rate_range(self, sample_config):
@@ -257,17 +274,21 @@ class TestGetEconomicData:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=365)
-        result = run_async(manager.get_economic_data('unemployment_rate', start_date, end_date))
-        assert all(result['value'] >= 0)
-        assert all(result['value'] <= 100)
+        result = run_async(
+            manager.get_economic_data("unemployment_rate", start_date, end_date)
+        )
+        assert all(result["value"] >= 0)
+        assert all(result["value"] <= 100)
 
     def test_indicator_echoed(self, sample_config):
         """Test that indicator name is echoed in result."""
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=365)
-        result = run_async(manager.get_economic_data('gdp_growth', start_date, end_date))
-        assert all(result['indicator'] == 'gdp_growth')
+        result = run_async(
+            manager.get_economic_data("gdp_growth", start_date, end_date)
+        )
+        assert all(result["indicator"] == "gdp_growth")
 
 
 class TestHealthCheck:
@@ -292,7 +313,7 @@ class TestEdgeCases:
         """Test with same start and end date."""
         manager = DataManager(config=sample_config)
         date = datetime.now()
-        result = run_async(manager.get_stock_data('AAPL', date, date))
+        result = run_async(manager.get_stock_data("AAPL", date, date))
         assert isinstance(result, pd.DataFrame)
 
     def test_very_long_date_range(self, sample_config):
@@ -300,13 +321,13 @@ class TestEdgeCases:
         manager = DataManager(config=sample_config)
         end_date = datetime.now()
         start_date = end_date - timedelta(days=1000)
-        result = run_async(manager.get_stock_data('AAPL', start_date, end_date))
+        result = run_async(manager.get_stock_data("AAPL", start_date, end_date))
         assert isinstance(result, pd.DataFrame)
 
     def test_lookback_one_day(self, sample_config):
         """Test with lookback_days = 1."""
         manager = DataManager(config=sample_config)
-        result = run_async(manager.get_dark_pool_volume('AAPL', lookback_days=1))
+        result = run_async(manager.get_dark_pool_volume("AAPL", lookback_days=1))
         assert len(result) == 1
 
     def test_concurrent_requests(self, sample_config):
@@ -317,9 +338,9 @@ class TestEdgeCases:
 
         async def run_concurrent():
             return await asyncio.gather(
-                manager.get_stock_data('AAPL', start_date, end_date),
-                manager.get_stock_data('MSFT', start_date, end_date),
-                manager.get_stock_data('GOOGL', start_date, end_date)
+                manager.get_stock_data("AAPL", start_date, end_date),
+                manager.get_stock_data("MSFT", start_date, end_date),
+                manager.get_stock_data("GOOGL", start_date, end_date),
             )
 
         results = run_async(run_concurrent())

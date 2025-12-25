@@ -76,15 +76,15 @@ impl Theme {
             active_bg: hsla(222.0 / 360.0, 0.18, 0.18, 1.0),
 
             // Text - improved contrast hierarchy (WCAG AA compliant)
-            text: hsla(0.0, 0.0, 0.97, 1.0),           // Primary: pure white
+            text: hsla(0.0, 0.0, 0.97, 1.0), // Primary: pure white
             text_secondary: hsla(220.0 / 360.0, 0.08, 0.82, 1.0), // Secondary: soft white
-            text_muted: hsla(220.0 / 360.0, 0.12, 0.60, 1.0),     // Muted: visible but subdued
-            text_dimmed: hsla(220.0 / 360.0, 0.10, 0.45, 1.0),    // Dimmed: labels, hints
+            text_muted: hsla(220.0 / 360.0, 0.12, 0.60, 1.0), // Muted: visible but subdued
+            text_dimmed: hsla(220.0 / 360.0, 0.10, 0.45, 1.0), // Dimmed: labels, hints
 
             // Borders - layered for subtle depth
-            border: hsla(222.0 / 360.0, 0.14, 0.20, 1.0),         // Default
-            border_subtle: hsla(222.0 / 360.0, 0.12, 0.15, 1.0),  // Subtle dividers
-            border_strong: hsla(222.0 / 360.0, 0.16, 0.28, 1.0),  // Emphasized borders
+            border: hsla(222.0 / 360.0, 0.14, 0.20, 1.0), // Default
+            border_subtle: hsla(222.0 / 360.0, 0.12, 0.15, 1.0), // Subtle dividers
+            border_strong: hsla(222.0 / 360.0, 0.16, 0.28, 1.0), // Emphasized borders
 
             // Shadows - for card elevation
             shadow: hsla(222.0 / 360.0, 0.50, 0.02, 0.40),

@@ -825,9 +825,7 @@ class Note:
     @classmethod
     def from_markdown(cls, path: Path, markdown: str) -> "Note":
         """Parse a note from markdown with YAML frontmatter."""
-        frontmatter_match = re.match(
-            r"^---\n(.*?)\n---\n\n?(.*)", markdown, re.DOTALL
-        )
+        frontmatter_match = re.match(r"^---\n(.*?)\n---\n\n?(.*)", markdown, re.DOTALL)
 
         if frontmatter_match:
             yaml_str = frontmatter_match.group(1)
@@ -867,5 +865,7 @@ class Note:
             "tags": self.frontmatter.tags,
             "outgoing_links": list(self.outgoing_links),
             "incoming_links": list(self.incoming_links),
-            "content_preview": self.content[:200] + "..." if len(self.content) > 200 else self.content,
+            "content_preview": (
+                self.content[:200] + "..." if len(self.content) > 200 else self.content
+            ),
         }

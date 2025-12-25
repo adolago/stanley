@@ -60,18 +60,22 @@ class EarningsQuarter:
             "epsSurprisePercent": self.eps_surprise_percent,
             "revenueSurprise": self.revenue_surprise,
             "revenueSurprisePercent": self.revenue_surprise_percent,
-            "nextQuarterGuidance": {
-                "low": self.next_quarter_eps_guidance_low,
-                "high": self.next_quarter_eps_guidance_high,
-            }
-            if self.next_quarter_eps_guidance_low
-            else None,
-            "fullYearGuidance": {
-                "low": self.full_year_eps_guidance_low,
-                "high": self.full_year_eps_guidance_high,
-            }
-            if self.full_year_eps_guidance_low
-            else None,
+            "nextQuarterGuidance": (
+                {
+                    "low": self.next_quarter_eps_guidance_low,
+                    "high": self.next_quarter_eps_guidance_high,
+                }
+                if self.next_quarter_eps_guidance_low
+                else None
+            ),
+            "fullYearGuidance": (
+                {
+                    "low": self.full_year_eps_guidance_low,
+                    "high": self.full_year_eps_guidance_high,
+                }
+                if self.full_year_eps_guidance_low
+                else None
+            ),
         }
 
 
@@ -230,7 +234,9 @@ def analyze_earnings_quality(
 
     # Quality score (0-100)
     # High cash conversion + low accruals = high quality
-    quality_score = min(100, max(0, 50 + (cash_conversion - 1) * 25 - accruals_ratio * 100))
+    quality_score = min(
+        100, max(0, 50 + (cash_conversion - 1) * 25 - accruals_ratio * 100)
+    )
 
     return {
         "accruals": accruals,
@@ -327,7 +333,9 @@ def calculate_beat_rate(
     consecutive_beats = 0
     consecutive_misses = 0
 
-    for q in sorted(quarters, key=lambda x: (x.fiscal_year, x.fiscal_period), reverse=True):
+    for q in sorted(
+        quarters, key=lambda x: (x.fiscal_year, x.fiscal_period), reverse=True
+    ):
         if q.eps_surprise_percent > 0:
             if consecutive_misses == 0:
                 consecutive_beats += 1

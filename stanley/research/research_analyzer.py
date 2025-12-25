@@ -101,7 +101,9 @@ class ResearchReport:
             "fairValueRange": self.fair_value_range,
             "valuationRating": self.valuation_rating,
             "earnings": self.earnings.to_dict() if self.earnings else None,
-            "estimateRevisions": self.estimate_revisions.to_dict() if self.estimate_revisions else None,
+            "estimateRevisions": (
+                self.estimate_revisions.to_dict() if self.estimate_revisions else None
+            ),
             "earningsQualityScore": self.earnings_quality_score,
             "revenueGrowth5yr": self.revenue_growth_5yr,
             "epsGrowth5yr": self.eps_growth_5yr,
@@ -258,7 +260,10 @@ class ResearchAnalyzer:
         eps_history = [q.eps_actual for q in quarter_objects]
 
         if len(eps_history) >= 4:
-            eps_growth_yoy = calculate_growth_rate(eps_history[0], eps_history[4] if len(eps_history) > 4 else eps_history[-1])
+            eps_growth_yoy = calculate_growth_rate(
+                eps_history[0],
+                eps_history[4] if len(eps_history) > 4 else eps_history[-1],
+            )
         else:
             eps_growth_yoy = 0
 
@@ -278,7 +283,11 @@ class ResearchAnalyzer:
             quarters=quarter_objects,
             eps_growth_yoy=eps_growth_yoy,
             eps_growth_3yr_cagr=eps_growth_3yr,
-            avg_eps_surprise_percent=np.mean([q.eps_surprise_percent for q in quarter_objects]) if quarter_objects else 0,
+            avg_eps_surprise_percent=(
+                np.mean([q.eps_surprise_percent for q in quarter_objects])
+                if quarter_objects
+                else 0
+            ),
             beat_rate=beat_metrics["beat_rate"],
             consecutive_beats=beat_metrics["consecutive_beats"],
             earnings_volatility=consistency_metrics["volatility"],
@@ -538,15 +547,17 @@ class ResearchAnalyzer:
             revenue_actual = base_revenue * (1 + np.random.uniform(-0.1, 0.15))
             revenue_estimate = base_revenue * (1 + np.random.uniform(-0.05, 0.05))
 
-            history.append({
-                "fiscal_quarter": f"Q{quarter} {year}",
-                "fiscal_year": year,
-                "fiscal_period": quarter,
-                "eps_actual": eps_actual,
-                "eps_estimate": eps_estimate,
-                "revenue_actual": revenue_actual,
-                "revenue_estimate": revenue_estimate,
-            })
+            history.append(
+                {
+                    "fiscal_quarter": f"Q{quarter} {year}",
+                    "fiscal_year": year,
+                    "fiscal_period": quarter,
+                    "eps_actual": eps_actual,
+                    "eps_estimate": eps_estimate,
+                    "revenue_actual": revenue_actual,
+                    "revenue_estimate": revenue_estimate,
+                }
+            )
 
             base_eps *= 0.98  # Slight decline going back
             base_revenue *= 0.97
@@ -677,9 +688,15 @@ class ResearchAnalyzer:
             score -= 8
 
         # Financial health (10 points)
-        if financials.get("current_ratio", 0) > 1.5 and financials.get("debt_to_equity", 1) < 1:
+        if (
+            financials.get("current_ratio", 0) > 1.5
+            and financials.get("debt_to_equity", 1) < 1
+        ):
             score += 8
-        elif financials.get("current_ratio", 0) < 1 or financials.get("debt_to_equity", 1) > 2:
+        elif (
+            financials.get("current_ratio", 0) < 1
+            or financials.get("debt_to_equity", 1) > 2
+        ):
             score -= 8
 
         return max(0, min(100, score))

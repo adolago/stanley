@@ -17,6 +17,7 @@ pub struct StanleyApp {
     /// Selected time period for charts
     selected_period: TimePeriod,
     /// Notes-related state
+    #[allow(dead_code)]
     notes_search_query: String,
     notes_active_tab: NotesTab,
     /// Cached notes data (demo data for now)
@@ -47,6 +48,7 @@ pub struct ThesisNote {
 
 /// Thesis status
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum ThesisStatus {
     Research,
     Watchlist,
@@ -69,6 +71,7 @@ impl ThesisStatus {
 
 /// Trade journal note data
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct TradeNote {
     pub name: String,
     pub symbol: String,
@@ -100,6 +103,7 @@ impl TradeDirection {
 
 /// Trade status
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(dead_code)]
 pub enum TradeStatus {
     Open,
     Closed,
@@ -117,8 +121,9 @@ impl TradeStatus {
 }
 
 /// Available views in the application
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum ActiveView {
+    #[default]
     Dashboard,
     MoneyFlow,
     Institutional,
@@ -127,12 +132,6 @@ pub enum ActiveView {
     Portfolio,
     Research,
     Notes,
-}
-
-impl Default for ActiveView {
-    fn default() -> Self {
-        Self::Dashboard
-    }
 }
 
 /// Available time periods for chart display
@@ -398,12 +397,7 @@ impl StanleyApp {
             .child(self.nav_item("Notes", ActiveView::Notes, cx))
     }
 
-    fn nav_item(
-        &self,
-        label: &str,
-        view: ActiveView,
-        cx: &mut Context<Self>,
-    ) -> impl IntoElement {
+    fn nav_item(&self, label: &str, view: ActiveView, cx: &mut Context<Self>) -> impl IntoElement {
         let is_active = self.active_view == view;
         let theme = &self.theme;
 
@@ -523,9 +517,7 @@ impl StanleyApp {
             .items_center()
             // Selected indicator
             .when(is_selected, |s| {
-                s.border_l_2()
-                    .border_color(theme.accent)
-                    .pl(px(10.0))
+                s.border_l_2().border_color(theme.accent).pl(px(10.0))
             })
             .child(
                 div()
@@ -747,7 +739,10 @@ impl StanleyApp {
             .border_color(theme.border)
             // Hover effect for cards
             .cursor_pointer()
-            .hover(|s| s.bg(theme.card_bg_elevated).border_color(theme.border_strong))
+            .hover(|s| {
+                s.bg(theme.card_bg_elevated)
+                    .border_color(theme.border_strong)
+            })
             .flex()
             .flex_col()
             .gap(px(12.0))
@@ -776,19 +771,21 @@ impl StanleyApp {
                     .child(value.to_string()),
             )
             // Subtitle badge
-            .child(div().flex().child(
-                div()
-                    .px(px(10.0))
-                    .py(px(4.0))
-                    .rounded(px(6.0))
-                    .bg(accent_subtle)
-                    .border_1()
-                    .border_color(accent_muted)
-                    .text_color(accent)
-                    .text_size(px(11.0))
-                    .font_weight(FontWeight::MEDIUM)
-                    .child(subtitle.to_string()),
-            ))
+            .child(
+                div().flex().child(
+                    div()
+                        .px(px(10.0))
+                        .py(px(4.0))
+                        .rounded(px(6.0))
+                        .bg(accent_subtle)
+                        .border_1()
+                        .border_color(accent_muted)
+                        .text_color(accent)
+                        .text_size(px(11.0))
+                        .font_weight(FontWeight::MEDIUM)
+                        .child(subtitle.to_string()),
+                ),
+            )
     }
 
     fn render_analysis_cards(&self) -> impl IntoElement {
@@ -1165,16 +1162,12 @@ impl StanleyApp {
                     .child(format!("{} Investment Theses", self.theses.len())),
             )
             .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(12.0))
-                    .children(
-                        self.theses
-                            .iter()
-                            .map(|thesis| self.render_thesis_card(thesis))
-                            .collect::<Vec<_>>(),
-                    ),
+                div().flex().flex_col().gap(px(12.0)).children(
+                    self.theses
+                        .iter()
+                        .map(|thesis| self.render_thesis_card(thesis))
+                        .collect::<Vec<_>>(),
+                ),
             )
     }
 
@@ -1195,7 +1188,10 @@ impl StanleyApp {
             .border_1()
             .border_color(theme.border)
             .cursor_pointer()
-            .hover(|s| s.bg(theme.card_bg_elevated).border_color(theme.border_strong))
+            .hover(|s| {
+                s.bg(theme.card_bg_elevated)
+                    .border_color(theme.border_strong)
+            })
             .flex()
             .flex_col()
             .gap(px(12.0))
@@ -1321,28 +1317,22 @@ impl StanleyApp {
                                     .text_size(px(14.0))
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .text_color(theme.positive)
-                                    .child(
-                                        match (thesis.entry_price, thesis.target_price) {
-                                            (Some(entry), Some(target)) => {
-                                                let upside = ((target / entry) - 1.0) * 100.0;
-                                                format!("{:+.1}%", upside)
-                                            }
-                                            _ => "—".to_string(),
-                                        },
-                                    ),
+                                    .child(match (thesis.entry_price, thesis.target_price) {
+                                        (Some(entry), Some(target)) => {
+                                            let upside = ((target / entry) - 1.0) * 100.0;
+                                            format!("{:+.1}%", upside)
+                                        }
+                                        _ => "—".to_string(),
+                                    }),
                             ),
                     )
                     .child(
-                        div()
-                            .flex_grow()
-                            .flex()
-                            .justify_end()
-                            .child(
-                                div()
-                                    .text_size(px(11.0))
-                                    .text_color(theme.text_dimmed)
-                                    .child(format!("Updated {}", thesis.modified)),
-                            ),
+                        div().flex_grow().flex().justify_end().child(
+                            div()
+                                .text_size(px(11.0))
+                                .text_color(theme.text_dimmed)
+                                .child(format!("Updated {}", thesis.modified)),
+                        ),
                     ),
             )
     }
@@ -1362,16 +1352,12 @@ impl StanleyApp {
                     .child(format!("{} Trade Journal Entries", self.trades.len())),
             )
             .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .gap(px(12.0))
-                    .children(
-                        self.trades
-                            .iter()
-                            .map(|trade| self.render_trade_card(trade))
-                            .collect::<Vec<_>>(),
-                    ),
+                div().flex().flex_col().gap(px(12.0)).children(
+                    self.trades
+                        .iter()
+                        .map(|trade| self.render_trade_card(trade))
+                        .collect::<Vec<_>>(),
+                ),
             )
     }
 
@@ -1400,7 +1386,10 @@ impl StanleyApp {
             .border_1()
             .border_color(theme.border)
             .cursor_pointer()
-            .hover(|s| s.bg(theme.card_bg_elevated).border_color(theme.border_strong))
+            .hover(|s| {
+                s.bg(theme.card_bg_elevated)
+                    .border_color(theme.border_strong)
+            })
             .flex()
             .justify_between()
             .items_center()
@@ -1534,20 +1523,14 @@ impl StanleyApp {
                                 .text_size(px(16.0))
                                 .font_weight(FontWeight::BOLD)
                                 .text_color(pnl_color)
-                                .child(format!(
-                                    "{:+.2}",
-                                    trade.pnl.unwrap_or(0.0)
-                                )),
+                                .child(format!("{:+.2}", trade.pnl.unwrap_or(0.0))),
                         )
                         .child(
                             div()
                                 .text_size(px(12.0))
                                 .font_weight(FontWeight::MEDIUM)
                                 .text_color(pnl_color.opacity(0.8))
-                                .child(format!(
-                                    "{:+.2}%",
-                                    trade.pnl_percent.unwrap_or(0.0)
-                                )),
+                                .child(format!("{:+.2}%", trade.pnl_percent.unwrap_or(0.0))),
                         )
                     })
                     .when(trade.pnl.is_none(), |s| {
@@ -1570,10 +1553,7 @@ impl StanleyApp {
             .iter()
             .filter(|t| t.status == TradeStatus::Closed)
             .collect();
-        let total_pnl: f64 = closed_trades
-            .iter()
-            .filter_map(|t| t.pnl)
-            .sum();
+        let total_pnl: f64 = closed_trades.iter().filter_map(|t| t.pnl).sum();
         let winners = closed_trades
             .iter()
             .filter(|t| t.pnl.map(|p| p > 0.0).unwrap_or(false))
@@ -1604,7 +1584,11 @@ impl StanleyApp {
                 div()
                     .flex()
                     .gap(px(32.0))
-                    .child(self.stat_item("Total Trades", &closed_trades.len().to_string(), theme.text))
+                    .child(self.stat_item(
+                        "Total Trades",
+                        &closed_trades.len().to_string(),
+                        theme.text,
+                    ))
                     .child(self.stat_item("Winners", &winners.to_string(), theme.positive))
                     .child(self.stat_item(
                         "Losers",

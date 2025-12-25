@@ -77,7 +77,7 @@ class DataManager:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Async context manager exit."""
         await self.close()
-    
+
     async def get_stock_data(
         self,
         symbol: str,
@@ -109,7 +109,7 @@ class DataManager:
 
         # Fallback to mock data
         return await self._fetch_stock_data_mock(symbol, start_date, end_date)
-    
+
     async def get_etf_flows(
         self,
         etf_symbol: str,
@@ -139,11 +139,13 @@ class DataManager:
                 # Returning holdings data for now
                 return holdings
             except DataProviderError as e:
-                logger.warning(f"ETF data fetch failed for {etf_symbol}, using mock: {e}")
+                logger.warning(
+                    f"ETF data fetch failed for {etf_symbol}, using mock: {e}"
+                )
 
         # Fallback to mock data
         return await self._fetch_etf_flows_mock(etf_symbol, start_date, end_date)
-    
+
     async def get_institutional_holdings(self, symbol: str) -> pd.DataFrame:
         """
         Get institutional holdings data from 13F filings.
@@ -166,7 +168,7 @@ class DataManager:
 
         # Fallback to mock data
         return await self._fetch_institutional_holdings_mock(symbol)
-    
+
     async def get_options_flow(
         self,
         symbol: str,
@@ -191,11 +193,13 @@ class DataManager:
                 else:
                     return await self._adapter.get_options_chain(symbol)
             except DataProviderError as e:
-                logger.warning(f"Options flow fetch failed for {symbol}, using mock: {e}")
+                logger.warning(
+                    f"Options flow fetch failed for {symbol}, using mock: {e}"
+                )
 
         # Fallback to mock data
         return await self._fetch_options_flow_mock(symbol, unusual_only)
-    
+
     async def get_dark_pool_volume(
         self,
         symbol: str,
@@ -225,7 +229,7 @@ class DataManager:
 
         # Fallback to mock data
         return await self._fetch_dark_pool_volume_mock(symbol, lookback_days)
-    
+
     async def get_short_interest(self, symbol: str) -> pd.DataFrame:
         """
         Get short interest data.
@@ -242,11 +246,13 @@ class DataManager:
             try:
                 return await self._adapter.get_short_interest(symbol)
             except DataProviderError as e:
-                logger.warning(f"Short interest fetch failed for {symbol}, using mock: {e}")
+                logger.warning(
+                    f"Short interest fetch failed for {symbol}, using mock: {e}"
+                )
 
         # Fallback to mock data
         return await self._fetch_short_interest_mock(symbol)
-    
+
     async def get_insider_trading(
         self,
         symbol: str,
@@ -277,7 +283,7 @@ class DataManager:
 
         # Fallback to mock data
         return await self._fetch_insider_trading_mock(symbol, lookback_days)
-    
+
     async def get_economic_data(
         self,
         indicator: str,
@@ -311,7 +317,7 @@ class DataManager:
 
         # Fallback to mock data
         return await self._fetch_economic_data_mock(indicator, start_date, end_date)
-    
+
     # ========================================================================
     # Mock Data Methods (fallback when real data unavailable)
     # ========================================================================
@@ -333,21 +339,23 @@ class DataManager:
         Returns:
             DataFrame with mock stock data
         """
-        dates = pd.date_range(start=start_date, end=end_date, freq='D')
-        
+        dates = pd.date_range(start=start_date, end=end_date, freq="D")
+
         # Generate realistic price data
         initial_price = 150.0
         prices = []
         current_price = initial_price
-        
+
         for i in range(len(dates)):
             # Random walk with slight upward bias
-            daily_return = np.random.normal(0.001, 0.02)  # 0.1% avg daily return, 2% volatility
-            current_price *= (1 + daily_return)
+            daily_return = np.random.normal(
+                0.001, 0.02
+            )  # 0.1% avg daily return, 2% volatility
+            current_price *= 1 + daily_return
             prices.append(current_price)
-        
+
         volume = np.random.randint(1000000, 10000000, len(dates))
-        
+
         # Generate OHLC data with proper constraints (high >= close >= low)
         prices_arr = np.array(prices)
         high_multiplier = 1 + np.random.uniform(0, 0.02, len(dates))
@@ -362,14 +370,16 @@ class DataManager:
         high = np.maximum(high, np.maximum(prices_arr, open_prices))
         low = np.minimum(low, np.minimum(prices_arr, open_prices))
 
-        return pd.DataFrame({
-            'date': dates,
-            'open': open_prices,
-            'high': high,
-            'low': low,
-            'close': prices,
-            'volume': volume
-        })
+        return pd.DataFrame(
+            {
+                "date": dates,
+                "open": open_prices,
+                "high": high,
+                "low": low,
+                "close": prices,
+                "volume": volume,
+            }
+        )
 
     async def _fetch_etf_flows_mock(
         self,
@@ -378,27 +388,49 @@ class DataManager:
         end_date: datetime,
     ) -> pd.DataFrame:
         """Generate mock ETF flow data."""
-        dates = pd.date_range(start=start_date, end=end_date, freq='D')
-        
+        dates = pd.date_range(start=start_date, end=end_date, freq="D")
+
         # Generate realistic ETF flow data
         base_flow = np.random.normal(0, 500000, len(dates))  # Mean 0, std 500K
-        
-        return pd.DataFrame({
-            'date': dates,
-            'net_flow': base_flow,
-            'creation_units': np.where(base_flow > 0, base_flow / 100000, 0),
-            'redemption_units': np.where(base_flow < 0, -base_flow / 100000, 0)
-        })
+
+        return pd.DataFrame(
+            {
+                "date": dates,
+                "net_flow": base_flow,
+                "creation_units": np.where(base_flow > 0, base_flow / 100000, 0),
+                "redemption_units": np.where(base_flow < 0, -base_flow / 100000, 0),
+            }
+        )
 
     async def _fetch_institutional_holdings_mock(self, symbol: str) -> pd.DataFrame:
         """Generate mock institutional holdings data."""
-        return pd.DataFrame({
-            'manager_name': ['Vanguard', 'BlackRock', 'State Street', 'Fidelity', 'T. Rowe Price'],
-            'manager_cik': ['0000102909', '0001390777', '0000093751', '0000315066', '0000080227'],
-            'shares_held': [100000000, 80000000, 60000000, 40000000, 30000000],
-            'value_held': [10000000000, 8000000000, 6000000000, 4000000000, 3000000000],
-            'ownership_percentage': [0.05, 0.04, 0.03, 0.02, 0.015]
-        })
+        return pd.DataFrame(
+            {
+                "manager_name": [
+                    "Vanguard",
+                    "BlackRock",
+                    "State Street",
+                    "Fidelity",
+                    "T. Rowe Price",
+                ],
+                "manager_cik": [
+                    "0000102909",
+                    "0001390777",
+                    "0000093751",
+                    "0000315066",
+                    "0000080227",
+                ],
+                "shares_held": [100000000, 80000000, 60000000, 40000000, 30000000],
+                "value_held": [
+                    10000000000,
+                    8000000000,
+                    6000000000,
+                    4000000000,
+                    3000000000,
+                ],
+                "ownership_percentage": [0.05, 0.04, 0.03, 0.02, 0.015],
+            }
+        )
 
     async def _fetch_options_flow_mock(
         self,
@@ -406,16 +438,20 @@ class DataManager:
         unusual_only: bool,
     ) -> pd.DataFrame:
         """Generate mock options flow data."""
-        dates = pd.date_range(end=datetime.now(), periods=20, freq='D')
-        
-        return pd.DataFrame({
-            'date': dates,
-            'contract_symbol': [f"{symbol}230101C00150000" for _ in dates],
-            'volume': np.random.randint(100, 5000, len(dates)),
-            'open_interest': np.random.randint(500, 20000, len(dates)),
-            'notional_value': np.random.uniform(100000, 10000000, len(dates)),
-            'unusual_activity': np.random.choice([True, False], len(dates), p=[0.3, 0.7])
-        })
+        dates = pd.date_range(end=datetime.now(), periods=20, freq="D")
+
+        return pd.DataFrame(
+            {
+                "date": dates,
+                "contract_symbol": [f"{symbol}230101C00150000" for _ in dates],
+                "volume": np.random.randint(100, 5000, len(dates)),
+                "open_interest": np.random.randint(500, 20000, len(dates)),
+                "notional_value": np.random.uniform(100000, 10000000, len(dates)),
+                "unusual_activity": np.random.choice(
+                    [True, False], len(dates), p=[0.3, 0.7]
+                ),
+            }
+        )
 
     async def _fetch_dark_pool_volume_mock(
         self,
@@ -423,24 +459,28 @@ class DataManager:
         lookback_days: int,
     ) -> pd.DataFrame:
         """Generate mock dark pool volume data."""
-        dates = pd.date_range(end=datetime.now(), periods=lookback_days, freq='D')
-        
-        return pd.DataFrame({
-            'date': dates,
-            'dark_pool_volume': np.random.randint(100000, 1000000, len(dates)),
-            'total_volume': np.random.randint(1000000, 10000000, len(dates)),
-            'dark_pool_percentage': np.random.uniform(0.15, 0.35, len(dates)),
-            'large_block_activity': np.random.uniform(0.05, 0.15, len(dates))
-        })
+        dates = pd.date_range(end=datetime.now(), periods=lookback_days, freq="D")
+
+        return pd.DataFrame(
+            {
+                "date": dates,
+                "dark_pool_volume": np.random.randint(100000, 1000000, len(dates)),
+                "total_volume": np.random.randint(1000000, 10000000, len(dates)),
+                "dark_pool_percentage": np.random.uniform(0.15, 0.35, len(dates)),
+                "large_block_activity": np.random.uniform(0.05, 0.15, len(dates)),
+            }
+        )
 
     async def _fetch_short_interest_mock(self, symbol: str) -> pd.DataFrame:
         """Generate mock short interest data."""
-        return pd.DataFrame({
-            'current_short_interest': [np.random.uniform(0.02, 0.10)],
-            'previous_short_interest': [np.random.uniform(0.02, 0.10)],
-            'days_to_cover': [np.random.uniform(1, 10)],
-            'short_ratio': [np.random.uniform(0.01, 0.05)]
-        })
+        return pd.DataFrame(
+            {
+                "current_short_interest": [np.random.uniform(0.02, 0.10)],
+                "previous_short_interest": [np.random.uniform(0.02, 0.10)],
+                "days_to_cover": [np.random.uniform(1, 10)],
+                "short_ratio": [np.random.uniform(0.01, 0.05)],
+            }
+        )
 
     async def _fetch_insider_trading_mock(
         self,
@@ -448,16 +488,20 @@ class DataManager:
         lookback_days: int,
     ) -> pd.DataFrame:
         """Generate mock insider trading data."""
-        dates = pd.date_range(end=datetime.now(), periods=lookback_days, freq='D')
-        
-        return pd.DataFrame({
-            'date': dates,
-            'insider_name': [f"Insider_{i}" for i in range(len(dates))],
-            'transaction_type': np.random.choice(['Buy', 'Sell'], len(dates)),
-            'shares': np.random.randint(1000, 100000, len(dates)),
-            'value': np.random.uniform(100000, 10000000, len(dates)),
-            'position': np.random.choice(['CEO', 'CFO', 'Director', 'VP'], len(dates))
-        })
+        dates = pd.date_range(end=datetime.now(), periods=lookback_days, freq="D")
+
+        return pd.DataFrame(
+            {
+                "date": dates,
+                "insider_name": [f"Insider_{i}" for i in range(len(dates))],
+                "transaction_type": np.random.choice(["Buy", "Sell"], len(dates)),
+                "shares": np.random.randint(1000, 100000, len(dates)),
+                "value": np.random.uniform(100000, 10000000, len(dates)),
+                "position": np.random.choice(
+                    ["CEO", "CFO", "Director", "VP"], len(dates)
+                ),
+            }
+        )
 
     async def _fetch_economic_data_mock(
         self,
@@ -466,23 +510,19 @@ class DataManager:
         end_date: datetime,
     ) -> pd.DataFrame:
         """Generate mock economic indicator data."""
-        dates = pd.date_range(start=start_date, end=end_date, freq='ME')
-        
+        dates = pd.date_range(start=start_date, end=end_date, freq="ME")
+
         # Generate data based on indicator type
-        if indicator == 'unemployment_rate':
+        if indicator == "unemployment_rate":
             values = np.random.uniform(3.5, 6.5, len(dates))
-        elif indicator == 'inflation_rate':
+        elif indicator == "inflation_rate":
             values = np.random.uniform(1.5, 4.0, len(dates))
-        elif indicator == 'gdp_growth':
+        elif indicator == "gdp_growth":
             values = np.random.uniform(-2.0, 4.0, len(dates))
         else:
             values = np.random.uniform(0, 100, len(dates))
-        
-        return pd.DataFrame({
-            'date': dates,
-            'value': values,
-            'indicator': indicator
-        })
+
+        return pd.DataFrame({"date": dates, "value": values, "indicator": indicator})
 
     # ========================================================================
     # Utility Methods

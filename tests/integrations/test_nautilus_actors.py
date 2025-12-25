@@ -16,12 +16,13 @@ from unittest.mock import Mock, MagicMock, patch, AsyncMock
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_actor_config():
     """Create a mock actor configuration."""
     config = Mock()
-    config.component_id = Mock(value='MoneyFlowActor-001')
-    config.symbols = ['AAPL', 'MSFT', 'GOOGL']
+    config.component_id = Mock(value="MoneyFlowActor-001")
+    config.symbols = ["AAPL", "MSFT", "GOOGL"]
     config.update_interval_seconds = 60
     config.lookback_days = 20
     return config
@@ -32,7 +33,9 @@ def mock_portfolio():
     """Create a mock NautilusTrader portfolio."""
     portfolio = Mock()
     portfolio.account = Mock()
-    portfolio.account.balance = Mock(return_value=Mock(as_double=Mock(return_value=100000.0)))
+    portfolio.account.balance = Mock(
+        return_value=Mock(as_double=Mock(return_value=100000.0))
+    )
     portfolio.net_exposures = Mock(return_value={})
     return portfolio
 
@@ -72,32 +75,42 @@ def mock_clock():
 def mock_money_flow_analyzer():
     """Create a mock MoneyFlowAnalyzer."""
     analyzer = Mock()
-    analyzer.analyze_equity_flow = Mock(return_value={
-        'symbol': 'AAPL',
-        'money_flow_score': 0.65,
-        'institutional_sentiment': 0.7,
-        'smart_money_activity': 0.5,
-        'short_pressure': -0.2,
-        'accumulation_distribution': 0.4,
-        'confidence': 0.65,
-    })
-    analyzer.analyze_sector_flow = Mock(return_value=pd.DataFrame({
-        'sector': ['XLK', 'XLF', 'XLE'],
-        'net_flow_1m': [1000000, -500000, 200000],
-        'net_flow_3m': [5000000, -2000000, 1000000],
-        'institutional_change': [0.05, -0.02, 0.01],
-        'smart_money_sentiment': [0.6, -0.3, 0.2],
-        'flow_acceleration': [0.1, -0.05, 0.02],
-        'confidence_score': [0.8, 0.6, 0.5],
-    }).set_index('sector'))
-    analyzer.get_dark_pool_activity = Mock(return_value=pd.DataFrame({
-        'date': pd.date_range(end=datetime.now(), periods=10, freq='D'),
-        'dark_pool_volume': [500000] * 10,
-        'total_volume': [5000000] * 10,
-        'dark_pool_percentage': [0.25] * 10,
-        'large_block_activity': [0.1] * 10,
-        'dark_pool_signal': [1] * 10,
-    }))
+    analyzer.analyze_equity_flow = Mock(
+        return_value={
+            "symbol": "AAPL",
+            "money_flow_score": 0.65,
+            "institutional_sentiment": 0.7,
+            "smart_money_activity": 0.5,
+            "short_pressure": -0.2,
+            "accumulation_distribution": 0.4,
+            "confidence": 0.65,
+        }
+    )
+    analyzer.analyze_sector_flow = Mock(
+        return_value=pd.DataFrame(
+            {
+                "sector": ["XLK", "XLF", "XLE"],
+                "net_flow_1m": [1000000, -500000, 200000],
+                "net_flow_3m": [5000000, -2000000, 1000000],
+                "institutional_change": [0.05, -0.02, 0.01],
+                "smart_money_sentiment": [0.6, -0.3, 0.2],
+                "flow_acceleration": [0.1, -0.05, 0.02],
+                "confidence_score": [0.8, 0.6, 0.5],
+            }
+        ).set_index("sector")
+    )
+    analyzer.get_dark_pool_activity = Mock(
+        return_value=pd.DataFrame(
+            {
+                "date": pd.date_range(end=datetime.now(), periods=10, freq="D"),
+                "dark_pool_volume": [500000] * 10,
+                "total_volume": [5000000] * 10,
+                "dark_pool_percentage": [0.25] * 10,
+                "large_block_activity": [0.1] * 10,
+                "dark_pool_signal": [1] * 10,
+            }
+        )
+    )
     return analyzer
 
 
@@ -105,34 +118,41 @@ def mock_money_flow_analyzer():
 def mock_institutional_analyzer():
     """Create a mock InstitutionalAnalyzer."""
     analyzer = Mock()
-    analyzer.get_holdings = Mock(return_value={
-        'symbol': 'AAPL',
-        'institutional_ownership': 0.75,
-        'number_of_institutions': 250,
-        'top_holders': pd.DataFrame({
-            'manager_name': ['Vanguard', 'BlackRock'],
-            'value_held': [10000000000, 8000000000],
-            'ownership_percentage': [0.05, 0.04],
-        }),
-        'recent_changes': pd.DataFrame(),
-        'ownership_trend': 0.05,
-        'concentration_risk': 0.3,
-        'smart_money_score': 0.6,
-    })
-    analyzer.get_institutional_sentiment = Mock(return_value={
-        'universe_size': 5,
-        'average_institutional_ownership': 0.72,
-        'percentage_trending_up': 0.6,
-        'average_smart_money_score': 0.55,
-        'institutional_sentiment': 'bullish',
-        'details': pd.DataFrame(),
-    })
+    analyzer.get_holdings = Mock(
+        return_value={
+            "symbol": "AAPL",
+            "institutional_ownership": 0.75,
+            "number_of_institutions": 250,
+            "top_holders": pd.DataFrame(
+                {
+                    "manager_name": ["Vanguard", "BlackRock"],
+                    "value_held": [10000000000, 8000000000],
+                    "ownership_percentage": [0.05, 0.04],
+                }
+            ),
+            "recent_changes": pd.DataFrame(),
+            "ownership_trend": 0.05,
+            "concentration_risk": 0.3,
+            "smart_money_score": 0.6,
+        }
+    )
+    analyzer.get_institutional_sentiment = Mock(
+        return_value={
+            "universe_size": 5,
+            "average_institutional_ownership": 0.72,
+            "percentage_trending_up": 0.6,
+            "average_smart_money_score": 0.55,
+            "institutional_sentiment": "bullish",
+            "details": pd.DataFrame(),
+        }
+    )
     return analyzer
 
 
 # =============================================================================
 # MoneyFlowActor Tests
 # =============================================================================
+
 
 class TestMoneyFlowActorInitialization:
     """Test MoneyFlowActor initialization."""
@@ -141,11 +161,14 @@ class TestMoneyFlowActorInitialization:
         self, mock_actor_config, mock_portfolio, mock_msgbus, mock_cache, mock_clock
     ):
         """Test actor initializes with configuration."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL', 'MSFT'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL", "MSFT"],
             update_interval_seconds=60,
             lookback_days=20,
         )
@@ -157,17 +180,20 @@ class TestMoneyFlowActorInitialization:
         actor._portfolio = mock_portfolio
 
         assert actor is not None
-        assert actor.config.symbols == ['AAPL', 'MSFT']
+        assert actor.config.symbols == ["AAPL", "MSFT"]
 
     def test_actor_initializes_with_analyzer(
         self, mock_actor_config, mock_money_flow_analyzer
     ):
         """Test actor initializes with MoneyFlowAnalyzer."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
@@ -178,15 +204,16 @@ class TestMoneyFlowActorInitialization:
 class TestMoneyFlowActorBehavior:
     """Test MoneyFlowActor behavior."""
 
-    def test_on_start_schedules_timer(
-        self, mock_clock, mock_money_flow_analyzer
-    ):
+    def test_on_start_schedules_timer(self, mock_clock, mock_money_flow_analyzer):
         """Test that on_start schedules update timer."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
             update_interval_seconds=60,
         )
 
@@ -198,21 +225,22 @@ class TestMoneyFlowActorBehavior:
         # Verify timer was scheduled
         mock_clock.set_timer.assert_called()
 
-    def test_on_stop_cancels_timer(
-        self, mock_clock, mock_money_flow_analyzer
-    ):
+    def test_on_stop_cancels_timer(self, mock_clock, mock_money_flow_analyzer):
         """Test that on_stop cancels update timer."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
             update_interval_seconds=60,
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
         actor._clock = mock_clock
-        actor._timer_name = 'money_flow_update'
+        actor._timer_name = "money_flow_update"
 
         actor.on_start()
         actor.on_stop()
@@ -220,15 +248,16 @@ class TestMoneyFlowActorBehavior:
         # Verify timer was cancelled
         mock_clock.cancel_timer.assert_called()
 
-    def test_update_money_flow_signals(
-        self, mock_money_flow_analyzer, mock_msgbus
-    ):
+    def test_update_money_flow_signals(self, mock_money_flow_analyzer, mock_msgbus):
         """Test money flow signal updates."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL', 'MSFT'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL", "MSFT"],
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
@@ -239,15 +268,16 @@ class TestMoneyFlowActorBehavior:
         # Verify analyzer was called for each symbol
         assert mock_money_flow_analyzer.analyze_equity_flow.call_count == 2
 
-    def test_publishes_signals_to_msgbus(
-        self, mock_money_flow_analyzer, mock_msgbus
-    ):
+    def test_publishes_signals_to_msgbus(self, mock_money_flow_analyzer, mock_msgbus):
         """Test that signals are published to message bus."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
@@ -264,103 +294,116 @@ class TestMoneyFlowActorSignals:
 
     def test_generates_bullish_signal(self, mock_money_flow_analyzer):
         """Test generation of bullish signal."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Configure analyzer to return bullish data
         mock_money_flow_analyzer.analyze_equity_flow.return_value = {
-            'symbol': 'AAPL',
-            'money_flow_score': 0.8,
-            'institutional_sentiment': 0.9,
-            'smart_money_activity': 0.7,
-            'short_pressure': -0.1,
-            'accumulation_distribution': 0.6,
-            'confidence': 0.8,
+            "symbol": "AAPL",
+            "money_flow_score": 0.8,
+            "institutional_sentiment": 0.9,
+            "smart_money_activity": 0.7,
+            "short_pressure": -0.1,
+            "accumulation_distribution": 0.6,
+            "confidence": 0.8,
         }
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
             signal_threshold=0.5,
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
-        assert signal['direction'] == 'BULLISH'
-        assert signal['strength'] > 0.5
+        assert signal["direction"] == "BULLISH"
+        assert signal["strength"] > 0.5
 
     def test_generates_bearish_signal(self, mock_money_flow_analyzer):
         """Test generation of bearish signal."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Configure analyzer to return bearish data
         mock_money_flow_analyzer.analyze_equity_flow.return_value = {
-            'symbol': 'AAPL',
-            'money_flow_score': -0.7,
-            'institutional_sentiment': -0.8,
-            'smart_money_activity': -0.5,
-            'short_pressure': 0.3,
-            'accumulation_distribution': -0.4,
-            'confidence': 0.7,
+            "symbol": "AAPL",
+            "money_flow_score": -0.7,
+            "institutional_sentiment": -0.8,
+            "smart_money_activity": -0.5,
+            "short_pressure": 0.3,
+            "accumulation_distribution": -0.4,
+            "confidence": 0.7,
         }
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
             signal_threshold=0.5,
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
-        assert signal['direction'] == 'BEARISH'
-        assert signal['strength'] > 0.5
+        assert signal["direction"] == "BEARISH"
+        assert signal["strength"] > 0.5
 
     def test_generates_neutral_signal(self, mock_money_flow_analyzer):
         """Test generation of neutral signal."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Configure analyzer to return neutral data
         mock_money_flow_analyzer.analyze_equity_flow.return_value = {
-            'symbol': 'AAPL',
-            'money_flow_score': 0.1,
-            'institutional_sentiment': 0.0,
-            'smart_money_activity': 0.05,
-            'short_pressure': 0.0,
-            'accumulation_distribution': 0.1,
-            'confidence': 0.2,
+            "symbol": "AAPL",
+            "money_flow_score": 0.1,
+            "institutional_sentiment": 0.0,
+            "smart_money_activity": 0.05,
+            "short_pressure": 0.0,
+            "accumulation_distribution": 0.1,
+            "confidence": 0.2,
         }
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
             signal_threshold=0.5,
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
-        assert signal['direction'] == 'NEUTRAL'
-        assert signal['strength'] < 0.5
+        assert signal["direction"] == "NEUTRAL"
+        assert signal["strength"] < 0.5
 
 
 # =============================================================================
 # InstitutionalActor Tests
 # =============================================================================
 
+
 class TestInstitutionalActorInitialization:
     """Test InstitutionalActor initialization."""
 
     def test_actor_initializes_with_config(self):
         """Test actor initializes with configuration."""
-        from stanley.integrations.nautilus.actors import InstitutionalActor, InstitutionalActorConfig
+        from stanley.integrations.nautilus.actors import (
+            InstitutionalActor,
+            InstitutionalActorConfig,
+        )
 
         config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL', 'MSFT'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL", "MSFT"],
             update_interval_seconds=3600,
             minimum_ownership_threshold=0.5,
         )
@@ -368,16 +411,19 @@ class TestInstitutionalActorInitialization:
         actor = InstitutionalActor(config=config)
 
         assert actor is not None
-        assert actor.config.symbols == ['AAPL', 'MSFT']
+        assert actor.config.symbols == ["AAPL", "MSFT"]
         assert actor.config.minimum_ownership_threshold == 0.5
 
     def test_actor_initializes_with_analyzer(self, mock_institutional_analyzer):
         """Test actor initializes with InstitutionalAnalyzer."""
-        from stanley.integrations.nautilus.actors import InstitutionalActor, InstitutionalActorConfig
+        from stanley.integrations.nautilus.actors import (
+            InstitutionalActor,
+            InstitutionalActorConfig,
+        )
 
         config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL"],
         )
 
         actor = InstitutionalActor(config=config, analyzer=mock_institutional_analyzer)
@@ -392,11 +438,14 @@ class TestInstitutionalActorBehavior:
         self, mock_institutional_analyzer, mock_msgbus
     ):
         """Test institutional holdings analysis."""
-        from stanley.integrations.nautilus.actors import InstitutionalActor, InstitutionalActorConfig
+        from stanley.integrations.nautilus.actors import (
+            InstitutionalActor,
+            InstitutionalActorConfig,
+        )
 
         config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL', 'MSFT'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL", "MSFT"],
         )
 
         actor = InstitutionalActor(config=config, analyzer=mock_institutional_analyzer)
@@ -411,11 +460,14 @@ class TestInstitutionalActorBehavior:
         self, mock_institutional_analyzer, mock_msgbus
     ):
         """Test universe sentiment calculation."""
-        from stanley.integrations.nautilus.actors import InstitutionalActor, InstitutionalActorConfig
+        from stanley.integrations.nautilus.actors import (
+            InstitutionalActor,
+            InstitutionalActorConfig,
+        )
 
         config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL', 'MSFT', 'GOOGL'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL", "MSFT", "GOOGL"],
         )
 
         actor = InstitutionalActor(config=config, analyzer=mock_institutional_analyzer)
@@ -424,7 +476,7 @@ class TestInstitutionalActorBehavior:
         sentiment = actor._calculate_universe_sentiment()
 
         mock_institutional_analyzer.get_institutional_sentiment.assert_called_once()
-        assert 'institutional_sentiment' in sentiment
+        assert "institutional_sentiment" in sentiment
 
 
 class TestInstitutionalActorSignals:
@@ -432,91 +484,101 @@ class TestInstitutionalActorSignals:
 
     def test_generates_accumulation_signal(self, mock_institutional_analyzer):
         """Test generation of accumulation signal."""
-        from stanley.integrations.nautilus.actors import InstitutionalActor, InstitutionalActorConfig
+        from stanley.integrations.nautilus.actors import (
+            InstitutionalActor,
+            InstitutionalActorConfig,
+        )
 
         # Configure analyzer to return accumulation pattern
         mock_institutional_analyzer.get_holdings.return_value = {
-            'symbol': 'AAPL',
-            'institutional_ownership': 0.80,
-            'number_of_institutions': 300,
-            'ownership_trend': 0.10,  # Increasing
-            'concentration_risk': 0.2,
-            'smart_money_score': 0.8,
-            'top_holders': pd.DataFrame(),
-            'recent_changes': pd.DataFrame(),
+            "symbol": "AAPL",
+            "institutional_ownership": 0.80,
+            "number_of_institutions": 300,
+            "ownership_trend": 0.10,  # Increasing
+            "concentration_risk": 0.2,
+            "smart_money_score": 0.8,
+            "top_holders": pd.DataFrame(),
+            "recent_changes": pd.DataFrame(),
         }
 
         config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL"],
         )
 
         actor = InstitutionalActor(config=config, analyzer=mock_institutional_analyzer)
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
-        assert signal['pattern'] == 'ACCUMULATION'
-        assert signal['institutional_ownership'] > 0.7
+        assert signal["pattern"] == "ACCUMULATION"
+        assert signal["institutional_ownership"] > 0.7
 
     def test_generates_distribution_signal(self, mock_institutional_analyzer):
         """Test generation of distribution signal."""
-        from stanley.integrations.nautilus.actors import InstitutionalActor, InstitutionalActorConfig
+        from stanley.integrations.nautilus.actors import (
+            InstitutionalActor,
+            InstitutionalActorConfig,
+        )
 
         # Configure analyzer to return distribution pattern
         mock_institutional_analyzer.get_holdings.return_value = {
-            'symbol': 'AAPL',
-            'institutional_ownership': 0.60,
-            'number_of_institutions': 200,
-            'ownership_trend': -0.10,  # Decreasing
-            'concentration_risk': 0.4,
-            'smart_money_score': -0.5,
-            'top_holders': pd.DataFrame(),
-            'recent_changes': pd.DataFrame(),
+            "symbol": "AAPL",
+            "institutional_ownership": 0.60,
+            "number_of_institutions": 200,
+            "ownership_trend": -0.10,  # Decreasing
+            "concentration_risk": 0.4,
+            "smart_money_score": -0.5,
+            "top_holders": pd.DataFrame(),
+            "recent_changes": pd.DataFrame(),
         }
 
         config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL"],
         )
 
         actor = InstitutionalActor(config=config, analyzer=mock_institutional_analyzer)
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
-        assert signal['pattern'] == 'DISTRIBUTION'
+        assert signal["pattern"] == "DISTRIBUTION"
 
     def test_identifies_concentration_risk(self, mock_institutional_analyzer):
         """Test identification of concentration risk."""
-        from stanley.integrations.nautilus.actors import InstitutionalActor, InstitutionalActorConfig
+        from stanley.integrations.nautilus.actors import (
+            InstitutionalActor,
+            InstitutionalActorConfig,
+        )
 
         # High concentration risk
         mock_institutional_analyzer.get_holdings.return_value = {
-            'symbol': 'AAPL',
-            'institutional_ownership': 0.75,
-            'number_of_institutions': 50,  # Few institutions
-            'ownership_trend': 0.0,
-            'concentration_risk': 0.8,  # High concentration
-            'smart_money_score': 0.3,
-            'top_holders': pd.DataFrame(),
-            'recent_changes': pd.DataFrame(),
+            "symbol": "AAPL",
+            "institutional_ownership": 0.75,
+            "number_of_institutions": 50,  # Few institutions
+            "ownership_trend": 0.0,
+            "concentration_risk": 0.8,  # High concentration
+            "smart_money_score": 0.3,
+            "top_holders": pd.DataFrame(),
+            "recent_changes": pd.DataFrame(),
         }
 
         config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL"],
             concentration_risk_threshold=0.5,
         )
 
         actor = InstitutionalActor(config=config, analyzer=mock_institutional_analyzer)
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
-        assert signal['concentration_risk_warning'] is True
+        assert signal["concentration_risk_warning"] is True
 
 
 # =============================================================================
 # Actor Integration Tests
 # =============================================================================
+
 
 class TestActorIntegration:
     """Test actor integration with NautilusTrader components."""
@@ -526,18 +588,20 @@ class TestActorIntegration:
     ):
         """Test that actors can communicate via message bus."""
         from stanley.integrations.nautilus.actors import (
-            MoneyFlowActor, MoneyFlowActorConfig,
-            InstitutionalActor, InstitutionalActorConfig,
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+            InstitutionalActor,
+            InstitutionalActorConfig,
         )
 
         money_flow_config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         institutional_config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL"],
         )
 
         money_flow_actor = MoneyFlowActor(
@@ -560,11 +624,14 @@ class TestActorIntegration:
 
     def test_actor_handles_bar_event(self, mock_money_flow_analyzer):
         """Test that actor can handle bar events."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
@@ -572,7 +639,7 @@ class TestActorIntegration:
         # Create mock bar event
         bar = Mock()
         bar.bar_type = Mock()
-        bar.bar_type.symbol = Mock(value='AAPL')
+        bar.bar_type.symbol = Mock(value="AAPL")
         bar.open = Mock(as_double=Mock(return_value=100.0))
         bar.high = Mock(as_double=Mock(return_value=102.0))
         bar.low = Mock(as_double=Mock(return_value=99.0))
@@ -590,12 +657,16 @@ class TestActorIntegration:
 # Edge Case Tests
 # =============================================================================
 
+
 class TestActorEdgeCases:
     """Test actor edge cases and error handling."""
 
     def test_handles_analyzer_error(self, mock_money_flow_analyzer, mock_msgbus):
         """Test handling of analyzer errors."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Configure analyzer to raise error
         mock_money_flow_analyzer.analyze_equity_flow.side_effect = Exception(
@@ -603,8 +674,8 @@ class TestActorEdgeCases:
         )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
@@ -618,10 +689,13 @@ class TestActorEdgeCases:
 
     def test_handles_empty_symbol_list(self, mock_money_flow_analyzer):
         """Test handling of empty symbol list."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
+            component_id="MoneyFlowActor-001",
             symbols=[],  # Empty list
         )
 
@@ -635,14 +709,17 @@ class TestActorEdgeCases:
 
     def test_handles_invalid_symbol(self, mock_money_flow_analyzer, mock_msgbus):
         """Test handling of invalid symbol."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Return None for invalid symbol
         mock_money_flow_analyzer.analyze_equity_flow.return_value = None
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['INVALID_SYMBOL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["INVALID_SYMBOL"],
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
@@ -653,50 +730,57 @@ class TestActorEdgeCases:
 
     def test_handles_stale_data(self, mock_money_flow_analyzer):
         """Test handling of stale data detection."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Return data with old timestamp
         mock_money_flow_analyzer.analyze_equity_flow.return_value = {
-            'symbol': 'AAPL',
-            'money_flow_score': 0.5,
-            'last_updated': datetime.now() - timedelta(hours=24),  # Old data
-            'institutional_sentiment': 0.5,
-            'smart_money_activity': 0.5,
-            'short_pressure': 0.0,
-            'accumulation_distribution': 0.5,
-            'confidence': 0.3,  # Low confidence due to stale data
+            "symbol": "AAPL",
+            "money_flow_score": 0.5,
+            "last_updated": datetime.now() - timedelta(hours=24),  # Old data
+            "institutional_sentiment": 0.5,
+            "smart_money_activity": 0.5,
+            "short_pressure": 0.0,
+            "accumulation_distribution": 0.5,
+            "confidence": 0.3,  # Low confidence due to stale data
         }
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
             stale_data_threshold_hours=12,
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
         # Should flag stale data
-        assert signal.get('is_stale', False) or signal.get('confidence', 1.0) < 0.5
+        assert signal.get("is_stale", False) or signal.get("confidence", 1.0) < 0.5
 
 
 # =============================================================================
 # Performance Tests
 # =============================================================================
 
+
 class TestActorPerformance:
     """Test actor performance characteristics."""
 
     def test_handles_large_symbol_list(self, mock_money_flow_analyzer, mock_msgbus):
         """Test handling of large symbol list."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Large symbol list
         symbols = [f"SYM{i}" for i in range(100)]
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
+            component_id="MoneyFlowActor-001",
             symbols=symbols,
         )
 
@@ -704,6 +788,7 @@ class TestActorPerformance:
         actor._msgbus = mock_msgbus
 
         import time
+
         start = time.time()
         actor._update_signals()
         elapsed = time.time() - start
@@ -713,21 +798,24 @@ class TestActorPerformance:
 
     def test_caches_analysis_results(self, mock_money_flow_analyzer):
         """Test that analysis results are cached."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
             cache_ttl_seconds=60,
         )
 
         actor = MoneyFlowActor(config=config, analyzer=mock_money_flow_analyzer)
 
         # First call
-        actor._generate_signal('AAPL')
+        actor._generate_signal("AAPL")
 
         # Second call within cache TTL
-        actor._generate_signal('AAPL')
+        actor._generate_signal("AAPL")
 
         # Should only call analyzer once due to caching
         # (Implementation dependent - may call multiple times if no caching)

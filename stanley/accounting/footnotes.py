@@ -398,7 +398,9 @@ class FootnoteAnalyzer:
         Returns:
             RevenueDisclosure with extracted data
         """
-        footnote = self.get_footnote(ticker, FootnoteType.REVENUE_RECOGNITION, filing_type)
+        footnote = self.get_footnote(
+            ticker, FootnoteType.REVENUE_RECOGNITION, filing_type
+        )
 
         if footnote is None:
             return RevenueDisclosure()
@@ -467,7 +469,9 @@ class FootnoteAnalyzer:
                 disclosure.accrued_contingencies = value
 
         # Extract litigation matters
-        disclosure.litigation_matters = self._extract_litigation_matters(footnote.content)
+        disclosure.litigation_matters = self._extract_litigation_matters(
+            footnote.content
+        )
 
         return disclosure
 

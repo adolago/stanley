@@ -295,9 +295,7 @@ async def health_check():
                 app_state.portfolio_analyzer.health_check()
             )
         if app_state.research_analyzer:
-            components["research_analyzer"] = (
-                app_state.research_analyzer.health_check()
-            )
+            components["research_analyzer"] = app_state.research_analyzer.health_check()
         if app_state.commodities_analyzer:
             components["commodities_analyzer"] = (
                 app_state.commodities_analyzer.health_check()
@@ -342,11 +340,15 @@ async def get_market_data(symbol: str):
         except Exception as e:
             logger.warning(f"Failed to fetch stock data for {symbol}: {e}")
             # Return mock data as fallback
-            stock_data = pd.DataFrame({
-                'date': pd.date_range(start=start_date, end=end_date, freq='D'),
-                'close': [150.0 + np.random.uniform(-5, 5) for _ in range(6)],
-                'volume': [np.random.randint(10000000, 100000000) for _ in range(6)],
-            })
+            stock_data = pd.DataFrame(
+                {
+                    "date": pd.date_range(start=start_date, end=end_date, freq="D"),
+                    "close": [150.0 + np.random.uniform(-5, 5) for _ in range(6)],
+                    "volume": [
+                        np.random.randint(10000000, 100000000) for _ in range(6)
+                    ],
+                }
+            )
 
         if stock_data.empty:
             raise HTTPException(status_code=404, detail=f"No data found for {symbol}")
@@ -514,7 +516,9 @@ async def analyze_portfolio(request: PortfolioAnalyticsRequest):
     """
     try:
         if not app_state.portfolio_analyzer:
-            raise HTTPException(status_code=503, detail="Portfolio analyzer not initialized")
+            raise HTTPException(
+                status_code=503, detail="Portfolio analyzer not initialized"
+            )
 
         if not request.holdings:
             return create_response(data=None, error="No holdings provided")
@@ -594,17 +598,29 @@ async def get_dark_pool_activity(symbol: str, lookback_days: int = 20):
         # Convert to response format
         dark_pool_data = []
         for _, row in dark_pool_df.iterrows():
-            dark_pool_data.append({
-                "symbol": symbol,
-                "date": row["date"].isoformat() if pd.notna(row["date"]) else None,
-                "darkPoolVolume": int(row.get("dark_pool_volume", 0)),
-                "totalVolume": int(row.get("total_volume", 0)),
-                "darkPoolPercentage": round(float(row.get("dark_pool_percentage", 0)) * 100, 2),
-                "largeBlockActivity": round(float(row.get("large_block_activity", 0)) * 100, 2),
-                "signal": "bullish" if row.get("dark_pool_signal", 0) > 0 else (
-                    "bearish" if row.get("dark_pool_signal", 0) < 0 else "neutral"
-                ),
-            })
+            dark_pool_data.append(
+                {
+                    "symbol": symbol,
+                    "date": row["date"].isoformat() if pd.notna(row["date"]) else None,
+                    "darkPoolVolume": int(row.get("dark_pool_volume", 0)),
+                    "totalVolume": int(row.get("total_volume", 0)),
+                    "darkPoolPercentage": round(
+                        float(row.get("dark_pool_percentage", 0)) * 100, 2
+                    ),
+                    "largeBlockActivity": round(
+                        float(row.get("large_block_activity", 0)) * 100, 2
+                    ),
+                    "signal": (
+                        "bullish"
+                        if row.get("dark_pool_signal", 0) > 0
+                        else (
+                            "bearish"
+                            if row.get("dark_pool_signal", 0) < 0
+                            else "neutral"
+                        )
+                    ),
+                }
+            )
 
         return create_response(data=dark_pool_data)
 
@@ -638,15 +654,23 @@ async def get_equity_flow(symbol: str, lookback_days: int = 20):
             symbol, lookback_days
         )
 
-        return create_response(data={
-            "symbol": flow_data.get("symbol", symbol),
-            "moneyFlowScore": round(float(flow_data.get("money_flow_score", 0)), 3),
-            "institutionalSentiment": round(float(flow_data.get("institutional_sentiment", 0)), 3),
-            "smartMoneyActivity": round(float(flow_data.get("smart_money_activity", 0)), 3),
-            "shortPressure": round(float(flow_data.get("short_pressure", 0)), 3),
-            "accumulationDistribution": round(float(flow_data.get("accumulation_distribution", 0)), 3),
-            "confidence": round(float(flow_data.get("confidence", 0)), 3),
-        })
+        return create_response(
+            data={
+                "symbol": flow_data.get("symbol", symbol),
+                "moneyFlowScore": round(float(flow_data.get("money_flow_score", 0)), 3),
+                "institutionalSentiment": round(
+                    float(flow_data.get("institutional_sentiment", 0)), 3
+                ),
+                "smartMoneyActivity": round(
+                    float(flow_data.get("smart_money_activity", 0)), 3
+                ),
+                "shortPressure": round(float(flow_data.get("short_pressure", 0)), 3),
+                "accumulationDistribution": round(
+                    float(flow_data.get("accumulation_distribution", 0)), 3
+                ),
+                "confidence": round(float(flow_data.get("confidence", 0)), 3),
+            }
+        )
 
     except HTTPException:
         raise
@@ -834,7 +858,9 @@ async def get_commodity_detail(symbol: str):
         return create_response(error=str(e), success=False)
 
 
-@app.get("/api/commodities/{symbol}/macro", response_model=ApiResponse, tags=["Commodities"])
+@app.get(
+    "/api/commodities/{symbol}/macro", response_model=ApiResponse, tags=["Commodities"]
+)
 async def get_commodity_macro_linkage(symbol: str):
     """
     Get macro-commodity linkage analysis.
@@ -861,7 +887,9 @@ async def get_commodity_macro_linkage(symbol: str):
         return create_response(error=str(e), success=False)
 
 
-@app.get("/api/commodities/correlations", response_model=ApiResponse, tags=["Commodities"])
+@app.get(
+    "/api/commodities/correlations", response_model=ApiResponse, tags=["Commodities"]
+)
 async def get_commodity_correlations(commodities: Optional[str] = None):
     """
     Get correlation matrix for commodities.
@@ -882,10 +910,12 @@ async def get_commodity_correlations(commodities: Optional[str] = None):
             return create_response(data={})
 
         # Convert to JSON-serializable format
-        return create_response(data={
-            "commodities": list(corr_matrix.columns),
-            "matrix": corr_matrix.round(3).to_dict(),
-        })
+        return create_response(
+            data={
+                "commodities": list(corr_matrix.columns),
+                "matrix": corr_matrix.round(3).to_dict(),
+            }
+        )
 
     except HTTPException:
         raise
@@ -916,7 +946,9 @@ class CreateTradeRequest(BaseModel):
     direction: str = Field(default="long", description="Trade direction")
     entry_price: float = Field(default=0.0, ge=0, description="Entry price")
     shares: float = Field(default=0.0, ge=0, description="Number of shares")
-    entry_date: Optional[str] = Field(default=None, description="Entry date (ISO format)")
+    entry_date: Optional[str] = Field(
+        default=None, description="Entry date (ISO format)"
+    )
     content: Optional[str] = Field(default=None, description="Custom content")
 
 
@@ -935,8 +967,13 @@ class CreateEventRequest(BaseModel):
 
     symbol: str = Field(..., description="Stock symbol")
     company_name: str = Field(default="", description="Company name")
-    event_type: str = Field(default="conference", description="Event type (earnings_call, investor_day, conference, etc.)")
-    event_date: Optional[str] = Field(default=None, description="Event date (ISO format)")
+    event_type: str = Field(
+        default="conference",
+        description="Event type (earnings_call, investor_day, conference, etc.)",
+    )
+    event_date: Optional[str] = Field(
+        default=None, description="Event date (ISO format)"
+    )
     host: str = Field(default="", description="Bank/broker hosting the event")
     participants: List[str] = Field(default=[], description="List of participant names")
     content: Optional[str] = Field(default=None, description="Custom content")
@@ -1050,11 +1087,13 @@ async def get_note(name: str):
         if not note:
             raise HTTPException(status_code=404, detail=f"Note not found: {name}")
 
-        return create_response(data={
-            **note.to_dict(),
-            "content": note.content,
-            "frontmatter": note.frontmatter.to_yaml(),
-        })
+        return create_response(
+            data={
+                **note.to_dict(),
+                "content": note.content,
+                "frontmatter": note.frontmatter.to_yaml(),
+            }
+        )
 
     except HTTPException:
         raise

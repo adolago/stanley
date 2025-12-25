@@ -3,8 +3,8 @@
 //! Contains modular, composable components for building the investment
 //! analysis interface.
 
-mod sidebar;
+mod charts;
 mod dashboard;
 mod header;
-mod charts;
+mod sidebar;
 mod tables;

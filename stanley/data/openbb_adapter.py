@@ -49,10 +49,10 @@ class OpenBBAdapter:
             api_key: OpenBB API key (overrides config)
         """
         self._config = config or {}
-        
+
         # Extract OpenBB config
         openbb_config = self._config.get("openbb", {})
-        
+
         self._provider = OpenBBProvider(
             api_key=api_key or openbb_config.get("api_key"),
             max_retries=openbb_config.get("max_retries", 3),
@@ -60,7 +60,7 @@ class OpenBBAdapter:
             requests_per_second=openbb_config.get("rate_limit", 5.0),
             cache_ttl_seconds=openbb_config.get("cache_ttl", 300),
         )
-        
+
         self._initialized = False
 
     async def initialize(self) -> None:
@@ -107,10 +107,10 @@ class OpenBBAdapter:
             DataFrame with OHLCV data
         """
         await self.initialize()
-        
+
         end_date = end_date or datetime.now()
         start_date = start_date or (end_date - timedelta(days=lookback_days))
-        
+
         return await self._provider.get_stock_data(
             symbol=symbol,
             start_date=start_date,
@@ -137,12 +137,12 @@ class OpenBBAdapter:
             Dictionary mapping symbols to DataFrames
         """
         import asyncio
-        
+
         await self.initialize()
-        
+
         end_date = end_date or datetime.now()
         start_date = start_date or (end_date - timedelta(days=lookback_days))
-        
+
         async def fetch_one(sym: str) -> tuple:
             try:
                 df = await self._provider.get_stock_data(
@@ -154,7 +154,7 @@ class OpenBBAdapter:
             except Exception as e:
                 logger.warning(f"Failed to fetch {sym}: {e}")
                 return sym, pd.DataFrame()
-        
+
         results = await asyncio.gather(*[fetch_one(s) for s in symbols])
         return {sym: df for sym, df in results}
 
@@ -178,12 +178,12 @@ class OpenBBAdapter:
             DataFrame with institutional holders
         """
         await self.initialize()
-        
+
         df = await self._provider.get_institutional_holdings(symbol)
-        
+
         if min_value and "value_held" in df.columns:
             df = df[df["value_held"] >= min_value]
-        
+
         return df
 
     async def get_institutional_summary(
@@ -200,17 +200,21 @@ class OpenBBAdapter:
             Dictionary with summary statistics
         """
         await self.initialize()
-        
+
         df = await self._provider.get_institutional_holdings(symbol)
-        
+
         summary = {
             "symbol": symbol,
             "total_institutions": len(df),
-            "total_shares_held": df["shares_held"].sum() if "shares_held" in df.columns else None,
-            "total_value_held": df["value_held"].sum() if "value_held" in df.columns else None,
+            "total_shares_held": (
+                df["shares_held"].sum() if "shares_held" in df.columns else None
+            ),
+            "total_value_held": (
+                df["value_held"].sum() if "value_held" in df.columns else None
+            ),
             "top_holders": [],
         }
-        
+
         # Get top 5 holders
         if "shares_held" in df.columns:
             top = df.nlargest(5, "shares_held")
@@ -221,7 +225,7 @@ class OpenBBAdapter:
                     "value": row.get("value_held", 0),
                 }
                 summary["top_holders"].append(holder)
-        
+
         return summary
 
     # ========================================================================
@@ -246,20 +250,20 @@ class OpenBBAdapter:
             DataFrame with insider transactions
         """
         await self.initialize()
-        
+
         df = await self._provider.get_insider_transactions(symbol)
-        
+
         # Filter by date if possible
         if "date" in df.columns:
             cutoff = datetime.now() - timedelta(days=lookback_days)
             df["date"] = pd.to_datetime(df["date"])
             df = df[df["date"] >= cutoff]
-        
+
         # Filter by transaction type
         if transaction_type and "transaction_type" in df.columns:
             type_lower = transaction_type.lower()
             df = df[df["transaction_type"].str.lower().str.contains(type_lower)]
-        
+
         return df
 
     async def get_insider_summary(
@@ -278,9 +282,9 @@ class OpenBBAdapter:
             Dictionary with summary statistics
         """
         await self.initialize()
-        
+
         df = await self.get_insider_activity(symbol, lookback_days)
-        
+
         summary = {
             "symbol": symbol,
             "lookback_days": lookback_days,
@@ -290,24 +294,30 @@ class OpenBBAdapter:
             "net_shares": 0,
             "net_value": 0,
         }
-        
+
         if "transaction_type" in df.columns:
-            buys = df[df["transaction_type"].str.lower().str.contains("buy|purchase", na=False)]
-            sells = df[df["transaction_type"].str.lower().str.contains("sell|sale", na=False)]
-            
+            buys = df[
+                df["transaction_type"]
+                .str.lower()
+                .str.contains("buy|purchase", na=False)
+            ]
+            sells = df[
+                df["transaction_type"].str.lower().str.contains("sell|sale", na=False)
+            ]
+
             summary["buy_transactions"] = len(buys)
             summary["sell_transactions"] = len(sells)
-            
+
             if "shares" in df.columns:
                 buy_shares = buys["shares"].sum() if len(buys) > 0 else 0
                 sell_shares = sells["shares"].sum() if len(sells) > 0 else 0
                 summary["net_shares"] = buy_shares - sell_shares
-            
+
             if "value" in df.columns:
                 buy_value = buys["value"].sum() if len(buys) > 0 else 0
                 sell_value = sells["value"].sum() if len(sells) > 0 else 0
                 summary["net_value"] = buy_value - sell_value
-        
+
         return summary
 
     # ========================================================================
@@ -330,11 +340,11 @@ class OpenBBAdapter:
             DataFrame with options chain
         """
         await self.initialize()
-        
+
         kwargs = {}
         if expiration:
             kwargs["expiration"] = expiration
-        
+
         return await self._provider.get_options_chain(symbol, **kwargs)
 
     async def get_unusual_options_activity(
@@ -353,14 +363,14 @@ class OpenBBAdapter:
             DataFrame with unusual options activity
         """
         await self.initialize()
-        
+
         df = await self._provider.get_options_chain(symbol)
-        
+
         # Filter for unusual activity
         if "volume" in df.columns and "openInterest" in df.columns:
             df["vol_oi_ratio"] = df["volume"] / df["openInterest"].replace(0, 1)
             df = df[df["vol_oi_ratio"] >= volume_threshold]
-        
+
         return df
 
     # ========================================================================
@@ -381,7 +391,7 @@ class OpenBBAdapter:
             Dictionary with fundamental metrics
         """
         await self.initialize()
-        
+
         return await self._provider.get_fundamentals(symbol)
 
     # ========================================================================
@@ -404,12 +414,12 @@ class OpenBBAdapter:
             DataFrame with ETF holdings
         """
         await self.initialize()
-        
+
         df = await self._provider.get_etf_holdings(symbol)
-        
+
         if top_n and "weight" in df.columns:
             df = df.nlargest(top_n, "weight")
-        
+
         return df
 
     # ========================================================================
@@ -436,10 +446,10 @@ class OpenBBAdapter:
             DataFrame with indicator data
         """
         await self.initialize()
-        
+
         end_date = end_date or datetime.now()
         start_date = start_date or (end_date - timedelta(days=lookback_years * 365))
-        
+
         return await self._provider.get_economic_indicator(
             indicator=indicator,
             start_date=start_date,
@@ -464,7 +474,7 @@ class OpenBBAdapter:
             DataFrame with short interest data
         """
         await self.initialize()
-        
+
         return await self._provider.get_short_interest(symbol)
 
     # ========================================================================
@@ -485,7 +495,7 @@ class OpenBBAdapter:
             DataFrame with matching symbols
         """
         await self.initialize()
-        
+
         return await self._provider.search_symbols(query)
 
     # ========================================================================

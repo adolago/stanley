@@ -59,7 +59,12 @@ class SmartMoneyIndicator(Indicator):
         self._period = period
 
         # Weights (should sum to 1.0)
-        total_weight = dark_pool_weight + block_trade_weight + flow_imbalance_weight + volume_weight
+        total_weight = (
+            dark_pool_weight
+            + block_trade_weight
+            + flow_imbalance_weight
+            + volume_weight
+        )
         self._dark_pool_weight = dark_pool_weight / total_weight
         self._block_trade_weight = block_trade_weight / total_weight
         self._flow_imbalance_weight = flow_imbalance_weight / total_weight
@@ -170,7 +175,9 @@ class SmartMoneyIndicator(Indicator):
             recent_avg = np.mean(list(self._dark_pool_percentages)[-5:])
             if recent_avg > self._dark_pool_threshold:
                 # High dark pool suggests accumulation
-                self._dark_pool_signal = min(1.0, (recent_avg - self._dark_pool_threshold) / 0.15)
+                self._dark_pool_signal = min(
+                    1.0, (recent_avg - self._dark_pool_threshold) / 0.15
+                )
             else:
                 self._dark_pool_signal = 0.0
 
@@ -187,8 +194,12 @@ class SmartMoneyIndicator(Indicator):
         close = float(bar.close)
         open_ = float(bar.open)
 
-        avg_volume = np.mean(list(self._volumes)[-self._period:])
-        volume_std = np.std(list(self._volumes)[-self._period:]) if len(self._volumes) >= self._period else avg_volume * 0.3
+        avg_volume = np.mean(list(self._volumes)[-self._period :])
+        volume_std = (
+            np.std(list(self._volumes)[-self._period :])
+            if len(self._volumes) >= self._period
+            else avg_volume * 0.3
+        )
 
         # Block trades show as volume spikes
         if volume_std > 0:
@@ -214,7 +225,9 @@ class SmartMoneyIndicator(Indicator):
             recent_block_avg = np.mean(list(self._block_trade_ratios)[-5:])
             if recent_block_avg > self._block_trade_threshold:
                 # Block trades aligned with price direction
-                self._block_trade_signal = price_direction * min(1.0, recent_block_avg / 0.15)
+                self._block_trade_signal = price_direction * min(
+                    1.0, recent_block_avg / 0.15
+                )
             else:
                 self._block_trade_signal = 0.0
 
@@ -243,17 +256,21 @@ class SmartMoneyIndicator(Indicator):
         mf_multiplier = clv
 
         # Volume-weighted flow imbalance
-        flow_imbalance = mf_multiplier * (volume / max(1.0, np.mean(list(self._volumes)) if self._volumes else volume))
+        flow_imbalance = mf_multiplier * (
+            volume / max(1.0, np.mean(list(self._volumes)) if self._volumes else volume)
+        )
 
         self._flow_imbalances.append(flow_imbalance)
 
         # Calculate flow imbalance signal
         if len(self._flow_imbalances) >= self._period // 2:
-            recent_flow = list(self._flow_imbalances)[-self._period // 2:]
+            recent_flow = list(self._flow_imbalances)[-self._period // 2 :]
             cumulative_flow = sum(recent_flow)
 
             # Normalize to -1 to 1 range
-            self._flow_imbalance_signal = max(-1.0, min(1.0, cumulative_flow / (len(recent_flow) * 0.5)))
+            self._flow_imbalance_signal = max(
+                -1.0, min(1.0, cumulative_flow / (len(recent_flow) * 0.5))
+            )
 
     def _update_volume_analysis(self, bar: Bar) -> None:
         """
@@ -281,7 +298,9 @@ class SmartMoneyIndicator(Indicator):
 
             # High volume in price direction suggests institutional activity
             if avg_recent_ratio > 1.2:
-                self._volume_signal = price_direction * min(1.0, (avg_recent_ratio - 1.0) * 0.8)
+                self._volume_signal = price_direction * min(
+                    1.0, (avg_recent_ratio - 1.0) * 0.8
+                )
             else:
                 self._volume_signal = price_direction * avg_recent_ratio * 0.3
 
@@ -291,10 +310,10 @@ class SmartMoneyIndicator(Indicator):
         """
         # Combine component signals with weights
         self._value = (
-            self._dark_pool_weight * self._dark_pool_signal +
-            self._block_trade_weight * self._block_trade_signal +
-            self._flow_imbalance_weight * self._flow_imbalance_signal +
-            self._volume_weight * self._volume_signal
+            self._dark_pool_weight * self._dark_pool_signal
+            + self._block_trade_weight * self._block_trade_signal
+            + self._flow_imbalance_weight * self._flow_imbalance_signal
+            + self._volume_weight * self._volume_signal
         )
 
         # Clamp to -1 to 1 range
@@ -308,7 +327,7 @@ class SmartMoneyIndicator(Indicator):
             self._dark_pool_signal,
             self._block_trade_signal,
             self._flow_imbalance_signal,
-            self._volume_signal
+            self._volume_signal,
         ]
 
         # Count signals in same direction

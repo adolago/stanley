@@ -18,22 +18,25 @@ import asyncio
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_openbb_platform():
     """Create a complete mock OpenBB platform."""
-    with patch('openbb.obb') as mock:
+    with patch("openbb.obb") as mock:
         # Historical data
-        dates = pd.date_range(end=datetime.now(), periods=252, freq='D')
+        dates = pd.date_range(end=datetime.now(), periods=252, freq="D")
         prices = 100 * (1 + np.random.randn(252).cumsum() * 0.02)
 
-        historical_data = pd.DataFrame({
-            'date': dates,
-            'open': prices * (1 + np.random.uniform(-0.01, 0.01, 252)),
-            'high': prices * (1 + np.random.uniform(0, 0.02, 252)),
-            'low': prices * (1 - np.random.uniform(0, 0.02, 252)),
-            'close': prices,
-            'volume': np.random.randint(1000000, 10000000, 252),
-        })
+        historical_data = pd.DataFrame(
+            {
+                "date": dates,
+                "open": prices * (1 + np.random.uniform(-0.01, 0.01, 252)),
+                "high": prices * (1 + np.random.uniform(0, 0.02, 252)),
+                "low": prices * (1 - np.random.uniform(0, 0.02, 252)),
+                "close": prices,
+                "volume": np.random.randint(1000000, 10000000, 252),
+            }
+        )
 
         mock.equity.price.historical.return_value = Mock(
             to_df=Mock(return_value=historical_data)
@@ -41,26 +44,48 @@ def mock_openbb_platform():
 
         # Quote data
         mock.equity.price.quote.return_value = Mock(
-            to_df=Mock(return_value=pd.DataFrame([{
-                'symbol': 'AAPL',
-                'bid': 175.48,
-                'ask': 175.52,
-                'bid_size': 100,
-                'ask_size': 200,
-                'last': 175.50,
-                'volume': 52345678,
-            }]))
+            to_df=Mock(
+                return_value=pd.DataFrame(
+                    [
+                        {
+                            "symbol": "AAPL",
+                            "bid": 175.48,
+                            "ask": 175.52,
+                            "bid_size": 100,
+                            "ask_size": 200,
+                            "last": 175.50,
+                            "volume": 52345678,
+                        }
+                    ]
+                )
+            )
         )
 
         # Institutional data
         mock.equity.ownership.major_holders.return_value = Mock(
-            to_df=Mock(return_value=pd.DataFrame({
-                'symbol': ['AAPL'] * 5,
-                'manager_name': ['Vanguard', 'BlackRock', 'State Street', 'Fidelity', 'T. Rowe Price'],
-                'shares': [100000000, 80000000, 60000000, 40000000, 30000000],
-                'value': [17500000000, 14000000000, 10500000000, 7000000000, 5250000000],
-                'weight': [0.05, 0.04, 0.03, 0.02, 0.015],
-            }))
+            to_df=Mock(
+                return_value=pd.DataFrame(
+                    {
+                        "symbol": ["AAPL"] * 5,
+                        "manager_name": [
+                            "Vanguard",
+                            "BlackRock",
+                            "State Street",
+                            "Fidelity",
+                            "T. Rowe Price",
+                        ],
+                        "shares": [100000000, 80000000, 60000000, 40000000, 30000000],
+                        "value": [
+                            17500000000,
+                            14000000000,
+                            10500000000,
+                            7000000000,
+                            5250000000,
+                        ],
+                        "weight": [0.05, 0.04, 0.03, 0.02, 0.015],
+                    }
+                )
+            )
         )
 
         yield mock
@@ -71,48 +96,53 @@ def mock_stanley_analyzers():
     """Create mock Stanley analyzers."""
     money_flow = Mock()
     money_flow.analyze_equity_flow.return_value = {
-        'symbol': 'AAPL',
-        'money_flow_score': 0.65,
-        'institutional_sentiment': 0.7,
-        'smart_money_activity': 0.5,
-        'short_pressure': -0.2,
-        'accumulation_distribution': 0.4,
-        'confidence': 0.65,
+        "symbol": "AAPL",
+        "money_flow_score": 0.65,
+        "institutional_sentiment": 0.7,
+        "smart_money_activity": 0.5,
+        "short_pressure": -0.2,
+        "accumulation_distribution": 0.4,
+        "confidence": 0.65,
     }
-    money_flow.analyze_sector_flow.return_value = pd.DataFrame({
-        'net_flow_1m': [1000000, -500000, 200000],
-        'net_flow_3m': [5000000, -2000000, 1000000],
-        'institutional_change': [0.05, -0.02, 0.01],
-        'smart_money_sentiment': [0.6, -0.3, 0.2],
-        'flow_acceleration': [0.1, -0.05, 0.02],
-        'confidence_score': [0.8, 0.6, 0.5],
-    }, index=['XLK', 'XLF', 'XLE'])
+    money_flow.analyze_sector_flow.return_value = pd.DataFrame(
+        {
+            "net_flow_1m": [1000000, -500000, 200000],
+            "net_flow_3m": [5000000, -2000000, 1000000],
+            "institutional_change": [0.05, -0.02, 0.01],
+            "smart_money_sentiment": [0.6, -0.3, 0.2],
+            "flow_acceleration": [0.1, -0.05, 0.02],
+            "confidence_score": [0.8, 0.6, 0.5],
+        },
+        index=["XLK", "XLF", "XLE"],
+    )
 
     institutional = Mock()
     institutional.get_holdings.return_value = {
-        'symbol': 'AAPL',
-        'institutional_ownership': 0.75,
-        'number_of_institutions': 250,
-        'top_holders': pd.DataFrame({
-            'manager_name': ['Vanguard', 'BlackRock'],
-            'value_held': [10000000000, 8000000000],
-            'ownership_percentage': [0.05, 0.04],
-        }),
-        'recent_changes': pd.DataFrame(),
-        'ownership_trend': 0.05,
-        'concentration_risk': 0.3,
-        'smart_money_score': 0.6,
+        "symbol": "AAPL",
+        "institutional_ownership": 0.75,
+        "number_of_institutions": 250,
+        "top_holders": pd.DataFrame(
+            {
+                "manager_name": ["Vanguard", "BlackRock"],
+                "value_held": [10000000000, 8000000000],
+                "ownership_percentage": [0.05, 0.04],
+            }
+        ),
+        "recent_changes": pd.DataFrame(),
+        "ownership_trend": 0.05,
+        "concentration_risk": 0.3,
+        "smart_money_score": 0.6,
     }
     institutional.get_institutional_sentiment.return_value = {
-        'universe_size': 5,
-        'average_institutional_ownership': 0.72,
-        'percentage_trending_up': 0.6,
-        'average_smart_money_score': 0.55,
-        'institutional_sentiment': 'bullish',
-        'details': pd.DataFrame(),
+        "universe_size": 5,
+        "average_institutional_ownership": 0.72,
+        "percentage_trending_up": 0.6,
+        "average_smart_money_score": 0.55,
+        "institutional_sentiment": "bullish",
+        "details": pd.DataFrame(),
     }
 
-    return {'money_flow': money_flow, 'institutional': institutional}
+    return {"money_flow": money_flow, "institutional": institutional}
 
 
 @pytest.fixture
@@ -125,7 +155,9 @@ def mock_nautilus_engine():
     engine.run = Mock()
     engine.portfolio = Mock()
     engine.portfolio.account = Mock()
-    engine.portfolio.account.balance = Mock(return_value=Mock(as_double=Mock(return_value=100000.0)))
+    engine.portfolio.account.balance = Mock(
+        return_value=Mock(as_double=Mock(return_value=100000.0))
+    )
     return engine
 
 
@@ -133,25 +165,26 @@ def mock_nautilus_engine():
 def sample_backtest_config():
     """Sample backtest configuration."""
     return {
-        'symbols': ['AAPL', 'MSFT', 'GOOGL'],
-        'start_date': datetime(2023, 1, 1),
-        'end_date': datetime(2023, 12, 31),
-        'initial_capital': 100000.0,
-        'strategy': {
-            'name': 'InstitutionalMomentum',
-            'signal_threshold': 0.5,
-            'position_size': 0.1,
-            'stop_loss': 0.05,
-            'take_profit': 0.15,
+        "symbols": ["AAPL", "MSFT", "GOOGL"],
+        "start_date": datetime(2023, 1, 1),
+        "end_date": datetime(2023, 12, 31),
+        "initial_capital": 100000.0,
+        "strategy": {
+            "name": "InstitutionalMomentum",
+            "signal_threshold": 0.5,
+            "position_size": 0.1,
+            "stop_loss": 0.05,
+            "take_profit": 0.15,
         },
-        'data_provider': 'openbb',
-        'venue': 'NASDAQ',
+        "data_provider": "openbb",
+        "venue": "NASDAQ",
     }
 
 
 # =============================================================================
 # End-to-End Data Flow Tests
 # =============================================================================
+
 
 class TestDataFlowIntegration:
     """Test complete data flow from OpenBB to Nautilus."""
@@ -165,11 +198,11 @@ class TestDataFlowIntegration:
         adapter = OpenBBAdapter()
 
         # Fetch historical data
-        data = adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+        data = adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
 
         assert isinstance(data, pd.DataFrame)
         assert len(data) > 0
-        assert 'close' in data.columns
+        assert "close" in data.columns
 
         # Create analyzer and process data
         analyzer = MoneyFlowAnalyzer()
@@ -181,44 +214,48 @@ class TestDataFlowIntegration:
         self, mock_stanley_analyzers, mock_nautilus_engine
     ):
         """Test signal flow from Stanley analyzers to Nautilus actors."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         # Generate signal
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
         assert signal is not None
-        assert 'direction' in signal
-        assert 'strength' in signal
+        assert "direction" in signal
+        assert "strength" in signal
 
-    def test_complete_data_pipeline(
-        self, mock_openbb_platform, mock_stanley_analyzers
-    ):
+    def test_complete_data_pipeline(self, mock_openbb_platform, mock_stanley_analyzers):
         """Test complete data pipeline from fetch to signal."""
         from stanley.data.providers.openbb_provider import OpenBBAdapter
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
         from stanley.integrations.nautilus.indicators import SmartMoneyIndicator
 
         # 1. Fetch data from OpenBB
         adapter = OpenBBAdapter()
-        data = adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+        data = adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
 
         # 2. Convert to bars for indicator
         indicator = SmartMoneyIndicator(period=20)
 
         for _, row in data.iterrows():
             bar = Mock()
-            bar.close = Mock(as_double=Mock(return_value=float(row['close'])))
-            bar.volume = Mock(as_double=Mock(return_value=float(row['volume'])))
+            bar.close = Mock(as_double=Mock(return_value=float(row["close"])))
+            bar.volume = Mock(as_double=Mock(return_value=float(row["volume"])))
             bar.ts_event = int(datetime.now().timestamp() * 1e9)
             indicator.handle_bar(bar)
 
@@ -228,22 +265,23 @@ class TestDataFlowIntegration:
 
         # 4. Generate actor signal
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
         assert signal is not None
 
 
 # =============================================================================
 # Backtest Simulation Tests
 # =============================================================================
+
 
 class TestBacktestSimulation:
     """Test NautilusTrader backtest simulation with Stanley signals."""
@@ -252,17 +290,20 @@ class TestBacktestSimulation:
         self, mock_nautilus_engine, mock_stanley_analyzers, sample_backtest_config
     ):
         """Test backtest engine setup with Stanley components."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Create actor for backtest
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=sample_backtest_config['symbols'],
+            component_id="MoneyFlowActor-001",
+            symbols=sample_backtest_config["symbols"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         # Add actor to engine
@@ -276,7 +317,10 @@ class TestBacktestSimulation:
         """Test backtest execution with historical data."""
         from stanley.data.providers.openbb_provider import OpenBBAdapter
         from stanley.integrations.nautilus.data_client import StanleyDataClient
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Setup data client
         adapter = OpenBBAdapter()
@@ -289,13 +333,13 @@ class TestBacktestSimulation:
 
         # Setup actor
         actor_config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(
             config=actor_config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         # Run backtest
@@ -309,7 +353,10 @@ class TestBacktestSimulation:
         self, mock_stanley_analyzers, mock_nautilus_engine
     ):
         """Test that backtest generates trading signals."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Track generated signals
         signals = []
@@ -318,13 +365,13 @@ class TestBacktestSimulation:
         mock_msgbus.publish = Mock(side_effect=lambda topic, msg: signals.append(msg))
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL', 'MSFT', 'GOOGL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL", "MSFT", "GOOGL"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
         actor._msgbus = mock_msgbus
 
@@ -338,37 +385,44 @@ class TestBacktestSimulation:
         self, mock_stanley_analyzers, sample_backtest_config
     ):
         """Test that backtest respects position limits."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=sample_backtest_config['symbols'],
-            max_position_size=sample_backtest_config['strategy']['position_size'],
+            component_id="MoneyFlowActor-001",
+            symbols=sample_backtest_config["symbols"],
+            max_position_size=sample_backtest_config["strategy"]["position_size"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         # Generate position sizing
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
         # Position size should not exceed limit
-        if 'position_size' in signal:
-            assert signal['position_size'] <= config.max_position_size
+        if "position_size" in signal:
+            assert signal["position_size"] <= config.max_position_size
 
 
 # =============================================================================
 # Strategy Integration Tests
 # =============================================================================
 
+
 class TestStrategyIntegration:
     """Test strategy integration with Stanley signals."""
 
     def test_strategy_receives_signals(self, mock_stanley_analyzers):
         """Test that strategy receives signals from actors."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         received_signals = []
 
@@ -379,58 +433,59 @@ class TestStrategyIntegration:
         strategy = MockStrategy()
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         # Simulate signal generation and delivery
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
         strategy.on_signal(signal)
 
         assert len(received_signals) == 1
-        assert received_signals[0]['symbol'] == 'AAPL'
+        assert received_signals[0]["symbol"] == "AAPL"
 
     def test_strategy_combines_multiple_signals(self, mock_stanley_analyzers):
         """Test strategy combining signals from multiple actors."""
         from stanley.integrations.nautilus.actors import (
-            MoneyFlowActor, MoneyFlowActorConfig,
-            InstitutionalActor, InstitutionalActorConfig,
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+            InstitutionalActor,
+            InstitutionalActorConfig,
         )
 
         # Create both actors
         money_flow_config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         institutional_config = InstitutionalActorConfig(
-            component_id='InstitutionalActor-001',
-            symbols=['AAPL'],
+            component_id="InstitutionalActor-001",
+            symbols=["AAPL"],
         )
 
         money_flow_actor = MoneyFlowActor(
             config=money_flow_config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         institutional_actor = InstitutionalActor(
             config=institutional_config,
-            analyzer=mock_stanley_analyzers['institutional'],
+            analyzer=mock_stanley_analyzers["institutional"],
         )
 
         # Generate signals from both
-        mf_signal = money_flow_actor._generate_signal('AAPL')
-        inst_signal = institutional_actor._generate_signal('AAPL')
+        mf_signal = money_flow_actor._generate_signal("AAPL")
+        inst_signal = institutional_actor._generate_signal("AAPL")
 
         # Combine signals (simple example)
-        combined_strength = (
-            0.5 * mf_signal.get('strength', 0) +
-            0.5 * (1 if inst_signal.get('pattern') == 'ACCUMULATION' else -1)
+        combined_strength = 0.5 * mf_signal.get("strength", 0) + 0.5 * (
+            1 if inst_signal.get("pattern") == "ACCUMULATION" else -1
         )
 
         assert -1 <= combined_strength <= 1
@@ -439,6 +494,7 @@ class TestStrategyIntegration:
 # =============================================================================
 # Error Recovery Tests
 # =============================================================================
+
 
 class TestErrorRecovery:
     """Test error recovery in end-to-end flow."""
@@ -452,83 +508,97 @@ class TestErrorRecovery:
         # First call fails
         mock_openbb_platform.equity.price.historical.side_effect = [
             Exception("Provider temporarily unavailable"),
-            Mock(to_df=Mock(return_value=pd.DataFrame({
-                'date': pd.date_range(end=datetime.now(), periods=10, freq='D'),
-                'open': [100.0] * 10,
-                'high': [102.0] * 10,
-                'low': [99.0] * 10,
-                'close': [101.0] * 10,
-                'volume': [1000000] * 10,
-            })))
+            Mock(
+                to_df=Mock(
+                    return_value=pd.DataFrame(
+                        {
+                            "date": pd.date_range(
+                                end=datetime.now(), periods=10, freq="D"
+                            ),
+                            "open": [100.0] * 10,
+                            "high": [102.0] * 10,
+                            "low": [99.0] * 10,
+                            "close": [101.0] * 10,
+                            "volume": [1000000] * 10,
+                        }
+                    )
+                )
+            ),
         ]
 
         # First attempt fails
         try:
-            adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+            adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
         except Exception:
             pass
 
         # Second attempt succeeds
-        data = adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+        data = adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
         assert len(data) == 10
 
     def test_recovers_from_analyzer_error(self, mock_stanley_analyzers):
         """Test recovery from analyzer error."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # First call fails
-        mock_stanley_analyzers['money_flow'].analyze_equity_flow.side_effect = [
+        mock_stanley_analyzers["money_flow"].analyze_equity_flow.side_effect = [
             Exception("Analysis failed"),
             {
-                'symbol': 'AAPL',
-                'money_flow_score': 0.65,
-                'institutional_sentiment': 0.7,
-                'smart_money_activity': 0.5,
-                'short_pressure': -0.2,
-                'accumulation_distribution': 0.4,
-                'confidence': 0.65,
-            }
+                "symbol": "AAPL",
+                "money_flow_score": 0.65,
+                "institutional_sentiment": 0.7,
+                "smart_money_activity": 0.5,
+                "short_pressure": -0.2,
+                "accumulation_distribution": 0.4,
+                "confidence": 0.65,
+            },
         ]
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         # First attempt may fail
         try:
-            signal = actor._generate_signal('AAPL')
+            signal = actor._generate_signal("AAPL")
         except Exception:
             pass
 
         # Second attempt should succeed
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
         assert signal is not None
 
     def test_continues_after_partial_failure(self, mock_stanley_analyzers):
         """Test that processing continues after partial failure."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         # Mixed success/failure
-        mock_stanley_analyzers['money_flow'].analyze_equity_flow.side_effect = [
-            {'symbol': 'AAPL', 'money_flow_score': 0.5, 'direction': 'BULLISH'},
+        mock_stanley_analyzers["money_flow"].analyze_equity_flow.side_effect = [
+            {"symbol": "AAPL", "money_flow_score": 0.5, "direction": "BULLISH"},
             Exception("Failed for MSFT"),
-            {'symbol': 'GOOGL', 'money_flow_score': 0.3, 'direction': 'NEUTRAL'},
+            {"symbol": "GOOGL", "money_flow_score": 0.3, "direction": "NEUTRAL"},
         ]
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL', 'MSFT', 'GOOGL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL", "MSFT", "GOOGL"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         mock_msgbus = Mock()
@@ -545,6 +615,7 @@ class TestErrorRecovery:
 # Performance Integration Tests
 # =============================================================================
 
+
 class TestPerformanceIntegration:
     """Test performance of integrated system."""
 
@@ -554,17 +625,18 @@ class TestPerformanceIntegration:
         from stanley.integrations.nautilus.indicators import SmartMoneyIndicator
 
         adapter = OpenBBAdapter()
-        data = adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+        data = adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
 
         indicator = SmartMoneyIndicator(period=20)
 
         import time
+
         start = time.time()
 
         for _, row in data.iterrows():
             bar = Mock()
-            bar.close = Mock(as_double=Mock(return_value=float(row['close'])))
-            bar.volume = Mock(as_double=Mock(return_value=float(row['volume'])))
+            bar.close = Mock(as_double=Mock(return_value=float(row["close"])))
+            bar.volume = Mock(as_double=Mock(return_value=float(row["volume"])))
             bar.ts_event = int(datetime.now().timestamp() * 1e9)
             indicator.handle_bar(bar)
 
@@ -578,24 +650,28 @@ class TestPerformanceIntegration:
         self, mock_openbb_platform, mock_stanley_analyzers
     ):
         """Test handling multiple symbols concurrently."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
-        symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'META', 'NVDA', 'AMD']
+        symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "META", "NVDA", "AMD"]
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
+            component_id="MoneyFlowActor-001",
             symbols=symbols,
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
         mock_msgbus = Mock()
         actor._msgbus = mock_msgbus
 
         import time
+
         start = time.time()
 
         actor._update_signals()
@@ -611,6 +687,7 @@ class TestPerformanceIntegration:
 # Data Consistency Tests
 # =============================================================================
 
+
 class TestDataConsistency:
     """Test data consistency across the integration."""
 
@@ -620,58 +697,62 @@ class TestDataConsistency:
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
         adapter = OpenBBAdapter()
-        data = adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+        data = adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
 
         # Timestamps should be in chronological order
-        dates = data['date'].values
-        assert all(dates[i] <= dates[i+1] for i in range(len(dates)-1))
+        dates = data["date"].values
+        assert all(dates[i] <= dates[i + 1] for i in range(len(dates) - 1))
 
     def test_price_data_is_valid(self, mock_openbb_platform):
         """Test that price data is valid across pipeline."""
         from stanley.data.providers.openbb_provider import OpenBBAdapter
 
         adapter = OpenBBAdapter()
-        data = adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+        data = adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
 
         # OHLC constraints
-        assert (data['high'] >= data['open']).all()
-        assert (data['high'] >= data['close']).all()
-        assert (data['high'] >= data['low']).all()
-        assert (data['low'] <= data['open']).all()
-        assert (data['low'] <= data['close']).all()
+        assert (data["high"] >= data["open"]).all()
+        assert (data["high"] >= data["close"]).all()
+        assert (data["high"] >= data["low"]).all()
+        assert (data["low"] <= data["open"]).all()
+        assert (data["low"] <= data["close"]).all()
 
         # Positive values
-        assert (data['open'] > 0).all()
-        assert (data['volume'] >= 0).all()
+        assert (data["open"] > 0).all()
+        assert (data["volume"] >= 0).all()
 
     def test_signal_values_are_bounded(self, mock_stanley_analyzers):
         """Test that signal values are properly bounded."""
-        from stanley.integrations.nautilus.actors import MoneyFlowActor, MoneyFlowActorConfig
+        from stanley.integrations.nautilus.actors import (
+            MoneyFlowActor,
+            MoneyFlowActorConfig,
+        )
 
         config = MoneyFlowActorConfig(
-            component_id='MoneyFlowActor-001',
-            symbols=['AAPL'],
+            component_id="MoneyFlowActor-001",
+            symbols=["AAPL"],
         )
 
         actor = MoneyFlowActor(
             config=config,
-            analyzer=mock_stanley_analyzers['money_flow'],
+            analyzer=mock_stanley_analyzers["money_flow"],
         )
 
-        signal = actor._generate_signal('AAPL')
+        signal = actor._generate_signal("AAPL")
 
         # Signal strength should be bounded
-        if 'strength' in signal:
-            assert -1 <= signal['strength'] <= 1
+        if "strength" in signal:
+            assert -1 <= signal["strength"] <= 1
 
         # Direction should be valid
-        if 'direction' in signal:
-            assert signal['direction'] in ['BULLISH', 'BEARISH', 'NEUTRAL']
+        if "direction" in signal:
+            assert signal["direction"] in ["BULLISH", "BEARISH", "NEUTRAL"]
 
 
 # =============================================================================
 # Rate Limiting Tests
 # =============================================================================
+
 
 class TestRateLimiting:
     """Test rate limiting behavior."""
@@ -680,14 +761,14 @@ class TestRateLimiting:
         """Test that API rate limits are respected."""
         from stanley.data.providers.openbb_provider import OpenBBAdapter
 
-        adapter = OpenBBAdapter(config={'rate_limit_calls': 5, 'rate_limit_period': 1})
+        adapter = OpenBBAdapter(config={"rate_limit_calls": 5, "rate_limit_period": 1})
 
         # Make multiple rapid requests
         for i in range(10):
             try:
-                adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+                adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
             except Exception as e:
-                if 'rate limit' in str(e).lower():
+                if "rate limit" in str(e).lower():
                     # Rate limiting is working
                     pass
 
@@ -701,14 +782,22 @@ class TestRateLimiting:
 
         def track_calls(*args, **kwargs):
             call_count[0] += 1
-            return Mock(to_df=Mock(return_value=pd.DataFrame({
-                'date': pd.date_range(end=datetime.now(), periods=10, freq='D'),
-                'open': [100.0] * 10,
-                'high': [102.0] * 10,
-                'low': [99.0] * 10,
-                'close': [101.0] * 10,
-                'volume': [1000000] * 10,
-            })))
+            return Mock(
+                to_df=Mock(
+                    return_value=pd.DataFrame(
+                        {
+                            "date": pd.date_range(
+                                end=datetime.now(), periods=10, freq="D"
+                            ),
+                            "open": [100.0] * 10,
+                            "high": [102.0] * 10,
+                            "low": [99.0] * 10,
+                            "close": [101.0] * 10,
+                            "volume": [1000000] * 10,
+                        }
+                    )
+                )
+            )
 
         mock_openbb_platform.equity.price.historical = track_calls
 
@@ -716,6 +805,6 @@ class TestRateLimiting:
 
         # Multiple requests should all complete eventually
         for _ in range(5):
-            adapter.get_historical_data('AAPL', '2023-01-01', '2023-12-31')
+            adapter.get_historical_data("AAPL", "2023-01-01", "2023-12-31")
 
         assert call_count[0] == 5

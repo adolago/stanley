@@ -24,6 +24,7 @@ def _check_dbnomics_available():
     if _dbnomics_available is None:
         try:
             import dbnomics
+
             _dbnomics_available = True
         except ImportError:
             _dbnomics_available = False
@@ -121,6 +122,7 @@ class DBnomicsAdapter:
 
         if self._api_base_url:
             import dbnomics
+
             dbnomics.default_api_base_url = self._api_base_url
 
         self._initialized = True
@@ -313,9 +315,9 @@ class DBnomicsAdapter:
         except Exception as e:
             logger.error(f"Failed to get providers: {e}")
             # Return static provider list as fallback
-            return pd.DataFrame([
-                {"code": k, "name": v} for k, v in self.PROVIDERS.items()
-            ])
+            return pd.DataFrame(
+                [{"code": k, "name": v} for k, v in self.PROVIDERS.items()]
+            )
 
     def get_datasets(self, provider_code: str) -> pd.DataFrame:
         """
@@ -333,10 +335,7 @@ class DBnomicsAdapter:
             import requests
 
             url = self._api_base_url or "https://api.db.nomics.world"
-            response = requests.get(
-                f"{url}/v22/providers/{provider_code}",
-                timeout=30
-            )
+            response = requests.get(f"{url}/v22/providers/{provider_code}", timeout=30)
             response.raise_for_status()
 
             data = response.json()
@@ -361,16 +360,16 @@ class DBnomicsAdapter:
         """Recursively flatten dataset category tree."""
         for item in tree:
             if "code" in item:
-                result.append({
-                    "code": item.get("code"),
-                    "name": item.get("name"),
-                    "parent": parent,
-                })
+                result.append(
+                    {
+                        "code": item.get("code"),
+                        "name": item.get("name"),
+                        "parent": parent,
+                    }
+                )
             if "children" in item:
                 self._flatten_datasets(
-                    item["children"],
-                    result,
-                    item.get("name", parent)
+                    item["children"], result, item.get("name", parent)
                 )
 
     def get_gdp(
@@ -431,23 +430,13 @@ class DBnomicsAdapter:
                 # Try Eurostat for EU countries
                 if country in ["DEU", "FRA", "ITA", "ESP", "NLD"]:
                     return self.fetch_series(
-                        "Eurostat",
-                        "prc_hicp_manr",
-                        f"M.RCH_A.CP00.{country}"
+                        "Eurostat", "prc_hicp_manr", f"M.RCH_A.CP00.{country}"
                     )
                 # Try OECD MEI
-                return self.fetch_series(
-                    "OECD",
-                    "MEI",
-                    f"{country}.CPALTT01.IXOB.M"
-                )
+                return self.fetch_series("OECD", "MEI", f"{country}.CPALTT01.IXOB.M")
             else:
                 # Producer prices
-                return self.fetch_series(
-                    "OECD",
-                    "MEI",
-                    f"{country}.PIEAMP01.IXOB.M"
-                )
+                return self.fetch_series("OECD", "MEI", f"{country}.PIEAMP01.IXOB.M")
         except Exception as e:
             logger.error(f"Failed to get inflation for {country}: {e}")
             return pd.DataFrame()
@@ -464,11 +453,7 @@ class DBnomicsAdapter:
         """
         try:
             # OECD Short-Term Labour Statistics
-            return self.fetch_series(
-                "OECD",
-                "STLABOUR",
-                f"{country}.LRUNTTTT.STSA.M"
-            )
+            return self.fetch_series("OECD", "STLABOUR", f"{country}.LRUNTTTT.STSA.M")
         except Exception as e:
             logger.error(f"Failed to get unemployment for {country}: {e}")
             return pd.DataFrame()
@@ -491,25 +476,13 @@ class DBnomicsAdapter:
         try:
             if rate_type == "policy":
                 # Central bank policy rates
-                return self.fetch_series(
-                    "BIS",
-                    "WS_CBPOL_D_csv",
-                    f"D.{country}.."
-                )
+                return self.fetch_series("BIS", "WS_CBPOL_D_csv", f"D.{country}..")
             elif rate_type == "short":
                 # 3-month rates
-                return self.fetch_series(
-                    "OECD",
-                    "MEI",
-                    f"{country}.IRSTCI01.ST.M"
-                )
+                return self.fetch_series("OECD", "MEI", f"{country}.IRSTCI01.ST.M")
             else:
                 # 10-year government bonds
-                return self.fetch_series(
-                    "OECD",
-                    "MEI",
-                    f"{country}.IRLTLT01.ST.M"
-                )
+                return self.fetch_series("OECD", "MEI", f"{country}.IRLTLT01.ST.M")
         except Exception as e:
             logger.error(f"Failed to get interest rates for {country}: {e}")
             return pd.DataFrame()
@@ -525,11 +498,7 @@ class DBnomicsAdapter:
             DataFrame with trade balance data
         """
         try:
-            return self.fetch_series(
-                "IMF",
-                "DOT",
-                f"{country}..TMG_CIF_USD"
-            )
+            return self.fetch_series("IMF", "DOT", f"{country}..TMG_CIF_USD")
         except Exception as e:
             logger.error(f"Failed to get trade balance for {country}: {e}")
             return pd.DataFrame()
@@ -545,11 +514,7 @@ class DBnomicsAdapter:
             DataFrame with current account data
         """
         try:
-            return self.fetch_series(
-                "IMF",
-                "BOP",
-                f"{country}.BCA.."
-            )
+            return self.fetch_series("IMF", "BOP", f"{country}.BCA..")
         except Exception as e:
             logger.error(f"Failed to get current account for {country}: {e}")
             return pd.DataFrame()
@@ -570,11 +535,7 @@ class DBnomicsAdapter:
             DataFrame with money supply data
         """
         try:
-            return self.fetch_series(
-                "OECD",
-                "MEI",
-                f"{country}.MAN{aggregate}.IXOB.M"
-            )
+            return self.fetch_series("OECD", "MEI", f"{country}.MAN{aggregate}.IXOB.M")
         except Exception as e:
             logger.error(f"Failed to get money supply for {country}: {e}")
             return pd.DataFrame()

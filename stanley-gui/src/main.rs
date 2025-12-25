@@ -4,13 +4,13 @@
 //! analysis platform, focusing on money flow analysis, institutional holdings,
 //! and market data visualization.
 
+mod api;
 mod app;
 mod components;
 mod theme;
-mod api;
 
-use gpui::*;
 use app::StanleyApp;
+use gpui::*;
 
 fn main() {
     Application::new().run(|cx: &mut App| {
@@ -31,9 +31,7 @@ fn main() {
             ..Default::default()
         };
 
-        cx.open_window(window_options, |_window, cx| {
-            cx.new(|cx| StanleyApp::new(cx))
-        })
-        .unwrap();
+        cx.open_window(window_options, |_window, cx| cx.new(StanleyApp::new))
+            .unwrap();
     });
 }

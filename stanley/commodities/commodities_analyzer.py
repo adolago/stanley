@@ -145,7 +145,9 @@ class CommoditiesAnalyzer:
         price_series = {}
         for symbol in commodities:
             try:
-                hist = await self.price_provider.get_historical(symbol, start_date, end_date)
+                hist = await self.price_provider.get_historical(
+                    symbol, start_date, end_date
+                )
                 if not hist.empty:
                     price_series[symbol] = hist.set_index("date")["close"]
             except Exception as e:
@@ -244,7 +246,9 @@ class CommoditiesAnalyzer:
 
         # 30-day volatility
         returns_30d = closes.tail(30).pct_change().dropna()
-        volatility_30d = returns_30d.std() * np.sqrt(252) * 100 if len(returns_30d) > 1 else 0
+        volatility_30d = (
+            returns_30d.std() * np.sqrt(252) * 100 if len(returns_30d) > 1 else 0
+        )
 
         # Determine trend
         sma_20 = closes.tail(20).mean()
@@ -299,97 +303,105 @@ class CommoditiesAnalyzer:
 
         # Define known macro relationships
         if comm.category == CommodityCategory.ENERGY:
-            linkages.extend([
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="USD Index",
-                    correlation=-0.65,
-                    lead_lag_days=0,
-                    relationship="Inverse - weak USD supports oil prices",
-                    strength="strong",
-                ),
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="Global Manufacturing PMI",
-                    correlation=0.55,
-                    lead_lag_days=-30,
-                    relationship="PMI leads oil demand",
-                    strength="moderate",
-                ),
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="US Inflation (CPI)",
-                    correlation=0.45,
-                    lead_lag_days=30,
-                    relationship="Oil prices lead inflation",
-                    strength="moderate",
-                ),
-            ])
+            linkages.extend(
+                [
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="USD Index",
+                        correlation=-0.65,
+                        lead_lag_days=0,
+                        relationship="Inverse - weak USD supports oil prices",
+                        strength="strong",
+                    ),
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="Global Manufacturing PMI",
+                        correlation=0.55,
+                        lead_lag_days=-30,
+                        relationship="PMI leads oil demand",
+                        strength="moderate",
+                    ),
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="US Inflation (CPI)",
+                        correlation=0.45,
+                        lead_lag_days=30,
+                        relationship="Oil prices lead inflation",
+                        strength="moderate",
+                    ),
+                ]
+            )
         elif comm.category == CommodityCategory.PRECIOUS_METALS:
-            linkages.extend([
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="Real Interest Rates",
-                    correlation=-0.75,
-                    lead_lag_days=0,
-                    relationship="Inverse - low rates support gold",
-                    strength="strong",
-                ),
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="USD Index",
-                    correlation=-0.60,
-                    lead_lag_days=0,
-                    relationship="Inverse - weak USD supports gold",
-                    strength="strong",
-                ),
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="VIX",
-                    correlation=0.40,
-                    lead_lag_days=-5,
-                    relationship="Safe haven during volatility",
-                    strength="moderate",
-                ),
-            ])
+            linkages.extend(
+                [
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="Real Interest Rates",
+                        correlation=-0.75,
+                        lead_lag_days=0,
+                        relationship="Inverse - low rates support gold",
+                        strength="strong",
+                    ),
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="USD Index",
+                        correlation=-0.60,
+                        lead_lag_days=0,
+                        relationship="Inverse - weak USD supports gold",
+                        strength="strong",
+                    ),
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="VIX",
+                        correlation=0.40,
+                        lead_lag_days=-5,
+                        relationship="Safe haven during volatility",
+                        strength="moderate",
+                    ),
+                ]
+            )
         elif comm.category == CommodityCategory.BASE_METALS:
-            linkages.extend([
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="China Manufacturing PMI",
-                    correlation=0.65,
-                    lead_lag_days=-20,
-                    relationship="China demand drives prices",
-                    strength="strong",
-                ),
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="Global Industrial Production",
-                    correlation=0.70,
-                    lead_lag_days=-15,
-                    relationship="Industrial demand driver",
-                    strength="strong",
-                ),
-            ])
+            linkages.extend(
+                [
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="China Manufacturing PMI",
+                        correlation=0.65,
+                        lead_lag_days=-20,
+                        relationship="China demand drives prices",
+                        strength="strong",
+                    ),
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="Global Industrial Production",
+                        correlation=0.70,
+                        lead_lag_days=-15,
+                        relationship="Industrial demand driver",
+                        strength="strong",
+                    ),
+                ]
+            )
         elif comm.category == CommodityCategory.AGRICULTURE:
-            linkages.extend([
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="US Dollar Index",
-                    correlation=-0.45,
-                    lead_lag_days=0,
-                    relationship="USD-denominated pricing",
-                    strength="moderate",
-                ),
-                MacroLinkage(
-                    commodity=commodity,
-                    macro_indicator="Global Food Price Index",
-                    correlation=0.80,
-                    lead_lag_days=0,
-                    relationship="Part of food price complex",
-                    strength="strong",
-                ),
-            ])
+            linkages.extend(
+                [
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="US Dollar Index",
+                        correlation=-0.45,
+                        lead_lag_days=0,
+                        relationship="USD-denominated pricing",
+                        strength="moderate",
+                    ),
+                    MacroLinkage(
+                        commodity=commodity,
+                        macro_indicator="Global Food Price Index",
+                        correlation=0.80,
+                        lead_lag_days=0,
+                        relationship="Part of food price complex",
+                        strength="strong",
+                    ),
+                ]
+            )
 
         # Add equity correlations
         equity_corr = np.random.uniform(0.3, 0.6)
@@ -436,7 +448,9 @@ class CommoditiesAnalyzer:
         avg_change = np.mean(changes) if changes else 0
 
         # Get leader and laggard
-        sorted_prices = sorted(prices.values(), key=lambda x: x.change_percent, reverse=True)
+        sorted_prices = sorted(
+            prices.values(), key=lambda x: x.change_percent, reverse=True
+        )
         leader = sorted_prices[0] if sorted_prices else None
         laggard = sorted_prices[-1] if sorted_prices else None
 
@@ -511,7 +525,9 @@ class CommoditiesAnalyzer:
             try:
                 hist = await self.price_provider.get_historical(s, start_date, end_date)
                 if not hist.empty:
-                    total_return = (hist.iloc[-1]["close"] / hist.iloc[0]["close"] - 1) * 100
+                    total_return = (
+                        hist.iloc[-1]["close"] / hist.iloc[0]["close"] - 1
+                    ) * 100
                     returns[s] = total_return
             except Exception:
                 pass

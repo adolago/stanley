@@ -21,7 +21,6 @@ from .models import (
     TradeFrontmatter,
     TradeDirection,
     TradeStatus,
-    MoatSource,
 )
 
 
@@ -212,7 +211,9 @@ _Initial thesis creation._
             Tuple of (frontmatter, content)
         """
         entry_date = entry_date or datetime.now()
-        title = f"{symbol} {direction.value.title()} - {entry_date.strftime('%Y-%m-%d')}"
+        title = (
+            f"{symbol} {direction.value.title()} - {entry_date.strftime('%Y-%m-%d')}"
+        )
 
         frontmatter = TradeFrontmatter(
             title=title,
@@ -351,7 +352,9 @@ _Self-assessment of trade execution_
         frontmatter = NoteFrontmatter(
             title=f"{company_name or symbol} Research",
             note_type=NoteType.COMPANY,
-            tags=["company", sector.lower().replace(" ", "-")] if sector else ["company"],
+            tags=(
+                ["company", sector.lower().replace(" ", "-")] if sector else ["company"]
+            ),
             extra={"symbol": symbol.upper(), "sector": sector},
         )
 
@@ -665,7 +668,7 @@ _What went well? What could improve?_
 
 ---
 
-<< [[{(date.replace(day=date.day-1) if date.day > 1 else date).strftime("%Y-%m-%d")}]] | [[{(date.replace(day=date.day+1)).strftime("%Y-%m-%d")}]] >>
+<< [[{(date.replace(day=date.day - 1) if date.day > 1 else date).strftime("%Y-%m-%d")}]] | [[{(date.replace(day=date.day + 1)).strftime("%Y-%m-%d")}]] >>
 """
         return frontmatter, content
 
@@ -797,7 +800,11 @@ _How does this affect your investment thesis?_
             tags=["event", event_type.value, f"company/{symbol.lower()}"],
         )
 
-        participants_md = "\n".join([f"- [[{p}]]" for p in participants]) if participants else "- _Add participants_"
+        participants_md = (
+            "\n".join([f"- [[{p}]]" for p in participants])
+            if participants
+            else "- _Add participants_"
+        )
 
         content = f"""# {title}
 
@@ -937,7 +944,15 @@ _Any mentions of competitors, market dynamics_
             current_role=current_role,
             current_company=f"[[{current_company}]]" if current_company else "",
             linkedin_url=linkedin_url,
-            tags=["person", "executive", f"company/{current_company.lower().replace(' ', '_')}"] if current_company else ["person"],
+            tags=(
+                [
+                    "person",
+                    "executive",
+                    f"company/{current_company.lower().replace(' ', '_')}",
+                ]
+                if current_company
+                else ["person"]
+            ),
         )
 
         content = f"""# {full_name}
@@ -1092,8 +1107,16 @@ _Personal observations, insights from meetings, etc._
             tags=["sector", sector_name.lower().replace(" ", "-")],
         )
 
-        companies_md = "\n".join([f"| [[{c}]] | | | | |" for c in companies]) if companies else "| | | | | |"
-        sub_sectors_md = "\n".join([f"- {s}" for s in sub_sectors]) if sub_sectors else "- _Add sub-sectors_"
+        companies_md = (
+            "\n".join([f"| [[{c}]] | | | | |" for c in companies])
+            if companies
+            else "| | | | | |"
+        )
+        sub_sectors_md = (
+            "\n".join([f"- {s}" for s in sub_sectors])
+            if sub_sectors
+            else "- _Add sub-sectors_"
+        )
 
         content = f"""# {sector_name} Sector Overview
 

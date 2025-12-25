@@ -145,10 +145,18 @@ class AccountingAnalyzer:
         # Get footnote disclosures
         if include_footnotes:
             try:
-                fundamentals.lease_disclosures = self.footnotes.get_lease_disclosures(ticker)
-                fundamentals.debt_disclosures = self.footnotes.get_debt_disclosures(ticker)
-                fundamentals.revenue_disclosures = self.footnotes.get_revenue_disclosures(ticker)
-                fundamentals.contingencies = self.footnotes.get_contingency_disclosures(ticker)
+                fundamentals.lease_disclosures = self.footnotes.get_lease_disclosures(
+                    ticker
+                )
+                fundamentals.debt_disclosures = self.footnotes.get_debt_disclosures(
+                    ticker
+                )
+                fundamentals.revenue_disclosures = (
+                    self.footnotes.get_revenue_disclosures(ticker)
+                )
+                fundamentals.contingencies = self.footnotes.get_contingency_disclosures(
+                    ticker
+                )
                 fundamentals.policies = self.footnotes.get_accounting_policies(ticker)
             except Exception as e:
                 logger.error(f"Failed to get footnotes for {ticker}: {e}")
@@ -467,8 +475,12 @@ class AccountingAnalyzer:
         for col in comparison.select_dtypes(include=["number"]).columns:
             values = comparison[col].dropna()
             if len(values) > 1:
-                trend = "increasing" if values.iloc[0] > values.iloc[-1] else "decreasing"
-                pct_change = (values.iloc[0] - values.iloc[-1]) / abs(values.iloc[-1]) * 100
+                trend = (
+                    "increasing" if values.iloc[0] > values.iloc[-1] else "decreasing"
+                )
+                pct_change = (
+                    (values.iloc[0] - values.iloc[-1]) / abs(values.iloc[-1]) * 100
+                )
                 changes["trends"][col] = {
                     "direction": trend,
                     "pct_change": pct_change,

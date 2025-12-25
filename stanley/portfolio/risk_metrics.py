@@ -289,10 +289,15 @@ def calculate_volatility_metrics(
         in_drawdown = drawdown < 0
         if in_drawdown.any():
             drawdown_periods = (
-                (~in_drawdown).cumsum().where(in_drawdown).groupby((~in_drawdown).cumsum())
+                (~in_drawdown)
+                .cumsum()
+                .where(in_drawdown)
+                .groupby((~in_drawdown).cumsum())
             )
             if len(drawdown_periods) > 0:
-                max_dd_duration = in_drawdown.groupby((~in_drawdown).cumsum()).sum().max()
+                max_dd_duration = (
+                    in_drawdown.groupby((~in_drawdown).cumsum()).sum().max()
+                )
             else:
                 max_dd_duration = 0
         else:
@@ -336,7 +341,9 @@ def calculate_sharpe_ratio(
     if excess_returns.std() == 0:
         return 0.0
 
-    return (excess_returns.mean() / excess_returns.std()) * np.sqrt(annualization_factor)
+    return (excess_returns.mean() / excess_returns.std()) * np.sqrt(
+        annualization_factor
+    )
 
 
 def calculate_sortino_ratio(

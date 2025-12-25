@@ -102,7 +102,6 @@ class NoteManager:
             vault_path: Path to the vault directory.
                        Defaults to ~/.stanley/vault
         """
-        import os
         from pathlib import Path
 
         if vault_path is None:
@@ -173,7 +172,9 @@ class NoteManager:
         from datetime import datetime
 
         trade_direction = TradeDirection(direction)
-        trade_date = datetime.fromisoformat(entry_date) if entry_date else datetime.now()
+        trade_date = (
+            datetime.fromisoformat(entry_date) if entry_date else datetime.now()
+        )
 
         frontmatter, template_content = self.templates.trade_journal(
             symbol=symbol,
@@ -224,7 +225,9 @@ class NoteManager:
 
         fm = note.frontmatter
         fm.exit_price = exit_price
-        fm.exit_date = datetime.fromisoformat(exit_date) if exit_date else datetime.now()
+        fm.exit_date = (
+            datetime.fromisoformat(exit_date) if exit_date else datetime.now()
+        )
         fm.status = TradeStatus.CLOSED
         fm.exit_reason = exit_reason
         fm.lessons_learned = lessons
@@ -344,7 +347,9 @@ class NoteManager:
         if host:
             note_name = f"{evt_date.strftime('%Y-%m-%d')} - {symbol.upper()} - {host} {event_name}"
         else:
-            note_name = f"{evt_date.strftime('%Y-%m-%d')} - {symbol.upper()} - {event_name}"
+            note_name = (
+                f"{evt_date.strftime('%Y-%m-%d')} - {symbol.upper()} - {event_name}"
+            )
 
         return self.vault.create_note(
             name=note_name,
@@ -479,7 +484,9 @@ class NoteManager:
         from .models import EventType as ET
 
         evt_type = ET(event_type) if event_type else None
-        return self.vault.get_events(event_type=evt_type, symbol=symbol, company=company)
+        return self.vault.get_events(
+            event_type=evt_type, symbol=symbol, company=company
+        )
 
     def get_people(self, company: str = None, role: str = None) -> list:
         """
@@ -545,7 +552,9 @@ class NoteManager:
         """Delete a note."""
         return self.vault.delete_note(name)
 
-    def list_notes(self, note_type: str = None, tags: list = None, limit: int = 100) -> list:
+    def list_notes(
+        self, note_type: str = None, tags: list = None, limit: int = 100
+    ) -> list:
         """List notes with optional filters."""
         ntype = NoteType(note_type) if note_type else None
         return self.vault.list_notes(note_type=ntype, tags=tags, limit=limit)

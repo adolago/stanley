@@ -167,14 +167,18 @@ class InstitutionalActor(Actor):
         Called when the actor starts.
         Subscribe to bar data and start background tasks.
         """
-        logger.info(f"InstitutionalActor starting with {len(self._config.universe)} symbols")
+        logger.info(
+            f"InstitutionalActor starting with {len(self._config.universe)} symbols"
+        )
 
         self._is_running = True
 
         # Initialize buffers for each symbol
         for symbol in self._config.universe:
             instrument_id = InstrumentId.from_str(symbol)
-            self._bar_buffers[instrument_id] = deque(maxlen=self._config.lookback_bars * 2)
+            self._bar_buffers[instrument_id] = deque(
+                maxlen=self._config.lookback_bars * 2
+            )
             self._bar_counts[instrument_id] = 0
 
             # Subscribe to bar data
@@ -215,7 +219,9 @@ class InstitutionalActor(Actor):
 
         # Add bar to buffer
         if instrument_id not in self._bar_buffers:
-            self._bar_buffers[instrument_id] = deque(maxlen=self._config.lookback_bars * 2)
+            self._bar_buffers[instrument_id] = deque(
+                maxlen=self._config.lookback_bars * 2
+            )
             self._bar_counts[instrument_id] = 0
 
         self._bar_buffers[instrument_id].append(bar)
@@ -256,41 +262,54 @@ class InstitutionalActor(Actor):
             self._last_holdings_update[symbol] = datetime.now()
 
             # Calculate signal strength based on institutional metrics
-            signal_strength = self._calculate_signal_strength(holdings, previous_holdings)
+            signal_strength = self._calculate_signal_strength(
+                holdings, previous_holdings
+            )
             confidence = self._calculate_confidence(holdings)
 
             # Determine signal type
             signal_type = self._determine_signal_type(holdings, previous_holdings)
 
             # Emit event if thresholds are met
-            if abs(signal_strength) >= self._config.signal_threshold and \
-               confidence >= self._config.confidence_threshold:
+            if (
+                abs(signal_strength) >= self._config.signal_threshold
+                and confidence >= self._config.confidence_threshold
+            ):
 
                 event = InstitutionalSignalEvent(
                     symbol=symbol,
                     signal_type=signal_type,
                     signal_strength=signal_strength,
                     confidence=confidence,
-                    institutional_ownership=holdings.get('institutional_ownership', 0.0),
-                    ownership_trend=holdings.get('ownership_trend', 0.0),
-                    smart_money_score=holdings.get('smart_money_score', 0.0),
-                    concentration_risk=holdings.get('concentration_risk', 0.0),
+                    institutional_ownership=holdings.get(
+                        "institutional_ownership", 0.0
+                    ),
+                    ownership_trend=holdings.get("ownership_trend", 0.0),
+                    smart_money_score=holdings.get("smart_money_score", 0.0),
+                    concentration_risk=holdings.get("concentration_risk", 0.0),
                     timestamp=unix_nanos_to_dt(latest_bar.ts_event),
                     metadata={
-                        'number_of_institutions': holdings.get('number_of_institutions', 0),
-                        'top_holders': self._serialize_top_holders(holdings.get('top_holders')),
-                    }
+                        "number_of_institutions": holdings.get(
+                            "number_of_institutions", 0
+                        ),
+                        "top_holders": self._serialize_top_holders(
+                            holdings.get("top_holders")
+                        ),
+                    },
                 )
 
                 self.publish_event(event)
-                logger.info(f"Emitted InstitutionalSignalEvent for {symbol}: {signal_type} "
-                           f"(strength={signal_strength:.2f}, confidence={confidence:.2f})")
+                logger.info(
+                    f"Emitted InstitutionalSignalEvent for {symbol}: {signal_type} "
+                    f"(strength={signal_strength:.2f}, confidence={confidence:.2f})"
+                )
 
         except Exception as e:
             logger.error(f"Error analyzing institutional holdings for {symbol}: {e}")
 
-    def _calculate_signal_strength(self, holdings: Dict,
-                                    previous_holdings: Optional[Dict]) -> float:
+    def _calculate_signal_strength(
+        self, holdings: Dict, previous_holdings: Optional[Dict]
+    ) -> float:
         """
         Calculate signal strength based on holdings changes.
 
@@ -302,27 +321,23 @@ class InstitutionalActor(Actor):
             Signal strength (-1.0 to 1.0)
         """
         # Base signal on smart money score
-        smart_money = holdings.get('smart_money_score', 0.0)
+        smart_money = holdings.get("smart_money_score", 0.0)
 
         # Add ownership trend contribution
-        ownership_trend = holdings.get('ownership_trend', 0.0)
+        ownership_trend = holdings.get("ownership_trend", 0.0)
 
         # If we have previous holdings, factor in the change
         change_factor = 0.0
         if previous_holdings:
-            prev_ownership = previous_holdings.get('institutional_ownership', 0.0)
-            curr_ownership = holdings.get('institutional_ownership', 0.0)
+            prev_ownership = previous_holdings.get("institutional_ownership", 0.0)
+            curr_ownership = holdings.get("institutional_ownership", 0.0)
             ownership_change = curr_ownership - prev_ownership
 
             if abs(ownership_change) > self._config.ownership_change_threshold:
                 change_factor = np.sign(ownership_change) * 0.5
 
         # Combine factors
-        signal = (
-            0.4 * smart_money +
-            0.3 * ownership_trend +
-            0.3 * change_factor
-        )
+        signal = 0.4 * smart_money + 0.3 * ownership_trend + 0.3 * change_factor
 
         return max(-1.0, min(1.0, signal))
 
@@ -337,28 +352,31 @@ class InstitutionalActor(Actor):
             Confidence score (0.0 to 1.0)
         """
         # Base confidence on number of institutions
-        institution_count = holdings.get('number_of_institutions', 0)
+        institution_count = holdings.get("number_of_institutions", 0)
         count_confidence = min(1.0, institution_count / 100)
 
         # Factor in concentration risk (lower is better for confidence)
-        concentration_risk = holdings.get('concentration_risk', 0.5)
+        concentration_risk = holdings.get("concentration_risk", 0.5)
         concentration_confidence = 1.0 - concentration_risk
 
         # Factor in ownership level
-        ownership = holdings.get('institutional_ownership', 0.0)
-        ownership_confidence = min(1.0, ownership / 0.5)  # 50% ownership = full confidence
+        ownership = holdings.get("institutional_ownership", 0.0)
+        ownership_confidence = min(
+            1.0, ownership / 0.5
+        )  # 50% ownership = full confidence
 
         # Combine factors
         confidence = (
-            0.4 * count_confidence +
-            0.3 * concentration_confidence +
-            0.3 * ownership_confidence
+            0.4 * count_confidence
+            + 0.3 * concentration_confidence
+            + 0.3 * ownership_confidence
         )
 
         return max(0.0, min(1.0, confidence))
 
-    def _determine_signal_type(self, holdings: Dict,
-                                previous_holdings: Optional[Dict]) -> str:
+    def _determine_signal_type(
+        self, holdings: Dict, previous_holdings: Optional[Dict]
+    ) -> str:
         """
         Determine the type of institutional signal.
 
@@ -369,31 +387,31 @@ class InstitutionalActor(Actor):
         Returns:
             Signal type string
         """
-        smart_money = holdings.get('smart_money_score', 0.0)
-        ownership_trend = holdings.get('ownership_trend', 0.0)
+        smart_money = holdings.get("smart_money_score", 0.0)
+        ownership_trend = holdings.get("ownership_trend", 0.0)
 
         # Strong smart money signal
         if abs(smart_money) > 0.5:
-            return 'smart_money'
+            return "smart_money"
 
         # Check for significant ownership changes
         if previous_holdings:
-            prev_ownership = previous_holdings.get('institutional_ownership', 0.0)
-            curr_ownership = holdings.get('institutional_ownership', 0.0)
+            prev_ownership = previous_holdings.get("institutional_ownership", 0.0)
+            curr_ownership = holdings.get("institutional_ownership", 0.0)
             ownership_change = curr_ownership - prev_ownership
 
             if ownership_change > self._config.ownership_change_threshold:
-                return 'accumulation'
+                return "accumulation"
             elif ownership_change < -self._config.ownership_change_threshold:
-                return 'distribution'
+                return "distribution"
 
         # Use ownership trend
         if ownership_trend > 0.3:
-            return 'accumulation'
+            return "accumulation"
         elif ownership_trend < -0.3:
-            return 'distribution'
+            return "distribution"
 
-        return 'neutral'
+        return "neutral"
 
     def _serialize_top_holders(self, top_holders: Any) -> List[Dict]:
         """
@@ -409,7 +427,7 @@ class InstitutionalActor(Actor):
             return []
 
         if isinstance(top_holders, pd.DataFrame):
-            return top_holders.to_dict('records')
+            return top_holders.to_dict("records")
 
         return []
 
@@ -460,19 +478,30 @@ class InstitutionalActor(Actor):
                     self._processed_filings.add(filing_id)
 
                     # Extract significant changes
-                    new_positions = changes[changes['change_type'] == 'new']['symbol'].tolist()
-                    closed_positions = changes[changes['change_type'] == 'closed']['symbol'].tolist()
+                    new_positions = changes[changes["change_type"] == "new"][
+                        "symbol"
+                    ].tolist()
+                    closed_positions = changes[changes["change_type"] == "closed"][
+                        "symbol"
+                    ].tolist()
 
-                    significant_increases = changes[
-                        changes['change_percentage'] > 0.1
-                    ][['symbol', 'change_percentage', 'value_change']].to_dict('records')
+                    significant_increases = changes[changes["change_percentage"] > 0.1][
+                        ["symbol", "change_percentage", "value_change"]
+                    ].to_dict("records")
 
                     significant_decreases = changes[
-                        changes['change_percentage'] < -0.1
-                    ][['symbol', 'change_percentage', 'value_change']].to_dict('records')
+                        changes["change_percentage"] < -0.1
+                    ][["symbol", "change_percentage", "value_change"]].to_dict(
+                        "records"
+                    )
 
                     # Emit 13F event if there are significant changes
-                    if new_positions or closed_positions or significant_increases or significant_decreases:
+                    if (
+                        new_positions
+                        or closed_positions
+                        or significant_increases
+                        or significant_decreases
+                    ):
                         event = Filing13FEvent(
                             manager_cik=manager_cik,
                             manager_name=self._get_manager_name(manager_cik),
@@ -481,7 +510,7 @@ class InstitutionalActor(Actor):
                             closed_positions=closed_positions,
                             significant_increases=significant_increases,
                             significant_decreases=significant_decreases,
-                            timestamp=datetime.now()
+                            timestamp=datetime.now(),
                         )
 
                         self.publish_event(event)
@@ -502,11 +531,11 @@ class InstitutionalActor(Actor):
         """
         # Known major managers
         known_managers = {
-            '0000102909': 'Vanguard Group',
-            '0001390777': 'BlackRock',
-            '0000093751': 'State Street',
-            '0000315066': 'Fidelity',
-            '0000080227': 'T. Rowe Price',
+            "0000102909": "Vanguard Group",
+            "0001390777": "BlackRock",
+            "0000093751": "State Street",
+            "0000315066": "Fidelity",
+            "0000080227": "T. Rowe Price",
         }
 
         return known_managers.get(manager_cik, manager_cik)
@@ -637,5 +666,5 @@ class InstitutionalActor(Actor):
         """
         holdings = self._holdings_cache.get(symbol)
         if holdings:
-            return holdings.get('institutional_ownership', 0.0)
+            return holdings.get("institutional_ownership", 0.0)
         return 0.0

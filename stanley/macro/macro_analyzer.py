@@ -98,8 +98,18 @@ class MacroAnalyzer:
     # Major economies for default analysis
     G7_COUNTRIES = ["USA", "JPN", "DEU", "GBR", "FRA", "ITA", "CAN"]
     G20_COUNTRIES = G7_COUNTRIES + [
-        "CHN", "IND", "BRA", "RUS", "AUS", "KOR", "MEX",
-        "IDN", "TUR", "SAU", "ARG", "ZAF"
+        "CHN",
+        "IND",
+        "BRA",
+        "RUS",
+        "AUS",
+        "KOR",
+        "MEX",
+        "IDN",
+        "TUR",
+        "SAU",
+        "ARG",
+        "ZAF",
     ]
 
     def __init__(
@@ -145,9 +155,7 @@ class MacroAnalyzer:
             if not gdp_df.empty and "value" in gdp_df.columns:
                 values = gdp_df["value"].dropna()
                 if len(values) >= 4:
-                    snapshot.gdp_growth = (
-                        (values.iloc[-1] / values.iloc[-4] - 1) * 100
-                    )
+                    snapshot.gdp_growth = (values.iloc[-1] / values.iloc[-4] - 1) * 100
         except Exception as e:
             logger.debug(f"Failed to get GDP for {country}: {e}")
 
@@ -157,9 +165,7 @@ class MacroAnalyzer:
             if not cpi_df.empty and "value" in cpi_df.columns:
                 values = cpi_df["value"].dropna()
                 if len(values) >= 12:
-                    snapshot.inflation = (
-                        (values.iloc[-1] / values.iloc[-12] - 1) * 100
-                    )
+                    snapshot.inflation = (values.iloc[-1] / values.iloc[-12] - 1) * 100
         except Exception as e:
             logger.debug(f"Failed to get inflation for {country}: {e}")
 
@@ -217,8 +223,11 @@ class MacroAnalyzer:
 
         if indicators is None:
             indicators = [
-                "GDP_REAL", "CPI", "UNEMPLOYMENT_RATE",
-                "POLICY_RATE", "CURRENT_ACCOUNT"
+                "GDP_REAL",
+                "CPI",
+                "UNEMPLOYMENT_RATE",
+                "POLICY_RATE",
+                "CURRENT_ACCOUNT",
             ]
 
         comparison = {}
@@ -482,46 +491,56 @@ class MacroAnalyzer:
         if yield_curve:
             if yield_curve.curve_shape == "inverted":
                 risk_score += 30
-                risk_factors["factors"].append({
-                    "factor": "inverted_yield_curve",
-                    "severity": "high",
-                    "description": f"Yield curve inverted: {yield_curve.spread_3m10y:.2f}%"
-                })
+                risk_factors["factors"].append(
+                    {
+                        "factor": "inverted_yield_curve",
+                        "severity": "high",
+                        "description": f"Yield curve inverted: {yield_curve.spread_3m10y:.2f}%",
+                    }
+                )
             elif yield_curve.curve_shape == "flat":
                 risk_score += 15
-                risk_factors["factors"].append({
-                    "factor": "flat_yield_curve",
-                    "severity": "medium",
-                    "description": "Yield curve is flat"
-                })
+                risk_factors["factors"].append(
+                    {
+                        "factor": "flat_yield_curve",
+                        "severity": "medium",
+                        "description": "Yield curve is flat",
+                    }
+                )
 
         # Check leading indicators
         leading = self.analyze_leading_indicators(country)
         if leading["overall_signal"] == "bearish":
             risk_score += 20
-            risk_factors["factors"].append({
-                "factor": "leading_indicators_bearish",
-                "severity": "medium",
-                "description": "Leading indicators pointing down"
-            })
+            risk_factors["factors"].append(
+                {
+                    "factor": "leading_indicators_bearish",
+                    "severity": "medium",
+                    "description": "Leading indicators pointing down",
+                }
+            )
 
         # Check snapshot for specific risks
         snapshot = self.get_country_snapshot(country, include_regime=False)
 
         if snapshot.gdp_growth is not None and snapshot.gdp_growth < 0:
             risk_score += 25
-            risk_factors["factors"].append({
-                "factor": "negative_gdp_growth",
-                "severity": "high",
-                "description": f"GDP growth: {snapshot.gdp_growth:.1f}%"
-            })
+            risk_factors["factors"].append(
+                {
+                    "factor": "negative_gdp_growth",
+                    "severity": "high",
+                    "description": f"GDP growth: {snapshot.gdp_growth:.1f}%",
+                }
+            )
         elif snapshot.gdp_growth is not None and snapshot.gdp_growth < 1:
             risk_score += 10
-            risk_factors["factors"].append({
-                "factor": "slow_gdp_growth",
-                "severity": "low",
-                "description": f"GDP growth: {snapshot.gdp_growth:.1f}%"
-            })
+            risk_factors["factors"].append(
+                {
+                    "factor": "slow_gdp_growth",
+                    "severity": "low",
+                    "description": f"GDP growth: {snapshot.gdp_growth:.1f}%",
+                }
+            )
 
         if snapshot.unemployment is not None:
             # Rising unemployment is a risk factor
@@ -533,11 +552,13 @@ class MacroAnalyzer:
                         unemp_change = values.iloc[-1] - values.iloc[-12]
                         if unemp_change > 1:
                             risk_score += 15
-                            risk_factors["factors"].append({
-                                "factor": "rising_unemployment",
-                                "severity": "medium",
-                                "description": f"Unemployment up {unemp_change:.1f}pp YoY"
-                            })
+                            risk_factors["factors"].append(
+                                {
+                                    "factor": "rising_unemployment",
+                                    "severity": "medium",
+                                    "description": f"Unemployment up {unemp_change:.1f}pp YoY",
+                                }
+                            )
             except Exception:
                 pass
 

@@ -63,7 +63,12 @@ class InstitutionalMomentumIndicator(Indicator):
         self._symbol = symbol
 
         # Weights (normalize to sum to 1.0)
-        total_weight = ownership_weight + smart_money_weight + concentration_weight + momentum_weight
+        total_weight = (
+            ownership_weight
+            + smart_money_weight
+            + concentration_weight
+            + momentum_weight
+        )
         self._ownership_weight = ownership_weight / total_weight
         self._smart_money_weight = smart_money_weight / total_weight
         self._concentration_weight = concentration_weight / total_weight
@@ -151,9 +156,9 @@ class InstitutionalMomentumIndicator(Indicator):
             self._current_holdings = holdings
 
             # Update history buffers
-            ownership = holdings.get('institutional_ownership', 0.0)
-            smart_money = holdings.get('smart_money_score', 0.0)
-            concentration = holdings.get('concentration_risk', 0.0)
+            ownership = holdings.get("institutional_ownership", 0.0)
+            smart_money = holdings.get("smart_money_score", 0.0)
+            concentration = holdings.get("concentration_risk", 0.0)
 
             self._ownership_history.append(ownership)
             self._smart_money_history.append(smart_money)
@@ -196,8 +201,10 @@ class InstitutionalMomentumIndicator(Indicator):
 
         # Also factor in current ownership level
         if self._current_holdings:
-            ownership_trend = self._current_holdings.get('ownership_trend', 0.0)
-            self._ownership_signal = 0.7 * self._ownership_signal + 0.3 * ownership_trend
+            ownership_trend = self._current_holdings.get("ownership_trend", 0.0)
+            self._ownership_signal = (
+                0.7 * self._ownership_signal + 0.3 * ownership_trend
+            )
 
     def _update_smart_money_signal(self) -> None:
         """
@@ -205,7 +212,9 @@ class InstitutionalMomentumIndicator(Indicator):
         """
         if len(self._smart_money_history) < 2:
             if self._current_holdings:
-                self._smart_money_signal = self._current_holdings.get('smart_money_score', 0.0)
+                self._smart_money_signal = self._current_holdings.get(
+                    "smart_money_score", 0.0
+                )
             return
 
         smart_money_list = list(self._smart_money_history)
@@ -218,7 +227,11 @@ class InstitutionalMomentumIndicator(Indicator):
 
         # Check for momentum in smart money
         recent_smart_money = np.mean(smart_money_list[-3:])
-        earlier_smart_money = np.mean(smart_money_list[:-3]) if len(smart_money_list) > 3 else recent_smart_money
+        earlier_smart_money = (
+            np.mean(smart_money_list[:-3])
+            if len(smart_money_list) > 3
+            else recent_smart_money
+        )
 
         smart_money_momentum = recent_smart_money - earlier_smart_money
 
@@ -242,18 +255,28 @@ class InstitutionalMomentumIndicator(Indicator):
 
         # Calculate change in concentration
         recent_concentration = np.mean(concentration_list[-3:])
-        earlier_concentration = np.mean(concentration_list[:-3]) if len(concentration_list) > 3 else recent_concentration
+        earlier_concentration = (
+            np.mean(concentration_list[:-3])
+            if len(concentration_list) > 3
+            else recent_concentration
+        )
 
-        concentration_change = earlier_concentration - recent_concentration  # Negative change = increasing concentration
+        concentration_change = (
+            earlier_concentration - recent_concentration
+        )  # Negative change = increasing concentration
 
         # Normalize and invert (lower concentration is bullish)
         self._concentration_signal = concentration_change * 5  # Scale factor
 
         # Also factor in absolute level
         current_concentration = concentration_list[-1] if concentration_list else 0.5
-        concentration_level_signal = 1.0 - current_concentration * 2  # 0 concentration = 1, 0.5 = 0, 1 = -1
+        concentration_level_signal = (
+            1.0 - current_concentration * 2
+        )  # 0 concentration = 1, 0.5 = 0, 1 = -1
 
-        self._concentration_signal = 0.6 * self._concentration_signal + 0.4 * concentration_level_signal
+        self._concentration_signal = (
+            0.6 * self._concentration_signal + 0.4 * concentration_level_signal
+        )
 
         # Clamp to range
         self._concentration_signal = max(-1.0, min(1.0, self._concentration_signal))
@@ -270,13 +293,15 @@ class InstitutionalMomentumIndicator(Indicator):
         returns_list = list(self._returns)
 
         # Calculate momentum
-        cumulative_return = np.sum(returns_list[-self._period // 2:])
+        cumulative_return = np.sum(returns_list[-self._period // 2 :])
         momentum = cumulative_return
 
         # Calculate momentum strength
         avg_abs_return = np.mean(np.abs(returns_list))
         if avg_abs_return > 0:
-            momentum_strength = abs(momentum) / (avg_abs_return * len(returns_list[-self._period // 2:]) / 2)
+            momentum_strength = abs(momentum) / (
+                avg_abs_return * len(returns_list[-self._period // 2 :]) / 2
+            )
         else:
             momentum_strength = 0.0
 
@@ -285,7 +310,7 @@ class InstitutionalMomentumIndicator(Indicator):
 
         # If we have institutional data, weight by alignment
         if self._current_holdings:
-            smart_money = self._current_holdings.get('smart_money_score', 0.0)
+            smart_money = self._current_holdings.get("smart_money_score", 0.0)
 
             # Institutional alignment multiplier
             if np.sign(self._momentum_signal) == np.sign(smart_money):
@@ -304,10 +329,10 @@ class InstitutionalMomentumIndicator(Indicator):
         """
         # Combine component signals with weights
         self._value = (
-            self._ownership_weight * self._ownership_signal +
-            self._smart_money_weight * self._smart_money_signal +
-            self._concentration_weight * self._concentration_signal +
-            self._momentum_weight * self._momentum_signal
+            self._ownership_weight * self._ownership_signal
+            + self._smart_money_weight * self._smart_money_signal
+            + self._concentration_weight * self._concentration_signal
+            + self._momentum_weight * self._momentum_signal
         )
 
         # Clamp to -1 to 1 range
@@ -327,7 +352,7 @@ class InstitutionalMomentumIndicator(Indicator):
             self._ownership_signal,
             self._smart_money_signal,
             self._concentration_signal,
-            self._momentum_signal
+            self._momentum_signal,
         ]
 
         # Count signals in same direction
@@ -422,7 +447,7 @@ class InstitutionalMomentumIndicator(Indicator):
     def institutional_ownership(self) -> Optional[float]:
         """Get the current institutional ownership percentage."""
         if self._current_holdings:
-            return self._current_holdings.get('institutional_ownership')
+            return self._current_holdings.get("institutional_ownership")
         return None
 
     @property
@@ -443,10 +468,10 @@ class InstitutionalMomentumIndicator(Indicator):
             Dictionary of component signal values
         """
         return {
-            'ownership': self._ownership_signal,
-            'smart_money': self._smart_money_signal,
-            'concentration': self._concentration_signal,
-            'momentum': self._momentum_signal,
+            "ownership": self._ownership_signal,
+            "smart_money": self._smart_money_signal,
+            "concentration": self._concentration_signal,
+            "momentum": self._momentum_signal,
         }
 
     def reset(self) -> None:
@@ -517,7 +542,7 @@ class InstitutionalMomentumIndicator(Indicator):
             Sentiment string ('bullish', 'bearish', or 'neutral')
         """
         if self.is_bullish():
-            return 'bullish'
+            return "bullish"
         elif self.is_bearish():
-            return 'bearish'
-        return 'neutral'
+            return "bearish"
+        return "neutral"

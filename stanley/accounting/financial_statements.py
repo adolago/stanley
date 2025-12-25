@@ -270,13 +270,20 @@ class FinancialStatements:
             )
 
         # Quick ratio (current assets - inventory) / current liabilities
-        if all(c in bs.columns for c in ["current_assets", "inventory", "current_liabilities"]):
+        if all(
+            c in bs.columns
+            for c in ["current_assets", "inventory", "current_liabilities"]
+        ):
             quick_assets = bs["current_assets"] - bs.get("inventory", 0)
-            ratios["quick_ratio"] = self._safe_divide(quick_assets, bs["current_liabilities"])
+            ratios["quick_ratio"] = self._safe_divide(
+                quick_assets, bs["current_liabilities"]
+            )
 
         # Profitability Ratios
         if "gross_profit" in inc.columns and "revenue" in inc.columns:
-            ratios["gross_margin"] = self._safe_divide(inc["gross_profit"], inc["revenue"])
+            ratios["gross_margin"] = self._safe_divide(
+                inc["gross_profit"], inc["revenue"]
+            )
 
         if "operating_income" in inc.columns and "revenue" in inc.columns:
             ratios["operating_margin"] = self._safe_divide(
@@ -292,7 +299,9 @@ class FinancialStatements:
 
         # Return on Equity (ROE)
         if "net_income" in inc.columns and "shareholders_equity" in bs.columns:
-            ratios["roe"] = self._safe_divide(inc["net_income"], bs["shareholders_equity"])
+            ratios["roe"] = self._safe_divide(
+                inc["net_income"], bs["shareholders_equity"]
+            )
 
         # Leverage Ratios
         if "total_liabilities" in bs.columns and "total_assets" in bs.columns:
@@ -397,8 +406,14 @@ class FinancialStatements:
         """
         if metrics is None:
             metrics = [
-                "revenue", "net_income", "gross_margin", "operating_margin",
-                "roe", "roa", "current_ratio", "debt_to_equity"
+                "revenue",
+                "net_income",
+                "gross_margin",
+                "operating_margin",
+                "roe",
+                "roa",
+                "current_ratio",
+                "debt_to_equity",
             ]
 
         comparison = {}
@@ -413,12 +428,17 @@ class FinancialStatements:
                 # Get latest values from ratios
                 for metric in metrics:
                     if metric in ratios.columns:
-                        ticker_data[metric] = ratios[metric].iloc[0] if len(ratios) > 0 else None
+                        ticker_data[metric] = (
+                            ratios[metric].iloc[0] if len(ratios) > 0 else None
+                        )
 
                 # Get latest values from statements
                 for statement in statements.values():
                     for metric in metrics:
-                        if metric in statement.data.columns and metric not in ticker_data:
+                        if (
+                            metric in statement.data.columns
+                            and metric not in ticker_data
+                        ):
                             ticker_data[metric] = statement.data[metric].iloc[0]
 
                 comparison[ticker] = ticker_data

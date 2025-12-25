@@ -484,9 +484,17 @@ class TestNoteManager:
     def test_get_people(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             manager = NoteManager(tmpdir)
-            manager.create_person(full_name="Tim Cook", current_role="CEO", current_company="Apple")
-            manager.create_person(full_name="Satya Nadella", current_role="CEO", current_company="Microsoft")
-            manager.create_person(full_name="Luca Maestri", current_role="CFO", current_company="Apple")
+            manager.create_person(
+                full_name="Tim Cook", current_role="CEO", current_company="Apple"
+            )
+            manager.create_person(
+                full_name="Satya Nadella",
+                current_role="CEO",
+                current_company="Microsoft",
+            )
+            manager.create_person(
+                full_name="Luca Maestri", current_role="CFO", current_company="Apple"
+            )
 
             # Get all people
             all_people = manager.get_people()

@@ -55,14 +55,14 @@ class OpenBBProvider(DataProvider, CachingMixin):
             cache_ttl_seconds: Cache time-to-live in seconds
         """
         CachingMixin.__init__(self)
-        
+
         self._api_key = api_key
         self._default_provider = default_provider
         self._max_retries = max_retries
         self._timeout = timeout
         self._rate_limiter = RateLimiter(requests_per_second)
         self._default_ttl_seconds = cache_ttl_seconds
-        
+
         self._executor: Optional[ThreadPoolExecutor] = None
         self._obb = None
         self._initialized = False
@@ -94,7 +94,9 @@ class OpenBBProvider(DataProvider, CachingMixin):
                 self._obb.user.credentials.openbb_api_key = self._api_key
 
             # Create thread pool for running sync OpenBB calls
-            self._executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="openbb")
+            self._executor = ThreadPoolExecutor(
+                max_workers=4, thread_name_prefix="openbb"
+            )
 
             self._initialized = True
             logger.info("OpenBB provider initialized successfully")
@@ -111,7 +113,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
         if self._executor:
             self._executor.shutdown(wait=True)
             self._executor = None
-        
+
         self._clear_cache()
         self._initialized = False
         logger.info("OpenBB provider closed")
@@ -128,9 +130,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
         try:
             # Try to fetch a simple piece of data
             await self.get_stock_data(
-                "AAPL",
-                datetime(2024, 1, 1),
-                datetime(2024, 1, 5)
+                "AAPL", datetime(2024, 1, 1), datetime(2024, 1, 5)
             )
             return True
         except Exception as e:
@@ -153,10 +153,10 @@ class OpenBBProvider(DataProvider, CachingMixin):
             await self.initialize()
 
         loop = asyncio.get_event_loop()
-        
+
         # Apply rate limiting
         await self._rate_limiter.acquire()
-        
+
         # Run in thread pool
         partial_func = partial(func, *args, **kwargs)
         return await loop.run_in_executor(self._executor, partial_func)
@@ -177,33 +177,39 @@ class OpenBBProvider(DataProvider, CachingMixin):
             DataProviderError: If all retries fail
         """
         last_error = None
-        
+
         for attempt in range(self._max_retries):
             try:
                 return await self._run_in_executor(func, *args, **kwargs)
             except Exception as e:
                 last_error = e
                 error_str = str(e).lower()
-                
+
                 # Check if rate limited
                 if "rate" in error_str and "limit" in error_str:
-                    wait_time = 2 ** attempt  # Exponential backoff
+                    wait_time = 2**attempt  # Exponential backoff
                     logger.warning(f"Rate limited, waiting {wait_time}s before retry")
                     await asyncio.sleep(wait_time)
                     continue
-                
+
                 # Check if transient error
                 if attempt < self._max_retries - 1:
-                    if any(x in error_str for x in ["timeout", "connection", "temporary"]):
+                    if any(
+                        x in error_str for x in ["timeout", "connection", "temporary"]
+                    ):
                         wait_time = 1 + attempt
-                        logger.warning(f"Transient error, retrying in {wait_time}s: {e}")
+                        logger.warning(
+                            f"Transient error, retrying in {wait_time}s: {e}"
+                        )
                         await asyncio.sleep(wait_time)
                         continue
-                
+
                 # Non-retryable error
                 break
 
-        raise DataProviderError(f"Failed after {self._max_retries} attempts: {last_error}")
+        raise DataProviderError(
+            f"Failed after {self._max_retries} attempts: {last_error}"
+        )
 
     def _to_dataframe(self, result) -> pd.DataFrame:
         """
@@ -224,13 +230,20 @@ class OpenBBProvider(DataProvider, CachingMixin):
         elif hasattr(result, "results"):
             # Handle OBBject with results attribute
             if isinstance(result.results, list):
-                return pd.DataFrame([r.model_dump() if hasattr(r, "model_dump") else r for r in result.results])
+                return pd.DataFrame(
+                    [
+                        r.model_dump() if hasattr(r, "model_dump") else r
+                        for r in result.results
+                    ]
+                )
             elif hasattr(result.results, "model_dump"):
                 return pd.DataFrame([result.results.model_dump()])
             else:
                 return pd.DataFrame(result.results)
         else:
-            raise DataProviderError(f"Cannot convert result to DataFrame: {type(result)}")
+            raise DataProviderError(
+                f"Cannot convert result to DataFrame: {type(result)}"
+            )
 
     async def get_stock_data(
         self,
@@ -238,7 +251,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
         start_date: datetime,
         end_date: datetime,
         provider: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> pd.DataFrame:
         """
         Get historical stock price data.
@@ -275,13 +288,13 @@ class OpenBBProvider(DataProvider, CachingMixin):
 
         try:
             df = await self._execute_with_retry(fetch_stock_data)
-            
+
             # Normalize column names
             df = self._normalize_ohlcv_columns(df)
-            
+
             # Cache result
             self._set_cached(cache_key, df)
-            
+
             return df
 
         except Exception as e:
@@ -311,24 +324,21 @@ class OpenBBProvider(DataProvider, CachingMixin):
             "Dividends": "dividends",
             "Stock Splits": "stock_splits",
         }
-        
+
         # Rename columns that exist
         rename_dict = {k: v for k, v in column_mappings.items() if k in df.columns}
         df = df.rename(columns=rename_dict)
-        
+
         # If index is datetime, reset it to a column
         if isinstance(df.index, pd.DatetimeIndex) and "date" not in df.columns:
             df = df.reset_index()
             if "index" in df.columns:
                 df = df.rename(columns={"index": "date"})
-        
+
         return df
 
     async def get_institutional_holdings(
-        self,
-        symbol: str,
-        provider: Optional[str] = None,
-        **kwargs
+        self, symbol: str, provider: Optional[str] = None, **kwargs
     ) -> pd.DataFrame:
         """
         Get institutional holdings from 13F filings.
@@ -360,10 +370,10 @@ class OpenBBProvider(DataProvider, CachingMixin):
         for prov in providers_to_try:
             try:
                 df = await self._execute_with_retry(fetch_holdings, prov)
-                
+
                 # Normalize columns
                 df = self._normalize_institutional_columns(df)
-                
+
                 self._set_cached(cache_key, df)
                 return df
 
@@ -393,15 +403,12 @@ class OpenBBProvider(DataProvider, CachingMixin):
             "dateReported": "report_date",
             "filingDate": "filing_date",
         }
-        
+
         rename_dict = {k: v for k, v in column_mappings.items() if k in df.columns}
         return df.rename(columns=rename_dict)
 
     async def get_options_chain(
-        self,
-        symbol: str,
-        provider: Optional[str] = None,
-        **kwargs
+        self, symbol: str, provider: Optional[str] = None, **kwargs
     ) -> pd.DataFrame:
         """
         Get options chain data.
@@ -423,9 +430,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
 
         def fetch_options(prov: str):
             result = self._obb.derivatives.options.chains(
-                symbol=symbol,
-                provider=prov,
-                **kwargs
+                symbol=symbol, provider=prov, **kwargs
             )
             return self._to_dataframe(result)
 
@@ -440,13 +445,12 @@ class OpenBBProvider(DataProvider, CachingMixin):
                 logger.debug(f"Provider {prov} failed for options chain: {e}")
                 continue
 
-        raise DataProviderError(f"Failed to fetch options chain for {symbol}: {last_error}")
+        raise DataProviderError(
+            f"Failed to fetch options chain for {symbol}: {last_error}"
+        )
 
     async def get_fundamentals(
-        self,
-        symbol: str,
-        provider: Optional[str] = None,
-        **kwargs
+        self, symbol: str, provider: Optional[str] = None, **kwargs
     ) -> Dict[str, Any]:
         """
         Get fundamental data for a stock.
@@ -491,14 +495,12 @@ class OpenBBProvider(DataProvider, CachingMixin):
                 logger.debug(f"Provider {prov} failed for fundamentals: {e}")
                 continue
 
-        raise DataProviderError(f"Failed to fetch fundamentals for {symbol}: {last_error}")
+        raise DataProviderError(
+            f"Failed to fetch fundamentals for {symbol}: {last_error}"
+        )
 
     async def get_insider_transactions(
-        self,
-        symbol: str,
-        provider: Optional[str] = None,
-        limit: int = 100,
-        **kwargs
+        self, symbol: str, provider: Optional[str] = None, limit: int = 100, **kwargs
     ) -> pd.DataFrame:
         """
         Get insider trading transactions.
@@ -559,15 +561,12 @@ class OpenBBProvider(DataProvider, CachingMixin):
             "securityTitle": "security_type",
             "reportingOwnerTitle": "position",
         }
-        
+
         rename_dict = {k: v for k, v in column_mappings.items() if k in df.columns}
         return df.rename(columns=rename_dict)
 
     async def get_etf_holdings(
-        self,
-        symbol: str,
-        provider: Optional[str] = None,
-        **kwargs
+        self, symbol: str, provider: Optional[str] = None, **kwargs
     ) -> pd.DataFrame:
         """
         Get ETF holdings data.
@@ -605,7 +604,9 @@ class OpenBBProvider(DataProvider, CachingMixin):
                 logger.debug(f"Provider {prov} failed for ETF holdings: {e}")
                 continue
 
-        raise DataProviderError(f"Failed to fetch ETF holdings for {symbol}: {last_error}")
+        raise DataProviderError(
+            f"Failed to fetch ETF holdings for {symbol}: {last_error}"
+        )
 
     async def get_economic_indicator(
         self,
@@ -613,7 +614,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
         start_date: datetime,
         end_date: datetime,
         provider: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> pd.DataFrame:
         """
         Get economic indicator data.
@@ -629,7 +630,10 @@ class OpenBBProvider(DataProvider, CachingMixin):
             DataFrame with indicator values over time
         """
         cache_key = self._cache_key(
-            "economic_indicator", indicator, start_date.isoformat(), end_date.isoformat()
+            "economic_indicator",
+            indicator,
+            start_date.isoformat(),
+            end_date.isoformat(),
         )
         cached = self._get_cached(cache_key, ttl_seconds=3600)
         if cached is not None:
@@ -647,7 +651,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
             "interest_rate": "FEDFUNDS",
             "fed_funds": "FEDFUNDS",
         }
-        
+
         series_id = indicator_mapping.get(indicator.lower(), indicator.upper())
 
         def fetch_indicator():
@@ -661,10 +665,10 @@ class OpenBBProvider(DataProvider, CachingMixin):
 
         try:
             df = await self._execute_with_retry(fetch_indicator)
-            
+
             # Add indicator name column
             df["indicator"] = indicator
-            
+
             self._set_cached(cache_key, df)
             return df
 
@@ -674,10 +678,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
             ) from e
 
     async def get_short_interest(
-        self,
-        symbol: str,
-        provider: Optional[str] = None,
-        **kwargs
+        self, symbol: str, provider: Optional[str] = None, **kwargs
     ) -> pd.DataFrame:
         """
         Get short interest data for a symbol.
@@ -724,7 +725,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         provider: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> pd.DataFrame:
         """
         Get earnings calendar.
@@ -745,7 +746,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
                 params["start_date"] = start_date.strftime("%Y-%m-%d")
             if end_date:
                 params["end_date"] = end_date.strftime("%Y-%m-%d")
-            
+
             result = self._obb.equity.calendar.earnings(**params)
             return self._to_dataframe(result)
 
@@ -756,10 +757,7 @@ class OpenBBProvider(DataProvider, CachingMixin):
             raise DataProviderError(f"Failed to fetch earnings calendar: {e}") from e
 
     async def search_symbols(
-        self,
-        query: str,
-        provider: Optional[str] = None,
-        **kwargs
+        self, query: str, provider: Optional[str] = None, **kwargs
     ) -> pd.DataFrame:
         """
         Search for stock symbols.
@@ -809,8 +807,8 @@ class OpenBBAdapter:
                 - rate_limit_period: Rate limit period in seconds
         """
         self.config = config or {}
-        self._provider = self.config.get('provider', 'yfinance')
-        self._fallback_provider = self.config.get('fallback_provider')
+        self._provider = self.config.get("provider", "yfinance")
+        self._fallback_provider = self.config.get("fallback_provider")
         self._obb = None
         self._initialized = False
 
@@ -821,10 +819,11 @@ class OpenBBAdapter:
 
         try:
             from openbb import obb
+
             self._obb = obb
 
             # Configure API key if provided
-            api_key = self.config.get('api_key')
+            api_key = self.config.get("api_key")
             if api_key:
                 self._obb.user.credentials.openbb_api_key = api_key
 
@@ -910,12 +909,12 @@ class OpenBBAdapter:
         bars = []
         for idx, row in df.iterrows():
             bar = {
-                'timestamp': idx if isinstance(idx, datetime) else row.get('date', idx),
-                'open': float(row.get('open', row.get('Open', 0))),
-                'high': float(row.get('high', row.get('High', 0))),
-                'low': float(row.get('low', row.get('Low', 0))),
-                'close': float(row.get('close', row.get('Close', 0))),
-                'volume': int(row.get('volume', row.get('Volume', 0))),
+                "timestamp": idx if isinstance(idx, datetime) else row.get("date", idx),
+                "open": float(row.get("open", row.get("Open", 0))),
+                "high": float(row.get("high", row.get("High", 0))),
+                "low": float(row.get("low", row.get("Low", 0))),
+                "close": float(row.get("close", row.get("Close", 0))),
+                "volume": int(row.get("volume", row.get("Volume", 0))),
             }
             bars.append(bar)
 
@@ -948,19 +947,21 @@ class OpenBBAdapter:
 
             row = df.iloc[0]
             return {
-                'symbol': symbol,
-                'price': float(row.get('last', row.get('price', 0))),
-                'bid': float(row.get('bid', 0)),
-                'ask': float(row.get('ask', 0)),
-                'bid_size': int(row.get('bid_size', row.get('bidSize', 0))),
-                'ask_size': int(row.get('ask_size', row.get('askSize', 0))),
-                'volume': int(row.get('volume', 0)),
-                'timestamp': datetime.now(),
+                "symbol": symbol,
+                "price": float(row.get("last", row.get("price", 0))),
+                "bid": float(row.get("bid", 0)),
+                "ask": float(row.get("ask", 0)),
+                "bid_size": int(row.get("bid_size", row.get("bidSize", 0))),
+                "ask_size": int(row.get("ask_size", row.get("askSize", 0))),
+                "volume": int(row.get("volume", 0)),
+                "timestamp": datetime.now(),
             }
         except Exception:
             return {}
 
-    def get_quote_tick(self, symbol: str, provider: Optional[str] = None) -> Dict[str, Any]:
+    def get_quote_tick(
+        self, symbol: str, provider: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Get quote tick data for NautilusTrader.
 
@@ -974,11 +975,11 @@ class OpenBBAdapter:
         quote = self.get_quote(symbol, provider)
 
         return {
-            'bid': quote.get('bid', 0),
-            'ask': quote.get('ask', 0),
-            'bid_size': quote.get('bid_size', 0),
-            'ask_size': quote.get('ask_size', 0),
-            'timestamp': quote.get('timestamp', datetime.now()),
+            "bid": quote.get("bid", 0),
+            "ask": quote.get("ask", 0),
+            "bid_size": quote.get("bid_size", 0),
+            "ask_size": quote.get("ask_size", 0),
+            "timestamp": quote.get("timestamp", datetime.now()),
         }
 
     def get_institutional_holdings(
@@ -1004,7 +1005,7 @@ class OpenBBAdapter:
         try:
             result = self._obb.equity.ownership.major_holders(
                 symbol=symbol,
-                provider=provider or 'fmp',
+                provider=provider or "fmp",
             )
             return result.to_df()
         except Exception:
@@ -1033,7 +1034,7 @@ class OpenBBAdapter:
         try:
             result = self._obb.derivatives.options.chains(
                 symbol=symbol,
-                provider=provider or 'intrinio',
+                provider=provider or "intrinio",
             )
             return result.to_df()
         except Exception:
@@ -1059,10 +1060,11 @@ class OpenBBAdapter:
             DataFrame with OHLCV data
         """
         import asyncio
+
         loop = asyncio.get_event_loop()
         return await loop.run_in_executor(
             None,
-            lambda: self.get_historical_data(symbol, start_date, end_date, provider)
+            lambda: self.get_historical_data(symbol, start_date, end_date, provider),
         )
 
     async def get_historical_data_batch_async(
@@ -1088,7 +1090,9 @@ class OpenBBAdapter:
 
         async def fetch_symbol(sym: str) -> tuple:
             try:
-                df = await self.get_historical_data_async(sym, start_date, end_date, provider)
+                df = await self.get_historical_data_async(
+                    sym, start_date, end_date, provider
+                )
                 return (sym, df)
             except Exception:
                 return (sym, pd.DataFrame())

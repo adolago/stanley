@@ -131,7 +131,9 @@ class OpenBBDataClient(DataClient):
             logger.info("Connected to OpenBB data source")
 
         except ImportError:
-            logger.error("OpenBB is not installed. Please install with: pip install openbb")
+            logger.error(
+                "OpenBB is not installed. Please install with: pip install openbb"
+            )
             raise
         except Exception as e:
             logger.error(f"Failed to connect to OpenBB: {e}")
@@ -233,7 +235,9 @@ class OpenBBDataClient(DataClient):
     def _get_bar_converter(self, bar_type: BarType) -> OpenBBBarConverter:
         """Get or create a bar converter for the given bar type."""
         if bar_type not in self._bar_converters:
-            instrument = self._instrument_provider.get_instrument(bar_type.instrument_id)
+            instrument = self._instrument_provider.get_instrument(
+                bar_type.instrument_id
+            )
             price_precision = instrument.price_precision if instrument else 2
 
             self._bar_converters[bar_type] = OpenBBBarConverter(
@@ -408,7 +412,9 @@ class OpenBBDataClient(DataClient):
     # Quote Data Methods
     # -------------------------------------------------------------------------
 
-    def _get_quote_converter(self, instrument_id: InstrumentId) -> OpenBBQuoteTickConverter:
+    def _get_quote_converter(
+        self, instrument_id: InstrumentId
+    ) -> OpenBBQuoteTickConverter:
         """Get or create a quote tick converter."""
         if instrument_id not in self._quote_converters:
             instrument = self._instrument_provider.get_instrument(instrument_id)
@@ -458,7 +464,11 @@ class OpenBBDataClient(DataClient):
             if hasattr(result, "to_df"):
                 df = result.to_df()
             elif hasattr(result, "results"):
-                df = pd.DataFrame([result.results] if not isinstance(result.results, list) else result.results)
+                df = pd.DataFrame(
+                    [result.results]
+                    if not isinstance(result.results, list)
+                    else result.results
+                )
             else:
                 df = pd.DataFrame([result])
 
@@ -509,7 +519,9 @@ class OpenBBDataClient(DataClient):
     # Trade Data Methods
     # -------------------------------------------------------------------------
 
-    def _get_trade_converter(self, instrument_id: InstrumentId) -> OpenBBTradeTickConverter:
+    def _get_trade_converter(
+        self, instrument_id: InstrumentId
+    ) -> OpenBBTradeTickConverter:
         """Get or create a trade tick converter."""
         if instrument_id not in self._trade_converters:
             instrument = self._instrument_provider.get_instrument(instrument_id)
@@ -559,7 +571,11 @@ class OpenBBDataClient(DataClient):
             if hasattr(result, "to_df"):
                 df = result.to_df()
             elif hasattr(result, "results"):
-                df = pd.DataFrame([result.results] if not isinstance(result.results, list) else result.results)
+                df = pd.DataFrame(
+                    [result.results]
+                    if not isinstance(result.results, list)
+                    else result.results
+                )
             else:
                 df = pd.DataFrame([result])
 
@@ -622,7 +638,9 @@ class OpenBBDataClient(DataClient):
             data_type: The data type being requested.
             correlation_id: Correlation ID for the request.
         """
-        logger.debug(f"Received data request: {data_type}, correlation_id={correlation_id}")
+        logger.debug(
+            f"Received data request: {data_type}, correlation_id={correlation_id}"
+        )
 
         # The request is handled through the specific request_* methods
         # This base method can be extended for custom data types
@@ -825,11 +843,15 @@ class StanleyDataClient:
     def request_bars(self, bar_type, start, end) -> None:
         """Request historical bars."""
         if self._openbb_adapter:
-            symbol = bar_type.symbol.value if hasattr(bar_type.symbol, 'value') else str(bar_type.symbol)
+            symbol = (
+                bar_type.symbol.value
+                if hasattr(bar_type.symbol, "value")
+                else str(bar_type.symbol)
+            )
             data = self._openbb_adapter.get_historical_data(
                 symbol,
-                start.strftime('%Y-%m-%d'),
-                end.strftime('%Y-%m-%d'),
+                start.strftime("%Y-%m-%d"),
+                end.strftime("%Y-%m-%d"),
             )
             bars = self._convert_to_bars(data, bar_type)
             return bars
@@ -837,7 +859,11 @@ class StanleyDataClient:
     def request_quote_ticks(self, instrument_id) -> None:
         """Request quote ticks."""
         if self._openbb_adapter:
-            symbol = instrument_id.symbol.value if hasattr(instrument_id.symbol, 'value') else str(instrument_id.symbol)
+            symbol = (
+                instrument_id.symbol.value
+                if hasattr(instrument_id.symbol, "value")
+                else str(instrument_id.symbol)
+            )
             self._openbb_adapter.get_quote(symbol)
 
     def _convert_to_bars(self, df, bar_type):
@@ -848,12 +874,12 @@ class StanleyDataClient:
         bars = []
         for idx, row in df.iterrows():
             bar = {
-                'open': float(row.get('open', row.get('Open', 0))),
-                'high': float(row.get('high', row.get('High', 0))),
-                'low': float(row.get('low', row.get('Low', 0))),
-                'close': float(row.get('close', row.get('Close', 0))),
-                'volume': int(row.get('volume', row.get('Volume', 0))),
-                'timestamp': idx if hasattr(idx, 'timestamp') else datetime.now(),
+                "open": float(row.get("open", row.get("Open", 0))),
+                "high": float(row.get("high", row.get("High", 0))),
+                "low": float(row.get("low", row.get("Low", 0))),
+                "close": float(row.get("close", row.get("Close", 0))),
+                "volume": int(row.get("volume", row.get("Volume", 0))),
+                "timestamp": idx if hasattr(idx, "timestamp") else datetime.now(),
             }
             bars.append(bar)
         return bars
@@ -861,29 +887,29 @@ class StanleyDataClient:
     def _convert_to_quote_tick(self, quote_data, instrument_id):
         """Convert quote data to quote tick format."""
         return {
-            'bid': quote_data.get('bid', 0),
-            'ask': quote_data.get('ask', 0),
-            'bid_size': quote_data.get('bid_size', 0),
-            'ask_size': quote_data.get('ask_size', 0),
-            'timestamp': quote_data.get('timestamp', datetime.now()),
+            "bid": quote_data.get("bid", 0),
+            "ask": quote_data.get("ask", 0),
+            "bid_size": quote_data.get("bid_size", 0),
+            "ask_size": quote_data.get("ask_size", 0),
+            "timestamp": quote_data.get("timestamp", datetime.now()),
         }
 
     def _convert_to_trade_tick(self, trade_data, instrument_id):
         """Convert trade data to trade tick format."""
         return {
-            'price': trade_data.get('price', 0),
-            'size': trade_data.get('quantity', trade_data.get('size', 0)),
-            'side': trade_data.get('side', 'UNKNOWN'),
-            'timestamp': trade_data.get('timestamp', datetime.now()),
+            "price": trade_data.get("price", 0),
+            "size": trade_data.get("quantity", trade_data.get("size", 0)),
+            "side": trade_data.get("side", "UNKNOWN"),
+            "timestamp": trade_data.get("timestamp", datetime.now()),
         }
 
     def _create_equity_instrument(self, symbol, venue, currency):
         """Create an equity instrument definition."""
         return {
-            'symbol': symbol,
-            'venue': venue,
-            'currency': currency,
-            'type': 'EQUITY',
+            "symbol": symbol,
+            "venue": venue,
+            "currency": currency,
+            "type": "EQUITY",
         }
 
     async def start_stream(self, instrument_id) -> None:

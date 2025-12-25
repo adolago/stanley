@@ -184,7 +184,9 @@ class OpenBBBarConverter:
             return None  # Use index
         return None
 
-    def _convert_row_to_bar(self, row: pd.Series, ts_col: Optional[str]) -> Optional[Bar]:
+    def _convert_row_to_bar(
+        self, row: pd.Series, ts_col: Optional[str]
+    ) -> Optional[Bar]:
         """
         Convert a single DataFrame row to a Bar.
 
@@ -213,7 +215,9 @@ class OpenBBBarConverter:
         close_price = self._to_price(row.get("close") or row.get("Close"))
         volume = self._to_quantity(row.get("volume") or row.get("Volume"))
 
-        if any(v is None for v in [open_price, high_price, low_price, close_price, volume]):
+        if any(
+            v is None for v in [open_price, high_price, low_price, close_price, volume]
+        ):
             return None
 
         return Bar(
@@ -546,14 +550,20 @@ class OpenBBInstrumentProvider:
         instrument_id = InstrumentId.from_str(f"{config.symbol}.{venue_obj}")
 
         # Convert tick_size to Price with appropriate precision
-        tick_precision = len(str(config.tick_size).split(".")[-1]) if "." in str(config.tick_size) else 0
+        tick_precision = (
+            len(str(config.tick_size).split(".")[-1])
+            if "." in str(config.tick_size)
+            else 0
+        )
 
         equity = Equity(
             instrument_id=instrument_id,
             raw_symbol=instrument_id.symbol,
             currency=config.currency,
             price_precision=tick_precision,
-            price_increment=Price(Decimal(str(config.tick_size)), precision=tick_precision),
+            price_increment=Price(
+                Decimal(str(config.tick_size)), precision=tick_precision
+            ),
             lot_size=Quantity(Decimal(str(config.lot_size)), precision=0),
             ts_event=0,
             ts_init=0,

@@ -158,7 +158,14 @@ class PortfolioAnalyzer:
         if not holdings_df.empty:
             top_holdings = (
                 holdings_df.nlargest(10, "market_value")[
-                    ["symbol", "shares", "average_cost", "current_price", "market_value", "weight"]
+                    [
+                        "symbol",
+                        "shares",
+                        "average_cost",
+                        "current_price",
+                        "market_value",
+                        "weight",
+                    ]
                 ]
                 .round(2)
                 .to_dict("records")
@@ -283,7 +290,9 @@ class PortfolioAnalyzer:
             return BetaResult(1.0, 0.0, 0.0, 0.0, benchmark, 0)
 
         # Calculate portfolio returns
-        weights = np.array([portfolio.get_weights().get(s, 0) for s in returns_matrix.columns])
+        weights = np.array(
+            [portfolio.get_weights().get(s, 0) for s in returns_matrix.columns]
+        )
         portfolio_returns = (returns_matrix * weights).sum(axis=1)
 
         result = calculate_beta(portfolio_returns, benchmark_returns)
@@ -378,13 +387,15 @@ class PortfolioAnalyzer:
             sector = get_sector(symbol)
             by_sector[sector] = by_sector.get(sector, 0) + contribution
 
-            by_holding.append({
-                "symbol": symbol,
-                "weight": round(weight * 100, 2),
-                "return": round(period_return * 100, 2),
-                "contribution": round(contribution, 2),
-                "sector": sector,
-            })
+            by_holding.append(
+                {
+                    "symbol": symbol,
+                    "weight": round(weight * 100, 2),
+                    "return": round(period_return * 100, 2),
+                    "contribution": round(contribution, 2),
+                    "sector": sector,
+                }
+            )
 
         # Sort by contribution
         by_holding.sort(key=lambda x: abs(x["contribution"]), reverse=True)
@@ -410,7 +421,9 @@ class PortfolioAnalyzer:
         for symbol in symbols:
             try:
                 if self.data_manager:
-                    data = await self.data_manager.get_stock_data(symbol, start_date, end_date)
+                    data = await self.data_manager.get_stock_data(
+                        symbol, start_date, end_date
+                    )
                     if not data.empty:
                         prices[symbol] = float(data.iloc[-1]["close"])
                     else:
@@ -437,14 +450,18 @@ class PortfolioAnalyzer:
         for symbol in symbols:
             try:
                 if self.data_manager:
-                    data = await self.data_manager.get_stock_data(symbol, start_date, end_date)
+                    data = await self.data_manager.get_stock_data(
+                        symbol, start_date, end_date
+                    )
                     if not data.empty and "close" in data.columns:
                         returns = calculate_returns(data["close"])
                         returns_dict[symbol] = returns
                 else:
                     # Mock returns
                     dates = pd.date_range(start=start_date, end=end_date, freq="D")
-                    returns = pd.Series(np.random.normal(0.001, 0.02, len(dates)), index=dates)
+                    returns = pd.Series(
+                        np.random.normal(0.001, 0.02, len(dates)), index=dates
+                    )
                     returns_dict[symbol] = returns
             except Exception as e:
                 logger.warning(f"Failed to fetch returns for {symbol}: {e}")
@@ -467,7 +484,9 @@ class PortfolioAnalyzer:
 
         try:
             if self.data_manager:
-                data = await self.data_manager.get_stock_data(symbol, start_date, end_date)
+                data = await self.data_manager.get_stock_data(
+                    symbol, start_date, end_date
+                )
                 if not data.empty and "close" in data.columns:
                     return calculate_returns(data["close"])
             else:

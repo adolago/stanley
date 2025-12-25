@@ -44,15 +44,15 @@ class TestAnalyzeSectorMoneyFlow:
     def test_returns_dataframe(self):
         """Test that method returns a DataFrame."""
         stanley = Stanley()
-        result = stanley.analyze_sector_money_flow(['XLK', 'XLF', 'XLE'])
+        result = stanley.analyze_sector_money_flow(["XLK", "XLF", "XLE"])
         assert isinstance(result, pd.DataFrame)
 
     def test_dataframe_has_expected_columns(self):
         """Test that DataFrame has expected columns."""
         stanley = Stanley()
-        result = stanley.analyze_sector_money_flow(['XLK', 'XLF'])
-        assert 'sector' in result.columns
-        assert 'money_flow_score' in result.columns
+        result = stanley.analyze_sector_money_flow(["XLK", "XLF"])
+        assert "sector" in result.columns
+        assert "money_flow_score" in result.columns
 
     def test_empty_sectors_list(self):
         """Test with empty sectors list."""
@@ -64,28 +64,28 @@ class TestAnalyzeSectorMoneyFlow:
     def test_single_sector(self):
         """Test with single sector."""
         stanley = Stanley()
-        result = stanley.analyze_sector_money_flow(['XLK'])
+        result = stanley.analyze_sector_money_flow(["XLK"])
         assert len(result) == 1
 
     def test_multiple_sectors(self):
         """Test with multiple sectors."""
         stanley = Stanley()
-        sectors = ['XLK', 'XLF', 'XLE', 'XLI', 'XLV']
+        sectors = ["XLK", "XLF", "XLE", "XLI", "XLV"]
         result = stanley.analyze_sector_money_flow(sectors)
         assert len(result) == len(sectors)
 
     def test_lookback_days_parameter(self):
         """Test lookback_days parameter is accepted."""
         stanley = Stanley()
-        result = stanley.analyze_sector_money_flow(['XLK'], lookback_days=30)
+        result = stanley.analyze_sector_money_flow(["XLK"], lookback_days=30)
         assert isinstance(result, pd.DataFrame)
 
     def test_sectors_preserved_in_output(self):
         """Test that input sectors appear in output."""
         stanley = Stanley()
-        sectors = ['XLK', 'XLF']
+        sectors = ["XLK", "XLF"]
         result = stanley.analyze_sector_money_flow(sectors)
-        assert set(result['sector'].tolist()) == set(sectors)
+        assert set(result["sector"].tolist()) == set(sectors)
 
 
 class TestGetInstitutionalHoldings:
@@ -94,34 +94,34 @@ class TestGetInstitutionalHoldings:
     def test_returns_dict(self):
         """Test that method returns a dictionary."""
         stanley = Stanley()
-        result = stanley.get_institutional_holdings('AAPL')
+        result = stanley.get_institutional_holdings("AAPL")
         assert isinstance(result, dict)
 
     def test_has_expected_keys(self):
         """Test that result has expected keys."""
         stanley = Stanley()
-        result = stanley.get_institutional_holdings('AAPL')
-        assert 'symbol' in result
-        assert 'institutional_ownership' in result
-        assert 'top_holders' in result
+        result = stanley.get_institutional_holdings("AAPL")
+        assert "symbol" in result
+        assert "institutional_ownership" in result
+        assert "top_holders" in result
 
     def test_symbol_echoed_in_result(self):
         """Test that input symbol appears in result."""
         stanley = Stanley()
-        result = stanley.get_institutional_holdings('MSFT')
-        assert result['symbol'] == 'MSFT'
+        result = stanley.get_institutional_holdings("MSFT")
+        assert result["symbol"] == "MSFT"
 
     def test_institutional_ownership_range(self):
         """Test that institutional_ownership is in valid range."""
         stanley = Stanley()
-        result = stanley.get_institutional_holdings('AAPL')
-        assert 0 <= result['institutional_ownership'] <= 1
+        result = stanley.get_institutional_holdings("AAPL")
+        assert 0 <= result["institutional_ownership"] <= 1
 
     def test_top_holders_is_list(self):
         """Test that top_holders is a list."""
         stanley = Stanley()
-        result = stanley.get_institutional_holdings('AAPL')
-        assert isinstance(result['top_holders'], list)
+        result = stanley.get_institutional_holdings("AAPL")
+        assert isinstance(result["top_holders"], list)
 
 
 class TestHealthCheck:
@@ -137,29 +137,29 @@ class TestHealthCheck:
         """Test that result has 'core' key."""
         stanley = Stanley()
         result = stanley.health_check()
-        assert 'core' in result
+        assert "core" in result
 
     def test_has_status_key(self):
         """Test that result has 'status' key."""
         stanley = Stanley()
         result = stanley.health_check()
-        assert 'status' in result
+        assert "status" in result
 
     def test_core_is_boolean(self):
         """Test that 'core' value is boolean."""
         stanley = Stanley()
         result = stanley.health_check()
-        assert isinstance(result['core'], bool)
+        assert isinstance(result["core"], bool)
 
     def test_status_is_string(self):
         """Test that 'status' value is string."""
         stanley = Stanley()
         result = stanley.health_check()
-        assert isinstance(result['status'], str)
+        assert isinstance(result["status"], str)
 
     def test_healthy_state(self):
         """Test that healthy Stanley reports operational status."""
         stanley = Stanley()
         result = stanley.health_check()
-        assert result['core'] is True
-        assert result['status'] == 'operational'
+        assert result["core"] is True
+        assert result["status"] == "operational"

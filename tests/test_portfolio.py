@@ -67,10 +67,12 @@ class TestVaRCalculation:
     def test_historical_var(self):
         # Create sample returns data
         np.random.seed(42)
-        returns = pd.DataFrame({
-            "AAPL": np.random.normal(0.001, 0.02, 252),
-            "GOOGL": np.random.normal(0.0015, 0.025, 252),
-        })
+        returns = pd.DataFrame(
+            {
+                "AAPL": np.random.normal(0.001, 0.02, 252),
+                "GOOGL": np.random.normal(0.0015, 0.025, 252),
+            }
+        )
         weights = np.array([0.6, 0.4])
         portfolio_value = 100000.0
 
@@ -85,9 +87,11 @@ class TestVaRCalculation:
 
     def test_parametric_var(self):
         np.random.seed(42)
-        returns = pd.DataFrame({
-            "AAPL": np.random.normal(0.001, 0.02, 252),
-        })
+        returns = pd.DataFrame(
+            {
+                "AAPL": np.random.normal(0.001, 0.02, 252),
+            }
+        )
         weights = np.array([1.0])
         portfolio_value = 100000.0
 

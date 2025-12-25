@@ -54,16 +54,30 @@ class Commodity:
 # Registry of common commodities
 COMMODITY_REGISTRY: Dict[str, Commodity] = {
     # Energy
-    "CL": Commodity("CL", "Crude Oil (WTI)", CommodityCategory.ENERGY, "USD/barrel", "NYMEX"),
+    "CL": Commodity(
+        "CL", "Crude Oil (WTI)", CommodityCategory.ENERGY, "USD/barrel", "NYMEX"
+    ),
     "BZ": Commodity("BZ", "Brent Crude", CommodityCategory.ENERGY, "USD/barrel", "ICE"),
-    "NG": Commodity("NG", "Natural Gas", CommodityCategory.ENERGY, "USD/MMBtu", "NYMEX"),
-    "RB": Commodity("RB", "RBOB Gasoline", CommodityCategory.ENERGY, "USD/gallon", "NYMEX"),
-    "HO": Commodity("HO", "Heating Oil", CommodityCategory.ENERGY, "USD/gallon", "NYMEX"),
+    "NG": Commodity(
+        "NG", "Natural Gas", CommodityCategory.ENERGY, "USD/MMBtu", "NYMEX"
+    ),
+    "RB": Commodity(
+        "RB", "RBOB Gasoline", CommodityCategory.ENERGY, "USD/gallon", "NYMEX"
+    ),
+    "HO": Commodity(
+        "HO", "Heating Oil", CommodityCategory.ENERGY, "USD/gallon", "NYMEX"
+    ),
     # Precious Metals
     "GC": Commodity("GC", "Gold", CommodityCategory.PRECIOUS_METALS, "USD/oz", "COMEX"),
-    "SI": Commodity("SI", "Silver", CommodityCategory.PRECIOUS_METALS, "USD/oz", "COMEX"),
-    "PL": Commodity("PL", "Platinum", CommodityCategory.PRECIOUS_METALS, "USD/oz", "NYMEX"),
-    "PA": Commodity("PA", "Palladium", CommodityCategory.PRECIOUS_METALS, "USD/oz", "NYMEX"),
+    "SI": Commodity(
+        "SI", "Silver", CommodityCategory.PRECIOUS_METALS, "USD/oz", "COMEX"
+    ),
+    "PL": Commodity(
+        "PL", "Platinum", CommodityCategory.PRECIOUS_METALS, "USD/oz", "NYMEX"
+    ),
+    "PA": Commodity(
+        "PA", "Palladium", CommodityCategory.PRECIOUS_METALS, "USD/oz", "NYMEX"
+    ),
     # Base Metals
     "HG": Commodity("HG", "Copper", CommodityCategory.BASE_METALS, "USD/lb", "COMEX"),
     "ALI": Commodity("ALI", "Aluminum", CommodityCategory.BASE_METALS, "USD/mt", "LME"),
@@ -72,9 +86,15 @@ COMMODITY_REGISTRY: Dict[str, Commodity] = {
     # Agriculture
     "ZC": Commodity("ZC", "Corn", CommodityCategory.AGRICULTURE, "USc/bushel", "CBOT"),
     "ZW": Commodity("ZW", "Wheat", CommodityCategory.AGRICULTURE, "USc/bushel", "CBOT"),
-    "ZS": Commodity("ZS", "Soybeans", CommodityCategory.AGRICULTURE, "USc/bushel", "CBOT"),
-    "ZM": Commodity("ZM", "Soybean Meal", CommodityCategory.AGRICULTURE, "USD/short ton", "CBOT"),
-    "ZL": Commodity("ZL", "Soybean Oil", CommodityCategory.AGRICULTURE, "USc/lb", "CBOT"),
+    "ZS": Commodity(
+        "ZS", "Soybeans", CommodityCategory.AGRICULTURE, "USc/bushel", "CBOT"
+    ),
+    "ZM": Commodity(
+        "ZM", "Soybean Meal", CommodityCategory.AGRICULTURE, "USD/short ton", "CBOT"
+    ),
+    "ZL": Commodity(
+        "ZL", "Soybean Oil", CommodityCategory.AGRICULTURE, "USc/lb", "CBOT"
+    ),
     # Softs
     "KC": Commodity("KC", "Coffee", CommodityCategory.SOFTS, "USc/lb", "ICE"),
     "SB": Commodity("SB", "Sugar #11", CommodityCategory.SOFTS, "USc/lb", "ICE"),
@@ -83,7 +103,9 @@ COMMODITY_REGISTRY: Dict[str, Commodity] = {
     # Livestock
     "LE": Commodity("LE", "Live Cattle", CommodityCategory.LIVESTOCK, "USc/lb", "CME"),
     "HE": Commodity("HE", "Lean Hogs", CommodityCategory.LIVESTOCK, "USc/lb", "CME"),
-    "GF": Commodity("GF", "Feeder Cattle", CommodityCategory.LIVESTOCK, "USc/lb", "CME"),
+    "GF": Commodity(
+        "GF", "Feeder Cattle", CommodityCategory.LIVESTOCK, "USc/lb", "CME"
+    ),
 }
 
 
@@ -249,14 +271,16 @@ class CommodityPriceProvider:
         open_prices = prices * (1 + np.random.uniform(-0.01, 0.01, len(dates)))
         volume = np.random.randint(10000, 500000, len(dates))
 
-        return pd.DataFrame({
-            "date": dates,
-            "open": open_prices,
-            "high": high,
-            "low": low,
-            "close": prices,
-            "volume": volume,
-        })
+        return pd.DataFrame(
+            {
+                "date": dates,
+                "open": open_prices,
+                "high": high,
+                "low": low,
+                "close": prices,
+                "volume": volume,
+            }
+        )
 
     async def get_category_prices(
         self,

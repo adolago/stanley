@@ -17,6 +17,7 @@ from unittest.mock import Mock, MagicMock, patch, AsyncMock
 # Fixtures
 # =============================================================================
 
+
 @pytest.fixture
 def mock_msgbus():
     """Create a mock NautilusTrader message bus."""
@@ -51,27 +52,29 @@ def mock_clock():
 @pytest.fixture
 def sample_bar_data():
     """Sample bar data in Stanley format."""
-    dates = pd.date_range(end=datetime.now(), periods=10, freq='D')
-    return pd.DataFrame({
-        'date': dates,
-        'open': [100.0 + i * 0.5 for i in range(10)],
-        'high': [102.0 + i * 0.5 for i in range(10)],
-        'low': [99.0 + i * 0.5 for i in range(10)],
-        'close': [101.0 + i * 0.5 for i in range(10)],
-        'volume': [1000000 + i * 10000 for i in range(10)],
-    })
+    dates = pd.date_range(end=datetime.now(), periods=10, freq="D")
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "open": [100.0 + i * 0.5 for i in range(10)],
+            "high": [102.0 + i * 0.5 for i in range(10)],
+            "low": [99.0 + i * 0.5 for i in range(10)],
+            "close": [101.0 + i * 0.5 for i in range(10)],
+            "volume": [1000000 + i * 10000 for i in range(10)],
+        }
+    )
 
 
 @pytest.fixture
 def sample_quote_data():
     """Sample quote data in Stanley format."""
     return {
-        'symbol': 'AAPL',
-        'bid': 175.48,
-        'ask': 175.52,
-        'bid_size': 100,
-        'ask_size': 200,
-        'timestamp': datetime.now(),
+        "symbol": "AAPL",
+        "bid": 175.48,
+        "ask": 175.52,
+        "bid_size": 100,
+        "ask_size": 200,
+        "timestamp": datetime.now(),
     }
 
 
@@ -79,11 +82,11 @@ def sample_quote_data():
 def sample_trade_data():
     """Sample trade data in Stanley format."""
     return {
-        'symbol': 'AAPL',
-        'price': 175.50,
-        'quantity': 100,
-        'side': 'BUY',
-        'timestamp': datetime.now(),
+        "symbol": "AAPL",
+        "price": 175.50,
+        "quantity": 100,
+        "side": "BUY",
+        "timestamp": datetime.now(),
     }
 
 
@@ -91,20 +94,26 @@ def sample_trade_data():
 def mock_openbb_adapter():
     """Create a mock OpenBB adapter."""
     adapter = Mock()
-    adapter.get_historical_data = Mock(return_value=pd.DataFrame({
-        'date': pd.date_range(end=datetime.now(), periods=10, freq='D'),
-        'open': [100.0] * 10,
-        'high': [102.0] * 10,
-        'low': [99.0] * 10,
-        'close': [101.0] * 10,
-        'volume': [1000000] * 10,
-    }))
-    adapter.get_quote = Mock(return_value={
-        'bid': 175.48,
-        'ask': 175.52,
-        'bid_size': 100,
-        'ask_size': 200,
-    })
+    adapter.get_historical_data = Mock(
+        return_value=pd.DataFrame(
+            {
+                "date": pd.date_range(end=datetime.now(), periods=10, freq="D"),
+                "open": [100.0] * 10,
+                "high": [102.0] * 10,
+                "low": [99.0] * 10,
+                "close": [101.0] * 10,
+                "volume": [1000000] * 10,
+            }
+        )
+    )
+    adapter.get_quote = Mock(
+        return_value={
+            "bid": 175.48,
+            "ask": 175.52,
+            "bid_size": 100,
+            "ask_size": 200,
+        }
+    )
     return adapter
 
 
@@ -112,10 +121,13 @@ def mock_openbb_adapter():
 # Data Client Initialization Tests
 # =============================================================================
 
+
 class TestStanleyDataClientInitialization:
     """Test data client initialization."""
 
-    def test_client_initializes_with_components(self, mock_msgbus, mock_cache, mock_clock):
+    def test_client_initializes_with_components(
+        self, mock_msgbus, mock_cache, mock_clock
+    ):
         """Test data client initializes with required Nautilus components."""
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
@@ -150,9 +162,9 @@ class TestStanleyDataClientInitialization:
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
         config = {
-            'venues': ['NASDAQ', 'NYSE'],
-            'symbols': ['AAPL', 'MSFT'],
-            'bar_types': ['1-MINUTE', '1-HOUR', '1-DAY'],
+            "venues": ["NASDAQ", "NYSE"],
+            "symbols": ["AAPL", "MSFT"],
+            "bar_types": ["1-MINUTE", "1-HOUR", "1-DAY"],
         }
 
         client = StanleyDataClient(
@@ -169,10 +181,13 @@ class TestStanleyDataClientInitialization:
 # Data Subscription Tests
 # =============================================================================
 
+
 class TestDataSubscriptions:
     """Test data subscription functionality."""
 
-    def test_subscribe_bars(self, mock_msgbus, mock_cache, mock_clock, mock_openbb_adapter):
+    def test_subscribe_bars(
+        self, mock_msgbus, mock_cache, mock_clock, mock_openbb_adapter
+    ):
         """Test subscribing to bar data."""
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
@@ -185,8 +200,8 @@ class TestDataSubscriptions:
 
         # Create a mock bar type
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
-        bar_type.spec = Mock(step=1, aggregation='MINUTE')
+        bar_type.symbol = Mock(value="AAPL")
+        bar_type.spec = Mock(step=1, aggregation="MINUTE")
 
         client.subscribe_bars(bar_type)
 
@@ -204,7 +219,7 @@ class TestDataSubscriptions:
         )
 
         instrument_id = Mock()
-        instrument_id.symbol = Mock(value='AAPL')
+        instrument_id.symbol = Mock(value="AAPL")
 
         client.subscribe_quote_ticks(instrument_id)
 
@@ -222,14 +237,16 @@ class TestDataSubscriptions:
         )
 
         instrument_id = Mock()
-        instrument_id.symbol = Mock(value='AAPL')
+        instrument_id.symbol = Mock(value="AAPL")
 
         client.subscribe_trade_ticks(instrument_id)
 
         # Verify subscription was registered
         assert True  # Implementation will track subscriptions
 
-    def test_unsubscribe_bars(self, mock_msgbus, mock_cache, mock_clock, mock_openbb_adapter):
+    def test_unsubscribe_bars(
+        self, mock_msgbus, mock_cache, mock_clock, mock_openbb_adapter
+    ):
         """Test unsubscribing from bar data."""
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
@@ -241,7 +258,7 @@ class TestDataSubscriptions:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         client.subscribe_bars(bar_type)
         client.unsubscribe_bars(bar_type)
@@ -253,6 +270,7 @@ class TestDataSubscriptions:
 # =============================================================================
 # Data Request Tests
 # =============================================================================
+
 
 class TestDataRequests:
     """Test data request functionality."""
@@ -273,8 +291,8 @@ class TestDataRequests:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
-        bar_type.spec = Mock(step=1, aggregation='DAY')
+        bar_type.symbol = Mock(value="AAPL")
+        bar_type.spec = Mock(step=1, aggregation="DAY")
 
         start = datetime.now() - timedelta(days=30)
         end = datetime.now()
@@ -300,7 +318,7 @@ class TestDataRequests:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         start = datetime.now() - timedelta(days=30)
         end = datetime.now()
@@ -311,7 +329,12 @@ class TestDataRequests:
         # mock_msgbus.publish.assert_called()  # Implementation dependent
 
     def test_request_quote_ticks(
-        self, mock_msgbus, mock_cache, mock_clock, mock_openbb_adapter, sample_quote_data
+        self,
+        mock_msgbus,
+        mock_cache,
+        mock_clock,
+        mock_openbb_adapter,
+        sample_quote_data,
     ):
         """Test requesting quote tick data."""
         from stanley.integrations.nautilus.data_client import StanleyDataClient
@@ -326,7 +349,7 @@ class TestDataRequests:
         )
 
         instrument_id = Mock()
-        instrument_id.symbol = Mock(value='AAPL')
+        instrument_id.symbol = Mock(value="AAPL")
 
         client.request_quote_ticks(instrument_id)
 
@@ -337,6 +360,7 @@ class TestDataRequests:
 # =============================================================================
 # Data Conversion Tests
 # =============================================================================
+
 
 class TestDataConversion:
     """Test data conversion from Stanley to Nautilus format."""
@@ -354,8 +378,8 @@ class TestDataConversion:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
-        bar_type.venue = Mock(value='NASDAQ')
+        bar_type.symbol = Mock(value="AAPL")
+        bar_type.venue = Mock(value="NASDAQ")
 
         bars = client._convert_to_bars(sample_bar_data, bar_type)
 
@@ -363,11 +387,11 @@ class TestDataConversion:
         assert len(bars) == 10
 
         for bar in bars:
-            assert hasattr(bar, 'open') or 'open' in bar
-            assert hasattr(bar, 'high') or 'high' in bar
-            assert hasattr(bar, 'low') or 'low' in bar
-            assert hasattr(bar, 'close') or 'close' in bar
-            assert hasattr(bar, 'volume') or 'volume' in bar
+            assert hasattr(bar, "open") or "open" in bar
+            assert hasattr(bar, "high") or "high" in bar
+            assert hasattr(bar, "low") or "low" in bar
+            assert hasattr(bar, "close") or "close" in bar
+            assert hasattr(bar, "volume") or "volume" in bar
 
     def test_convert_quote_to_quote_tick(
         self, mock_msgbus, mock_cache, mock_clock, sample_quote_data
@@ -382,7 +406,7 @@ class TestDataConversion:
         )
 
         instrument_id = Mock()
-        instrument_id.symbol = Mock(value='AAPL')
+        instrument_id.symbol = Mock(value="AAPL")
 
         quote_tick = client._convert_to_quote_tick(sample_quote_data, instrument_id)
 
@@ -402,7 +426,7 @@ class TestDataConversion:
         )
 
         instrument_id = Mock()
-        instrument_id.symbol = Mock(value='AAPL')
+        instrument_id.symbol = Mock(value="AAPL")
 
         trade_tick = client._convert_to_trade_tick(sample_trade_data, instrument_id)
 
@@ -412,6 +436,7 @@ class TestDataConversion:
 # =============================================================================
 # Price Precision Tests
 # =============================================================================
+
 
 class TestPricePrecision:
     """Test price precision handling."""
@@ -423,14 +448,16 @@ class TestPricePrecision:
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
         # Data with high precision
-        precise_data = pd.DataFrame({
-            'date': pd.date_range(end=datetime.now(), periods=3, freq='D'),
-            'open': [100.12345, 100.23456, 100.34567],
-            'high': [102.12345, 102.23456, 102.34567],
-            'low': [99.12345, 99.23456, 99.34567],
-            'close': [101.12345, 101.23456, 101.34567],
-            'volume': [1000000, 1100000, 1200000],
-        })
+        precise_data = pd.DataFrame(
+            {
+                "date": pd.date_range(end=datetime.now(), periods=3, freq="D"),
+                "open": [100.12345, 100.23456, 100.34567],
+                "high": [102.12345, 102.23456, 102.34567],
+                "low": [99.12345, 99.23456, 99.34567],
+                "close": [101.12345, 101.23456, 101.34567],
+                "volume": [1000000, 1100000, 1200000],
+            }
+        )
 
         mock_openbb_adapter.get_historical_data.return_value = precise_data
 
@@ -442,7 +469,7 @@ class TestPricePrecision:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         bars = client._convert_to_bars(precise_data, bar_type)
 
@@ -456,14 +483,16 @@ class TestPricePrecision:
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
         # Penny stock data
-        penny_data = pd.DataFrame({
-            'date': pd.date_range(end=datetime.now(), periods=3, freq='D'),
-            'open': [0.0125, 0.0130, 0.0128],
-            'high': [0.0135, 0.0140, 0.0138],
-            'low': [0.0120, 0.0125, 0.0123],
-            'close': [0.0130, 0.0135, 0.0133],
-            'volume': [50000000, 60000000, 55000000],
-        })
+        penny_data = pd.DataFrame(
+            {
+                "date": pd.date_range(end=datetime.now(), periods=3, freq="D"),
+                "open": [0.0125, 0.0130, 0.0128],
+                "high": [0.0135, 0.0140, 0.0138],
+                "low": [0.0120, 0.0125, 0.0123],
+                "close": [0.0130, 0.0135, 0.0133],
+                "volume": [50000000, 60000000, 55000000],
+            }
+        )
 
         mock_openbb_adapter.get_historical_data.return_value = penny_data
 
@@ -475,7 +504,7 @@ class TestPricePrecision:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='PENNY')
+        bar_type.symbol = Mock(value="PENNY")
 
         bars = client._convert_to_bars(penny_data, bar_type)
 
@@ -486,6 +515,7 @@ class TestPricePrecision:
 # =============================================================================
 # Edge Case Tests
 # =============================================================================
+
 
 class TestDataClientEdgeCases:
     """Test edge cases and error handling."""
@@ -506,7 +536,7 @@ class TestDataClientEdgeCases:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         bars = client._convert_to_bars(pd.DataFrame(), bar_type)
 
@@ -531,10 +561,12 @@ class TestDataClientEdgeCases:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         with pytest.raises(ConnectionError):
-            client.request_bars(bar_type, datetime.now() - timedelta(days=30), datetime.now())
+            client.request_bars(
+                bar_type, datetime.now() - timedelta(days=30), datetime.now()
+            )
 
     def test_handles_malformed_data(
         self, mock_msgbus, mock_cache, mock_clock, mock_openbb_adapter
@@ -543,10 +575,12 @@ class TestDataClientEdgeCases:
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
         # Data with wrong column names
-        malformed_data = pd.DataFrame({
-            'wrong_date': pd.date_range(end=datetime.now(), periods=3, freq='D'),
-            'wrong_open': [100.0] * 3,
-        })
+        malformed_data = pd.DataFrame(
+            {
+                "wrong_date": pd.date_range(end=datetime.now(), periods=3, freq="D"),
+                "wrong_open": [100.0] * 3,
+            }
+        )
 
         mock_openbb_adapter.get_historical_data.return_value = malformed_data
 
@@ -558,7 +592,7 @@ class TestDataClientEdgeCases:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         # Should handle gracefully, either by returning empty list or raising
         result = client._convert_to_bars(malformed_data, bar_type)
@@ -571,14 +605,16 @@ class TestDataClientEdgeCases:
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
         # Data with duplicate timestamps
-        duplicate_data = pd.DataFrame({
-            'date': [datetime.now()] * 3,  # Same timestamp
-            'open': [100.0, 100.5, 101.0],
-            'high': [102.0, 102.5, 103.0],
-            'low': [99.0, 99.5, 100.0],
-            'close': [101.0, 101.5, 102.0],
-            'volume': [1000000, 1100000, 1200000],
-        })
+        duplicate_data = pd.DataFrame(
+            {
+                "date": [datetime.now()] * 3,  # Same timestamp
+                "open": [100.0, 100.5, 101.0],
+                "high": [102.0, 102.5, 103.0],
+                "low": [99.0, 99.5, 100.0],
+                "close": [101.0, 101.5, 102.0],
+                "volume": [1000000, 1100000, 1200000],
+            }
+        )
 
         client = StanleyDataClient(
             msgbus=mock_msgbus,
@@ -588,7 +624,7 @@ class TestDataClientEdgeCases:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         # Should deduplicate or handle appropriately
         bars = client._convert_to_bars(duplicate_data, bar_type)
@@ -598,6 +634,7 @@ class TestDataClientEdgeCases:
 # =============================================================================
 # Live Data Streaming Tests
 # =============================================================================
+
 
 class TestLiveDataStreaming:
     """Test live data streaming functionality."""
@@ -617,7 +654,7 @@ class TestLiveDataStreaming:
         )
 
         instrument_id = Mock()
-        instrument_id.symbol = Mock(value='AAPL')
+        instrument_id.symbol = Mock(value="AAPL")
 
         # Start streaming
         await client.start_stream(instrument_id)
@@ -639,7 +676,7 @@ class TestLiveDataStreaming:
         )
 
         instrument_id = Mock()
-        instrument_id.symbol = Mock(value='AAPL')
+        instrument_id.symbol = Mock(value="AAPL")
 
         await client.start_stream(instrument_id)
         await client.stop_stream(instrument_id)
@@ -650,6 +687,7 @@ class TestLiveDataStreaming:
 # =============================================================================
 # Cache Integration Tests
 # =============================================================================
+
 
 class TestCacheIntegration:
     """Test cache integration with data client."""
@@ -670,7 +708,7 @@ class TestCacheIntegration:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         start = datetime.now() - timedelta(days=30)
         end = datetime.now()
@@ -698,7 +736,7 @@ class TestCacheIntegration:
         )
 
         bar_type = Mock()
-        bar_type.symbol = Mock(value='AAPL')
+        bar_type.symbol = Mock(value="AAPL")
 
         # Request should use cached data
         # Implementation may vary
@@ -708,6 +746,7 @@ class TestCacheIntegration:
 # =============================================================================
 # Instrument Resolution Tests
 # =============================================================================
+
 
 class TestInstrumentResolution:
     """Test instrument resolution and creation."""
@@ -723,15 +762,17 @@ class TestInstrumentResolution:
         )
 
         instrument = client._create_equity_instrument(
-            symbol='AAPL',
-            venue='NASDAQ',
-            currency='USD',
+            symbol="AAPL",
+            venue="NASDAQ",
+            currency="USD",
         )
 
         assert instrument is not None
         # Verify instrument properties based on implementation
 
-    def test_instrument_cached_after_creation(self, mock_msgbus, mock_cache, mock_clock):
+    def test_instrument_cached_after_creation(
+        self, mock_msgbus, mock_cache, mock_clock
+    ):
         """Test that created instruments are cached."""
         from stanley.integrations.nautilus.data_client import StanleyDataClient
 
@@ -742,9 +783,9 @@ class TestInstrumentResolution:
         )
 
         instrument = client._create_equity_instrument(
-            symbol='AAPL',
-            venue='NASDAQ',
-            currency='USD',
+            symbol="AAPL",
+            venue="NASDAQ",
+            currency="USD",
         )
 
         # Verify instrument was added to cache

@@ -28,9 +28,13 @@ impl StanleyClient {
     }
 
     /// Get sector money flow analysis
-    pub fn get_sector_money_flow(&self, sectors: Vec<String>) -> Result<SectorFlowResponse, ApiError> {
+    pub fn get_sector_money_flow(
+        &self,
+        sectors: Vec<String>,
+    ) -> Result<SectorFlowResponse, ApiError> {
         let url = format!("{}/api/money-flow", self.base_url);
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .json(&SectorFlowRequest { sectors })
             .send()
@@ -40,9 +44,13 @@ impl StanleyClient {
     }
 
     /// Get institutional holdings for a symbol
-    pub fn get_institutional_holdings(&self, symbol: &str) -> Result<InstitutionalHoldingsResponse, ApiError> {
+    pub fn get_institutional_holdings(
+        &self,
+        symbol: &str,
+    ) -> Result<InstitutionalHoldingsResponse, ApiError> {
         let url = format!("{}/api/institutional/{}", self.base_url, symbol);
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
@@ -53,7 +61,8 @@ impl StanleyClient {
     /// Get equity money flow analysis
     pub fn get_equity_flow(&self, symbol: &str) -> Result<EquityFlowResponse, ApiError> {
         let url = format!("{}/api/equity-flow/{}", self.base_url, symbol);
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
@@ -64,7 +73,8 @@ impl StanleyClient {
     /// Get dark pool activity
     pub fn get_dark_pool_activity(&self, symbol: &str) -> Result<DarkPoolResponse, ApiError> {
         let url = format!("{}/api/dark-pool/{}", self.base_url, symbol);
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
@@ -75,7 +85,8 @@ impl StanleyClient {
     /// Health check
     pub fn health_check(&self) -> Result<HealthResponse, ApiError> {
         let url = format!("{}/api/health", self.base_url);
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
@@ -86,7 +97,11 @@ impl StanleyClient {
     // Notes API methods
 
     /// Get list of theses
-    pub fn get_theses(&self, status: Option<&str>, symbol: Option<&str>) -> Result<Vec<NoteResponse>, ApiError> {
+    pub fn get_theses(
+        &self,
+        status: Option<&str>,
+        symbol: Option<&str>,
+    ) -> Result<Vec<NoteResponse>, ApiError> {
         let mut url = format!("{}/api/theses", self.base_url);
         let mut params = Vec::new();
         if let Some(s) = status {
@@ -99,7 +114,8 @@ impl StanleyClient {
             url = format!("{}?{}", url, params.join("&"));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
@@ -110,7 +126,8 @@ impl StanleyClient {
     /// Create a new thesis
     pub fn create_thesis(&self, request: CreateThesisRequest) -> Result<NoteResponse, ApiError> {
         let url = format!("{}/api/theses", self.base_url);
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .json(&request)
             .send()
@@ -120,7 +137,11 @@ impl StanleyClient {
     }
 
     /// Get list of trades
-    pub fn get_trades(&self, status: Option<&str>, symbol: Option<&str>) -> Result<Vec<NoteResponse>, ApiError> {
+    pub fn get_trades(
+        &self,
+        status: Option<&str>,
+        symbol: Option<&str>,
+    ) -> Result<Vec<NoteResponse>, ApiError> {
         let mut url = format!("{}/api/trades", self.base_url);
         let mut params = Vec::new();
         if let Some(s) = status {
@@ -133,7 +154,8 @@ impl StanleyClient {
             url = format!("{}?{}", url, params.join("&"));
         }
 
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
@@ -144,7 +166,8 @@ impl StanleyClient {
     /// Create a new trade
     pub fn create_trade(&self, request: CreateTradeRequest) -> Result<NoteResponse, ApiError> {
         let url = format!("{}/api/trades", self.base_url);
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .json(&request)
             .send()
@@ -154,9 +177,14 @@ impl StanleyClient {
     }
 
     /// Close a trade
-    pub fn close_trade(&self, name: &str, request: CloseTradeRequest) -> Result<NoteResponse, ApiError> {
+    pub fn close_trade(
+        &self,
+        name: &str,
+        request: CloseTradeRequest,
+    ) -> Result<NoteResponse, ApiError> {
         let url = format!("{}/api/trades/{}/close", self.base_url, name);
-        let response = self.client
+        let response = self
+            .client
             .post(&url)
             .json(&request)
             .send()
@@ -168,7 +196,8 @@ impl StanleyClient {
     /// Get trade statistics
     pub fn get_trade_stats(&self) -> Result<TradeStatsResponse, ApiError> {
         let url = format!("{}/api/trades/stats", self.base_url);
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
@@ -177,10 +206,18 @@ impl StanleyClient {
     }
 
     /// Search notes
-    pub fn search_notes(&self, query: &str, limit: Option<u32>) -> Result<Vec<SearchResult>, ApiError> {
+    pub fn search_notes(
+        &self,
+        query: &str,
+        limit: Option<u32>,
+    ) -> Result<Vec<SearchResult>, ApiError> {
         let limit = limit.unwrap_or(50);
-        let url = format!("{}/api/notes/search?query={}&limit={}", self.base_url, query, limit);
-        let response = self.client
+        let url = format!(
+            "{}/api/notes/search?query={}&limit={}",
+            self.base_url, query, limit
+        );
+        let response = self
+            .client
             .get(&url)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
@@ -191,8 +228,124 @@ impl StanleyClient {
     /// Get notes graph
     pub fn get_notes_graph(&self) -> Result<GraphResponse, ApiError> {
         let url = format!("{}/api/notes/graph", self.base_url);
-        let response = self.client
+        let response = self
+            .client
             .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    // Events API methods
+
+    /// Get list of events
+    pub fn get_events(
+        &self,
+        event_type: Option<&str>,
+        symbol: Option<&str>,
+        company: Option<&str>,
+    ) -> Result<Vec<NoteResponse>, ApiError> {
+        let mut url = format!("{}/api/events", self.base_url);
+        let mut params = Vec::new();
+        if let Some(t) = event_type {
+            params.push(format!("event_type={}", t));
+        }
+        if let Some(s) = symbol {
+            params.push(format!("symbol={}", s));
+        }
+        if let Some(c) = company {
+            params.push(format!("company={}", c));
+        }
+        if !params.is_empty() {
+            url = format!("{}?{}", url, params.join("&"));
+        }
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Create a new event
+    pub fn create_event(&self, request: CreateEventRequest) -> Result<NoteResponse, ApiError> {
+        let url = format!("{}/api/events", self.base_url);
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    // People API methods
+
+    /// Get list of people
+    pub fn get_people(
+        &self,
+        company: Option<&str>,
+        role: Option<&str>,
+    ) -> Result<Vec<NoteResponse>, ApiError> {
+        let mut url = format!("{}/api/people", self.base_url);
+        let mut params = Vec::new();
+        if let Some(c) = company {
+            params.push(format!("company={}", c));
+        }
+        if let Some(r) = role {
+            params.push(format!("role={}", r));
+        }
+        if !params.is_empty() {
+            url = format!("{}?{}", url, params.join("&"));
+        }
+
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Create a new person profile
+    pub fn create_person(&self, request: CreatePersonRequest) -> Result<NoteResponse, ApiError> {
+        let url = format!("{}/api/people", self.base_url);
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    // Sectors API methods
+
+    /// Get list of sectors
+    pub fn get_sectors(&self) -> Result<Vec<NoteResponse>, ApiError> {
+        let url = format!("{}/api/sectors", self.base_url);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Create a new sector overview
+    pub fn create_sector(&self, request: CreateSectorRequest) -> Result<NoteResponse, ApiError> {
+        let url = format!("{}/api/sectors", self.base_url);
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
             .send()
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
@@ -311,6 +464,31 @@ pub struct CloseTradeRequest {
     pub exit_reason: Option<String>,
     pub lessons: Option<String>,
     pub grade: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateEventRequest {
+    pub symbol: String,
+    pub company_name: Option<String>,
+    pub event_type: String,
+    pub event_date: Option<String>,
+    pub host: Option<String>,
+    pub participants: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreatePersonRequest {
+    pub full_name: String,
+    pub current_role: Option<String>,
+    pub current_company: Option<String>,
+    pub linkedin_url: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateSectorRequest {
+    pub sector_name: String,
+    pub sub_sectors: Vec<String>,
+    pub companies: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]
