@@ -82,6 +82,122 @@ impl StanleyClient {
 
         response.json().map_err(|e| ApiError::Parse(e.to_string()))
     }
+
+    // Notes API methods
+
+    /// Get list of theses
+    pub fn get_theses(&self, status: Option<&str>, symbol: Option<&str>) -> Result<Vec<NoteResponse>, ApiError> {
+        let mut url = format!("{}/api/theses", self.base_url);
+        let mut params = Vec::new();
+        if let Some(s) = status {
+            params.push(format!("status={}", s));
+        }
+        if let Some(s) = symbol {
+            params.push(format!("symbol={}", s));
+        }
+        if !params.is_empty() {
+            url = format!("{}?{}", url, params.join("&"));
+        }
+
+        let response = self.client
+            .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Create a new thesis
+    pub fn create_thesis(&self, request: CreateThesisRequest) -> Result<NoteResponse, ApiError> {
+        let url = format!("{}/api/theses", self.base_url);
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get list of trades
+    pub fn get_trades(&self, status: Option<&str>, symbol: Option<&str>) -> Result<Vec<NoteResponse>, ApiError> {
+        let mut url = format!("{}/api/trades", self.base_url);
+        let mut params = Vec::new();
+        if let Some(s) = status {
+            params.push(format!("status={}", s));
+        }
+        if let Some(s) = symbol {
+            params.push(format!("symbol={}", s));
+        }
+        if !params.is_empty() {
+            url = format!("{}?{}", url, params.join("&"));
+        }
+
+        let response = self.client
+            .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Create a new trade
+    pub fn create_trade(&self, request: CreateTradeRequest) -> Result<NoteResponse, ApiError> {
+        let url = format!("{}/api/trades", self.base_url);
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Close a trade
+    pub fn close_trade(&self, name: &str, request: CloseTradeRequest) -> Result<NoteResponse, ApiError> {
+        let url = format!("{}/api/trades/{}/close", self.base_url, name);
+        let response = self.client
+            .post(&url)
+            .json(&request)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get trade statistics
+    pub fn get_trade_stats(&self) -> Result<TradeStatsResponse, ApiError> {
+        let url = format!("{}/api/trades/stats", self.base_url);
+        let response = self.client
+            .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Search notes
+    pub fn search_notes(&self, query: &str, limit: Option<u32>) -> Result<Vec<SearchResult>, ApiError> {
+        let limit = limit.unwrap_or(50);
+        let url = format!("{}/api/notes/search?query={}&limit={}", self.base_url, query, limit);
+        let response = self.client
+            .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get notes graph
+    pub fn get_notes_graph(&self) -> Result<GraphResponse, ApiError> {
+        let url = format!("{}/api/notes/graph", self.base_url);
+        let response = self.client
+            .get(&url)
+            .send()
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+    }
 }
 
 impl Default for StanleyClient {
@@ -167,4 +283,119 @@ pub struct DarkPoolData {
 pub struct HealthResponse {
     pub core: bool,
     pub status: String,
+}
+
+// Notes API types
+
+#[derive(Debug, Serialize)]
+pub struct CreateThesisRequest {
+    pub symbol: String,
+    pub company_name: Option<String>,
+    pub sector: Option<String>,
+    pub conviction: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreateTradeRequest {
+    pub symbol: String,
+    pub direction: String,
+    pub entry_price: f64,
+    pub shares: f64,
+    pub entry_date: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CloseTradeRequest {
+    pub exit_price: f64,
+    pub exit_date: Option<String>,
+    pub exit_reason: Option<String>,
+    pub lessons: Option<String>,
+    pub grade: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NoteFrontmatter {
+    pub title: String,
+    #[serde(rename = "type")]
+    pub note_type: String,
+    pub created: String,
+    pub modified: String,
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ThesisFrontmatter {
+    pub title: String,
+    pub symbol: String,
+    pub company_name: Option<String>,
+    pub sector: Option<String>,
+    pub status: String,
+    pub conviction: String,
+    pub entry_price: Option<f64>,
+    pub target_price: Option<f64>,
+    pub stop_loss: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TradeFrontmatter {
+    pub title: String,
+    pub symbol: String,
+    pub direction: String,
+    pub status: String,
+    pub entry_price: f64,
+    pub exit_price: Option<f64>,
+    pub shares: f64,
+    pub pnl: Option<f64>,
+    pub pnl_percent: Option<f64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct NoteResponse {
+    pub name: String,
+    pub path: String,
+    pub frontmatter: serde_json::Value,
+    pub content: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SearchResult {
+    pub path: String,
+    pub name: String,
+    pub title: String,
+    #[serde(rename = "type")]
+    pub note_type: String,
+    pub snippet: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TradeStatsResponse {
+    pub total_trades: u32,
+    pub winners: u32,
+    pub losers: u32,
+    pub win_rate: f64,
+    pub total_pnl: f64,
+    pub avg_win: f64,
+    pub avg_loss: f64,
+    pub profit_factor: f64,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GraphNode {
+    pub id: String,
+    pub label: String,
+    #[serde(rename = "type")]
+    pub node_type: String,
+    pub tags: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GraphEdge {
+    pub source: String,
+    pub target: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GraphResponse {
+    pub nodes: Vec<GraphNode>,
+    pub edges: Vec<GraphEdge>,
 }
