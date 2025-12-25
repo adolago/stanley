@@ -18,7 +18,7 @@ redis==5.0.1
 # Financial data
 openbb>=4.0.0
 yfinance==0.2.24
-sec-downloader==1.4.0
+sec-downloader>=0.12.0
 edgartools>=3.0.0
 dbnomics>=1.2.0
 requests==2.31.0
