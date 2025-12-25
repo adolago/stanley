@@ -20,6 +20,7 @@ from ..analytics.institutional import InstitutionalAnalyzer
 from ..analytics.money_flow import MoneyFlowAnalyzer
 from ..commodities import CommoditiesAnalyzer
 from ..data.data_manager import DataManager
+from ..notes import NoteManager
 from ..portfolio import PortfolioAnalyzer
 from ..research import ResearchAnalyzer
 
@@ -156,6 +157,7 @@ class AppState:
         self.portfolio_analyzer: Optional[PortfolioAnalyzer] = None
         self.research_analyzer: Optional[ResearchAnalyzer] = None
         self.commodities_analyzer: Optional[CommoditiesAnalyzer] = None
+        self.note_manager: Optional[NoteManager] = None
 
 
 app_state = AppState()
@@ -187,6 +189,13 @@ async def lifespan(app: FastAPI):
     app_state.portfolio_analyzer = PortfolioAnalyzer(app_state.data_manager)
     app_state.research_analyzer = ResearchAnalyzer(app_state.data_manager)
     app_state.commodities_analyzer = CommoditiesAnalyzer(app_state.data_manager)
+
+    # Initialize note manager
+    try:
+        app_state.note_manager = NoteManager()
+        logger.info("Note manager initialized")
+    except Exception as e:
+        logger.warning(f"Note manager initialization failed: {e}")
 
     logger.info("Stanley API ready")
 
@@ -882,6 +891,349 @@ async def get_commodity_correlations(commodities: Optional[str] = None):
         raise
     except Exception as e:
         logger.error(f"Error fetching commodity correlations: {e}")
+        return create_response(error=str(e), success=False)
+
+
+# =============================================================================
+# Notes Endpoints
+# =============================================================================
+
+
+class CreateThesisRequest(BaseModel):
+    """Request to create an investment thesis."""
+
+    symbol: str = Field(..., description="Stock symbol")
+    company_name: str = Field(default="", description="Company name")
+    sector: str = Field(default="", description="Sector/industry")
+    conviction: str = Field(default="medium", description="Conviction level")
+    content: Optional[str] = Field(default=None, description="Custom content")
+
+
+class CreateTradeRequest(BaseModel):
+    """Request to create a trade journal entry."""
+
+    symbol: str = Field(..., description="Stock symbol")
+    direction: str = Field(default="long", description="Trade direction")
+    entry_price: float = Field(default=0.0, ge=0, description="Entry price")
+    shares: float = Field(default=0.0, ge=0, description="Number of shares")
+    entry_date: Optional[str] = Field(default=None, description="Entry date (ISO format)")
+    content: Optional[str] = Field(default=None, description="Custom content")
+
+
+class CloseTradeRequest(BaseModel):
+    """Request to close a trade."""
+
+    exit_price: float = Field(..., ge=0, description="Exit price")
+    exit_date: Optional[str] = Field(default=None, description="Exit date (ISO format)")
+    exit_reason: str = Field(default="", description="Reason for exit")
+    lessons: str = Field(default="", description="Lessons learned")
+    grade: str = Field(default="", description="Self-assessment grade")
+
+
+class UpdateNoteRequest(BaseModel):
+    """Request to update a note."""
+
+    content: str = Field(..., description="New content")
+
+
+@app.get("/api/notes", response_model=ApiResponse, tags=["Notes"])
+async def list_notes(
+    note_type: Optional[str] = None,
+    tags: Optional[str] = None,
+    limit: int = 100,
+):
+    """
+    List notes with optional filters.
+
+    Args:
+        note_type: Filter by type (thesis, trade, company, etc.)
+        tags: Comma-separated list of tags
+        limit: Maximum results
+    """
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        tag_list = tags.split(",") if tags else None
+        notes = app_state.note_manager.list_notes(
+            note_type=note_type, tags=tag_list, limit=limit
+        )
+
+        return create_response(data=[n.to_dict() for n in notes])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing notes: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/notes/search", response_model=ApiResponse, tags=["Notes"])
+async def search_notes(query: str, limit: int = 50):
+    """
+    Full-text search across notes.
+
+    Args:
+        query: Search query
+        limit: Maximum results
+    """
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        results = app_state.note_manager.search(query, limit)
+        return create_response(data=results)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error searching notes: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/notes/graph", response_model=ApiResponse, tags=["Notes"])
+async def get_notes_graph():
+    """Get the note graph for visualization."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        graph = app_state.note_manager.get_graph()
+        return create_response(data=graph)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting notes graph: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/notes/{name}", response_model=ApiResponse, tags=["Notes"])
+async def get_note(name: str):
+    """Get a specific note by name."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        note = app_state.note_manager.get_note(name)
+        if not note:
+            raise HTTPException(status_code=404, detail=f"Note not found: {name}")
+
+        return create_response(data={
+            **note.to_dict(),
+            "content": note.content,
+            "frontmatter": note.frontmatter.to_yaml(),
+        })
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting note {name}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/notes/{name}/backlinks", response_model=ApiResponse, tags=["Notes"])
+async def get_note_backlinks(name: str):
+    """Get all notes that link to the given note."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        backlinks = app_state.note_manager.get_backlinks(name)
+        return create_response(data=[n.to_dict() for n in backlinks])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting backlinks for {name}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.put("/api/notes/{name}", response_model=ApiResponse, tags=["Notes"])
+async def update_note(name: str, request: UpdateNoteRequest):
+    """Update a note's content."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        note = app_state.note_manager.update_note(name, request.content)
+        return create_response(data=note.to_dict())
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error updating note {name}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.delete("/api/notes/{name}", response_model=ApiResponse, tags=["Notes"])
+async def delete_note(name: str):
+    """Delete a note."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        deleted = app_state.note_manager.delete_note(name)
+        if not deleted:
+            raise HTTPException(status_code=404, detail=f"Note not found: {name}")
+
+        return create_response(data={"deleted": name})
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting note {name}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+# =============================================================================
+# Thesis Endpoints
+# =============================================================================
+
+
+@app.get("/api/theses", response_model=ApiResponse, tags=["Notes"])
+async def list_theses(status: Optional[str] = None, symbol: Optional[str] = None):
+    """
+    List investment theses.
+
+    Args:
+        status: Filter by status (research, watchlist, active, closed, invalidated)
+        symbol: Filter by symbol
+    """
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        theses = app_state.note_manager.get_theses(status=status, symbol=symbol)
+        return create_response(data=[t.to_dict() for t in theses])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing theses: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.post("/api/theses", response_model=ApiResponse, tags=["Notes"])
+async def create_thesis(request: CreateThesisRequest):
+    """Create a new investment thesis."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        thesis = app_state.note_manager.create_thesis(
+            symbol=request.symbol,
+            company_name=request.company_name,
+            sector=request.sector,
+            conviction=request.conviction,
+            content=request.content,
+        )
+
+        return create_response(data=thesis.to_dict())
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating thesis: {e}")
+        return create_response(error=str(e), success=False)
+
+
+# =============================================================================
+# Trade Journal Endpoints
+# =============================================================================
+
+
+@app.get("/api/trades", response_model=ApiResponse, tags=["Notes"])
+async def list_trades(status: Optional[str] = None, symbol: Optional[str] = None):
+    """
+    List trade journal entries.
+
+    Args:
+        status: Filter by status (open, closed, partial)
+        symbol: Filter by symbol
+    """
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        trades = app_state.note_manager.get_trades(status=status, symbol=symbol)
+        return create_response(data=[t.to_dict() for t in trades])
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error listing trades: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.post("/api/trades", response_model=ApiResponse, tags=["Notes"])
+async def create_trade(request: CreateTradeRequest):
+    """Create a new trade journal entry."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        trade = app_state.note_manager.create_trade(
+            symbol=request.symbol,
+            direction=request.direction,
+            entry_price=request.entry_price,
+            shares=request.shares,
+            entry_date=request.entry_date,
+            content=request.content,
+        )
+
+        return create_response(data=trade.to_dict())
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating trade: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.post("/api/trades/{name}/close", response_model=ApiResponse, tags=["Notes"])
+async def close_trade(name: str, request: CloseTradeRequest):
+    """Close an open trade."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        trade = app_state.note_manager.close_trade(
+            trade_name=name,
+            exit_price=request.exit_price,
+            exit_date=request.exit_date,
+            exit_reason=request.exit_reason,
+            lessons=request.lessons,
+            grade=request.grade,
+        )
+
+        return create_response(data=trade.to_dict())
+
+    except HTTPException:
+        raise
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error closing trade {name}: {e}")
+        return create_response(error=str(e), success=False)
+
+
+@app.get("/api/trades/stats", response_model=ApiResponse, tags=["Notes"])
+async def get_trade_stats():
+    """Get aggregate trade statistics."""
+    try:
+        if not app_state.note_manager:
+            raise HTTPException(status_code=503, detail="Note manager not initialized")
+
+        stats = app_state.note_manager.get_trade_stats()
+        return create_response(data=stats)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting trade stats: {e}")
         return create_response(error=str(e), success=False)
 
 
