@@ -217,9 +217,7 @@ async def lifespan(app: FastAPI):
     try:
         # SEC requires identification for API access
         # Can be set via SEC_IDENTITY env var or defaults to config value
-        sec_identity = os.environ.get(
-            "SEC_IDENTITY", "stanley-research@example.com"
-        )
+        sec_identity = os.environ.get("SEC_IDENTITY", "stanley-research@example.com")
 
         # Create EdgarAdapter with identity
         edgar_adapter = EdgarAdapter(identity=sec_identity)
@@ -235,7 +233,9 @@ async def lifespan(app: FastAPI):
         )
         app_state.red_flag_scorer = RedFlagScorer(edgar_adapter=edgar_adapter)
         app_state.anomaly_aggregator = AnomalyAggregator(edgar_adapter=edgar_adapter)
-        logger.info(f"Accounting analyzers initialized with SEC identity: {sec_identity}")
+        logger.info(
+            f"Accounting analyzers initialized with SEC identity: {sec_identity}"
+        )
     except Exception as e:
         logger.warning(f"Accounting analyzers initialization failed: {e}")
 
