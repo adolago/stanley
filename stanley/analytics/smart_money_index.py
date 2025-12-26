@@ -669,7 +669,9 @@ class SmartMoneyIndex:
         # Use OptionsFlowAnalyzer if available
         if self.options_flow_analyzer:
             try:
-                sentiment = await self.options_flow_analyzer.get_options_sentiment(symbol)
+                sentiment = await self.options_flow_analyzer.get_options_sentiment(
+                    symbol
+                )
                 # sentiment_score is already in -1 to +1 range
                 return sentiment.get("sentiment_score", 0.0)
             except Exception as e:
@@ -677,7 +679,9 @@ class SmartMoneyIndex:
 
         # Fallback to DataManager
         if self.data_manager:
-            options = await self.data_manager.get_options_flow(symbol, unusual_only=True)
+            options = await self.data_manager.get_options_flow(
+                symbol, unusual_only=True
+            )
             if not options.empty:
                 # Calculate put/call ratio from unusual activity
                 # Higher unusual call volume = bullish
@@ -725,7 +729,9 @@ class SmartMoneyIndex:
     async def _get_insider_trading_signal(self, symbol: str) -> float:
         """Get insider trading activity signal (-1 to +1)."""
         if self.data_manager:
-            insider = await self.data_manager.get_insider_trading(symbol, lookback_days=90)
+            insider = await self.data_manager.get_insider_trading(
+                symbol, lookback_days=90
+            )
             if not insider.empty:
                 # Calculate buy/sell ratio
                 buys = insider[insider["transaction_type"] == "Buy"]["value"].sum()
@@ -801,9 +807,7 @@ class SmartMoneyIndex:
         else:
             return "SPY"  # Default to broad market
 
-    def _normalize_components(
-        self, components: Dict[str, float]
-    ) -> Dict[str, float]:
+    def _normalize_components(self, components: Dict[str, float]) -> Dict[str, float]:
         """Normalize all components to -1 to +1 scale."""
         normalized = {}
         for key, value in components.items():
@@ -850,9 +854,7 @@ class SmartMoneyIndex:
 
         return data_confidence
 
-    def _determine_signal(
-        self, index_value: float, confidence: float
-    ) -> SignalType:
+    def _determine_signal(self, index_value: float, confidence: float) -> SignalType:
         """Determine signal type based on index value and confidence."""
         # Strong Buy: index > 0.6, confidence > 0.7
         if index_value > 0.6 and confidence > 0.7:
@@ -873,16 +875,12 @@ class SmartMoneyIndex:
         # Hold: -0.3 < index < 0.3
         return SignalType.HOLD
 
-    async def _get_price_data(
-        self, symbol: str, lookback_days: int
-    ) -> pd.DataFrame:
+    async def _get_price_data(self, symbol: str, lookback_days: int) -> pd.DataFrame:
         """Get price data for divergence analysis."""
         if self.data_manager:
             end_date = datetime.now()
             start_date = end_date - timedelta(days=lookback_days)
-            return await self.data_manager.get_stock_data(
-                symbol, start_date, end_date
-            )
+            return await self.data_manager.get_stock_data(symbol, start_date, end_date)
 
         # Fallback to empty DataFrame
         return pd.DataFrame()

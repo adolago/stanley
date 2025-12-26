@@ -784,9 +784,7 @@ class TestEstimateFairValueRange:
             "price_to_sales": 8.0,
         }
 
-        result = estimate_fair_value_range(
-            sample_valuation_metrics, peer_averages
-        )
+        result = estimate_fair_value_range(sample_valuation_metrics, peer_averages)
 
         assert "low" in result
         assert "mid" in result
@@ -796,9 +794,7 @@ class TestEstimateFairValueRange:
 
     def test_fair_value_with_empty_peer_averages(self, sample_valuation_metrics):
         """Test fair value with no peer data."""
-        result = estimate_fair_value_range(
-            sample_valuation_metrics, {}
-        )
+        result = estimate_fair_value_range(sample_valuation_metrics, {})
 
         # Should fall back to current price +/- 20%
         assert result["low"] == pytest.approx(175.0 * 0.8, rel=0.01)
@@ -813,9 +809,7 @@ class TestEstimateFairValueRange:
             "price_to_sales": 8.0,
         }
 
-        result = estimate_fair_value_range(
-            sample_valuation_metrics, peer_averages
-        )
+        result = estimate_fair_value_range(sample_valuation_metrics, peer_averages)
 
         method_names = [m["method"] for m in result["methods"]]
         assert "P/E" in method_names or len(result["methods"]) > 0

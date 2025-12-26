@@ -548,7 +548,8 @@ class MoneyFlowAnalyzer:
                 direction = "increase" if zscore > 0 else "decrease"
                 alert = self.alert_aggregator.create_alert(
                     alert_type=(
-                        AlertType.DARK_POOL_SURGE if zscore > 0
+                        AlertType.DARK_POOL_SURGE
+                        if zscore > 0
                         else AlertType.DARK_POOL_DECLINE
                     ),
                     symbol=symbol,
@@ -681,7 +682,11 @@ class MoneyFlowAnalyzer:
 
     def _create_block_trade_alert(self, block_trade: BlockTradeEvent) -> MoneyFlowAlert:
         """Create alert for significant block trade."""
-        direction = "BUY" if block_trade.is_buy else "SELL" if block_trade.is_buy is False else "UNKNOWN"
+        direction = (
+            "BUY"
+            if block_trade.is_buy
+            else "SELL" if block_trade.is_buy is False else "UNKNOWN"
+        )
         venue = "Dark Pool" if block_trade.is_dark_pool else "Lit Exchange"
 
         return self.alert_aggregator.create_alert(
@@ -721,7 +726,18 @@ class MoneyFlowAnalyzer:
         """
         if sectors is None:
             # Default to major sector ETFs
-            sectors = ["XLK", "XLF", "XLE", "XLV", "XLI", "XLP", "XLU", "XLY", "XLB", "XLRE"]
+            sectors = [
+                "XLK",
+                "XLF",
+                "XLE",
+                "XLV",
+                "XLI",
+                "XLP",
+                "XLU",
+                "XLY",
+                "XLB",
+                "XLRE",
+            ]
 
         logger.info(f"Detecting sector rotation across {len(sectors)} sectors")
 
@@ -748,7 +764,9 @@ class MoneyFlowAnalyzer:
             row = sector_flows.loc[sector]
 
             # Relative strength score (combination of flows and institutional change)
-            flow_score = np.sign(row["net_flow_3m"]) * min(1, abs(row["net_flow_3m"]) / 10_000_000)
+            flow_score = np.sign(row["net_flow_3m"]) * min(
+                1, abs(row["net_flow_3m"]) / 10_000_000
+            )
             inst_score = row["institutional_change"]
             sector_scores[sector] = 0.6 * flow_score + 0.4 * inst_score
 
@@ -765,11 +783,13 @@ class MoneyFlowAnalyzer:
 
         # Identify rotation (sectors with strong momentum)
         rotating_into = [
-            s for s, m in momentum_scores.items()
+            s
+            for s, m in momentum_scores.items()
             if m > self.thresholds.sector_rotation_threshold
         ]
         rotating_out_of = [
-            s for s, m in momentum_scores.items()
+            s
+            for s, m in momentum_scores.items()
             if m < -self.thresholds.sector_rotation_threshold
         ]
 
@@ -794,10 +814,14 @@ class MoneyFlowAnalyzer:
 
         return signal
 
-    def _create_sector_rotation_alert(self, signal: SectorRotationSignal) -> MoneyFlowAlert:
+    def _create_sector_rotation_alert(
+        self, signal: SectorRotationSignal
+    ) -> MoneyFlowAlert:
         """Create alert for sector rotation."""
         into_str = ", ".join(signal.rotating_into) if signal.rotating_into else "None"
-        out_str = ", ".join(signal.rotating_out_of) if signal.rotating_out_of else "None"
+        out_str = (
+            ", ".join(signal.rotating_out_of) if signal.rotating_out_of else "None"
+        )
 
         return self.alert_aggregator.create_alert(
             alert_type=AlertType.SECTOR_ROTATION,
@@ -863,7 +887,9 @@ class MoneyFlowAnalyzer:
 
         # Calculate net institutional flow
         net_flow = inst_flows["institutional_net_flow"].sum()
-        recent_flow = inst_flows["institutional_net_flow"].tail(TRADING_DAYS_1_WEEK).sum()
+        recent_flow = (
+            inst_flows["institutional_net_flow"].tail(TRADING_DAYS_1_WEEK).sum()
+        )
 
         # Determine flow direction
         if net_flow > self.thresholds.smart_money_flow_threshold * 1_000_000:
@@ -993,15 +1019,17 @@ class MoneyFlowAnalyzer:
         volume_ratio = current_volume / average_volume if average_volume > 0 else 0.0
 
         # Z-score
-        zscore = (current_volume - average_volume) / std_volume if std_volume > 0 else 0.0
+        zscore = (
+            (current_volume - average_volume) / std_volume if std_volume > 0 else 0.0
+        )
 
         # Percentile rank
         percentile = stats.percentileofscore(volumes, current_volume) / 100
 
         # Determine if unusual
         is_unusual = (
-            abs(zscore) > self.thresholds.volume_zscore_threshold or
-            volume_ratio > self.thresholds.volume_ratio_threshold
+            abs(zscore) > self.thresholds.volume_zscore_threshold
+            or volume_ratio > self.thresholds.volume_ratio_threshold
         )
 
         # Calculate unusualness score (0-1)
@@ -1049,7 +1077,9 @@ class MoneyFlowAnalyzer:
 
         return signal
 
-    def _create_unusual_volume_alert(self, signal: UnusualVolumeSignal) -> MoneyFlowAlert:
+    def _create_unusual_volume_alert(
+        self, signal: UnusualVolumeSignal
+    ) -> MoneyFlowAlert:
         """Create alert for unusual volume."""
         return self.alert_aggregator.create_alert(
             alert_type=AlertType.UNUSUAL_VOLUME,
@@ -1118,13 +1148,19 @@ class MoneyFlowAnalyzer:
         # Calculate momentum (rate of change)
         recent_flow = flows.tail(5).mean()
         older_flow = flows.head(5).mean() if len(flows) >= 10 else flows.mean()
-        flow_momentum = (recent_flow - older_flow) / abs(older_flow) if older_flow != 0 else 0.0
+        flow_momentum = (
+            (recent_flow - older_flow) / abs(older_flow) if older_flow != 0 else 0.0
+        )
 
         # Calculate acceleration (change in momentum)
         if len(flows) >= 15:
-            mid_flow = flows.iloc[len(flows)//2 - 2:len(flows)//2 + 3].mean()
-            recent_momentum = (recent_flow - mid_flow) / abs(mid_flow) if mid_flow != 0 else 0.0
-            older_momentum = (mid_flow - older_flow) / abs(older_flow) if older_flow != 0 else 0.0
+            mid_flow = flows.iloc[len(flows) // 2 - 2 : len(flows) // 2 + 3].mean()
+            recent_momentum = (
+                (recent_flow - mid_flow) / abs(mid_flow) if mid_flow != 0 else 0.0
+            )
+            older_momentum = (
+                (mid_flow - older_flow) / abs(older_flow) if older_flow != 0 else 0.0
+            )
             flow_acceleration = recent_momentum - older_momentum
         else:
             flow_acceleration = 0.0
@@ -1152,9 +1188,8 @@ class MoneyFlowAnalyzer:
         price_changes = inst_flows.get("price_change", pd.Series([0] * len(flows)))
         if len(price_changes) == len(flows):
             price_trend = price_changes.mean()
-            momentum_divergence = (
-                (flow_momentum > 0 and price_trend < 0) or
-                (flow_momentum < 0 and price_trend > 0)
+            momentum_divergence = (flow_momentum > 0 and price_trend < 0) or (
+                flow_momentum < 0 and price_trend > 0
             )
         else:
             momentum_divergence = False
@@ -1179,9 +1214,13 @@ class MoneyFlowAnalyzer:
 
         return indicator
 
-    def _create_momentum_shift_alert(self, indicator: FlowMomentumIndicator) -> MoneyFlowAlert:
+    def _create_momentum_shift_alert(
+        self, indicator: FlowMomentumIndicator
+    ) -> MoneyFlowAlert:
         """Create alert for momentum shift."""
-        direction = "accelerating" if indicator.flow_acceleration > 0 else "decelerating"
+        direction = (
+            "accelerating" if indicator.flow_acceleration > 0 else "decelerating"
+        )
 
         return self.alert_aggregator.create_alert(
             alert_type=AlertType.FLOW_MOMENTUM_SHIFT,
@@ -1252,8 +1291,10 @@ class MoneyFlowAnalyzer:
                 "events": [bt.to_dict() for bt in block_trades],
                 "total_count": len(block_trades),
                 "large_blocks": sum(
-                    1 for bt in block_trades
-                    if bt.size_classification in (BlockTradeSize.LARGE, BlockTradeSize.MEGA)
+                    1
+                    for bt in block_trades
+                    if bt.size_classification
+                    in (BlockTradeSize.LARGE, BlockTradeSize.MEGA)
                 ),
             },
             "smart_money": smart_money.to_dict(),

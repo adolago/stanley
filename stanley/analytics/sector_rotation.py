@@ -46,7 +46,11 @@ CYCLE_SECTOR_MAP = {
     BusinessCyclePhase.EARLY_CYCLE: ["XLF", "XLY"],  # Financials, Consumer Disc
     BusinessCyclePhase.MID_CYCLE: ["XLK", "XLI"],  # Technology, Industrials
     BusinessCyclePhase.LATE_CYCLE: ["XLE", "XLB"],  # Energy, Materials
-    BusinessCyclePhase.RECESSION: ["XLU", "XLV", "XLP"],  # Utilities, Healthcare, Staples
+    BusinessCyclePhase.RECESSION: [
+        "XLU",
+        "XLV",
+        "XLP",
+    ],  # Utilities, Healthcare, Staples
 }
 
 # Risk-on vs Risk-off sector classification
@@ -227,7 +231,9 @@ class SectorRotationAnalyzer:
         confidence = min(1.0, abs(spread) / 0.05)  # Max confidence at 5% spread
 
         # Determine trend (improving or deteriorating)
-        trend = self._calculate_risk_trend(sector_data, RISK_ON_SECTORS, RISK_OFF_SECTORS)
+        trend = self._calculate_risk_trend(
+            sector_data, RISK_ON_SECTORS, RISK_OFF_SECTORS
+        )
 
         return {
             "regime": regime,
@@ -236,12 +242,8 @@ class SectorRotationAnalyzer:
             "risk_off_score": round(risk_off_score, 4),
             "spread": round(spread, 4),
             "trend": trend,
-            "risk_on_sectors": self._get_sector_details(
-                sector_data, RISK_ON_SECTORS
-            ),
-            "risk_off_sectors": self._get_sector_details(
-                sector_data, RISK_OFF_SECTORS
-            ),
+            "risk_on_sectors": self._get_sector_details(sector_data, RISK_ON_SECTORS),
+            "risk_off_sectors": self._get_sector_details(sector_data, RISK_OFF_SECTORS),
         }
 
     async def get_sector_correlation_changes(
@@ -489,9 +491,7 @@ class SectorRotationAnalyzer:
         rotation = await self.analyze_rotation(lookback_days=126)
 
         if not rotation["rotation_scores"].empty:
-            phase_scores = self._calculate_phase_scores(
-                rotation["rotation_scores"]
-            )
+            phase_scores = self._calculate_phase_scores(rotation["rotation_scores"])
         else:
             phase_scores = {phase.value: 0.0 for phase in BusinessCyclePhase}
 
@@ -500,9 +500,7 @@ class SectorRotationAnalyzer:
         confidence = phase_scores[current_phase]
 
         # Get leading sectors for current phase
-        leading_sectors = CYCLE_SECTOR_MAP.get(
-            BusinessCyclePhase(current_phase), []
-        )
+        leading_sectors = CYCLE_SECTOR_MAP.get(BusinessCyclePhase(current_phase), [])
 
         return {
             "current_phase": current_phase,
@@ -540,9 +538,7 @@ class SectorRotationAnalyzer:
             except Exception as e:
                 logger.warning(f"Failed to fetch data for {etf_symbol}: {e}")
                 # Use mock data as fallback
-                data = self._generate_mock_price_data(
-                    etf_symbol, start_date, end_date
-                )
+                data = self._generate_mock_price_data(etf_symbol, start_date, end_date)
                 sector_prices[etf_symbol] = data
 
         if not sector_prices:
@@ -582,30 +578,16 @@ class SectorRotationAnalyzer:
                         sector, start_date, end_date
                     )
             except Exception:
-                prices = self._generate_mock_price_data(
-                    sector, start_date, end_date
-                )
+                prices = self._generate_mock_price_data(sector, start_date, end_date)
         else:
             prices = self._generate_mock_price_data(sector, start_date, end_date)
 
         # Calculate momentum over different periods
         current_price = prices.iloc[-1] if len(prices) > 0 else 0
 
-        mom_1m = (
-            (current_price / prices.iloc[-21] - 1)
-            if len(prices) >= 21
-            else 0
-        )
-        mom_3m = (
-            (current_price / prices.iloc[-63] - 1)
-            if len(prices) >= 63
-            else 0
-        )
-        mom_6m = (
-            (current_price / prices.iloc[0] - 1)
-            if len(prices) > 0
-            else 0
-        )
+        mom_1m = (current_price / prices.iloc[-21] - 1) if len(prices) >= 21 else 0
+        mom_3m = (current_price / prices.iloc[-63] - 1) if len(prices) >= 63 else 0
+        mom_6m = (current_price / prices.iloc[0] - 1) if len(prices) > 0 else 0
 
         # Flow momentum (from ETF flows)
         flow_data = await self._fetch_etf_flow_data(
@@ -649,12 +631,10 @@ class SectorRotationAnalyzer:
 
             current = prices.iloc[-1]
             results[col] = {
-                "return_1w": (current / prices.iloc[-5] - 1)
-                if len(prices) >= 5
-                else 0,
-                "return_1m": (current / prices.iloc[-21] - 1)
-                if len(prices) >= 21
-                else 0,
+                "return_1w": (current / prices.iloc[-5] - 1) if len(prices) >= 5 else 0,
+                "return_1m": (
+                    (current / prices.iloc[-21] - 1) if len(prices) >= 21 else 0
+                ),
                 "return_3m": (current / prices.iloc[0] - 1),
                 "current_price": current,
             }
@@ -677,8 +657,7 @@ class SectorRotationAnalyzer:
 
         # Momentum score
         scores["momentum_score"] = (
-            0.5 * scores["relative_strength_1m"]
-            + 0.5 * scores["relative_strength_3m"]
+            0.5 * scores["relative_strength_1m"] + 0.5 * scores["relative_strength_3m"]
         )
 
         # Rotation signal based on changes
@@ -694,18 +673,14 @@ class SectorRotationAnalyzer:
 
         return scores
 
-    def _determine_phase_alignment(
-        self, rotation_scores: pd.DataFrame
-    ) -> Dict:
+    def _determine_phase_alignment(self, rotation_scores: pd.DataFrame) -> Dict:
         """Determine business cycle phase alignment."""
         if rotation_scores.empty:
             return {"phase": "unknown", "confidence": 0.0}
 
         phase_scores = {}
         for phase, sectors in CYCLE_SECTOR_MAP.items():
-            available_sectors = [
-                s for s in sectors if s in rotation_scores.index
-            ]
+            available_sectors = [s for s in sectors if s in rotation_scores.index]
             if available_sectors:
                 avg_momentum = rotation_scores.loc[
                     available_sectors, "momentum_score"
@@ -720,9 +695,7 @@ class SectorRotationAnalyzer:
 
         return {"phase": best_phase, "confidence": round(confidence, 2)}
 
-    def _identify_leadership_from_returns(
-        self, returns_df: pd.DataFrame
-    ) -> Dict:
+    def _identify_leadership_from_returns(self, returns_df: pd.DataFrame) -> Dict:
         """Identify sector leadership from returns."""
         if returns_df.empty:
             return {"leaders": [], "laggards": []}
@@ -745,7 +718,7 @@ class SectorRotationAnalyzer:
             return pd.Series()
 
         group_data = sector_data[available]
-        returns = (group_data.iloc[-1] / group_data.iloc[0] - 1)
+        returns = group_data.iloc[-1] / group_data.iloc[0] - 1
         return returns
 
     def _calculate_risk_trend(
@@ -847,9 +820,7 @@ class SectorRotationAnalyzer:
         upper_tri = corr_matrix.values[np.triu_indices(n, k=1)]
         return float(np.mean(upper_tri)) if len(upper_tri) > 0 else 0.0
 
-    def _classify_correlation_regime(
-        self, corr_matrix: pd.DataFrame
-    ) -> str:
+    def _classify_correlation_regime(self, corr_matrix: pd.DataFrame) -> str:
         """Classify the correlation regime."""
         avg_corr = self._average_correlation(corr_matrix)
 
@@ -874,23 +845,18 @@ class SectorRotationAnalyzer:
         # Regime alignment
         is_risk_on_sector = sector in RISK_ON_SECTORS
         regime_favorable = (
-            (risk_regime["regime"] == "risk_on" and is_risk_on_sector)
-            or (risk_regime["regime"] == "risk_off" and not is_risk_on_sector)
-        )
+            risk_regime["regime"] == "risk_on" and is_risk_on_sector
+        ) or (risk_regime["regime"] == "risk_off" and not is_risk_on_sector)
         regime_alignment = 1.0 if regime_favorable else -0.5
 
         # Leadership score
         is_leader = sector in leadership.get("current_leaders", [])
         is_rising = sector in leadership.get("rising_sectors", [])
-        leadership_score = (
-            1.0 if is_leader else (0.5 if is_rising else 0.0)
-        )
+        leadership_score = 1.0 if is_leader else (0.5 if is_rising else 0.0)
 
         # Composite signal
         composite = (
-            0.5 * momentum_score
-            + 0.3 * regime_alignment
-            + 0.2 * leadership_score
+            0.5 * momentum_score + 0.3 * regime_alignment + 0.2 * leadership_score
         )
 
         # Determine signal direction
@@ -941,9 +907,7 @@ class SectorRotationAnalyzer:
         recent_flow = net_flows.tail(10).mean()
         historical_flow = net_flows.mean()
         if abs(historical_flow) > 1e-10:
-            flow_acceleration = (recent_flow - historical_flow) / abs(
-                historical_flow
-            )
+            flow_acceleration = (recent_flow - historical_flow) / abs(historical_flow)
         else:
             flow_acceleration = 0.0
 
@@ -958,9 +922,7 @@ class SectorRotationAnalyzer:
             flow_signal = "strong_outflow"
 
         # Institutional bias
-        institutional_bias = np.sign(net_flow_3m) * min(
-            1.0, abs(flow_momentum)
-        )
+        institutional_bias = np.sign(net_flow_3m) * min(1.0, abs(flow_momentum))
 
         return {
             "net_flow_1m": float(net_flow_1m),
@@ -978,9 +940,7 @@ class SectorRotationAnalyzer:
         phase_scores = {}
 
         for phase, sectors in CYCLE_SECTOR_MAP.items():
-            available_sectors = [
-                s for s in sectors if s in rotation_scores.index
-            ]
+            available_sectors = [s for s in sectors if s in rotation_scores.index]
             if available_sectors:
                 avg_momentum = rotation_scores.loc[
                     available_sectors, "momentum_score"

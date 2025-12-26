@@ -22,7 +22,7 @@ except ImportError:
 # Skip all tests if module not yet implemented
 pytestmark = pytest.mark.skipif(
     SectorRotationAnalyzer is None,
-    reason="SectorRotationAnalyzer module not yet implemented"
+    reason="SectorRotationAnalyzer module not yet implemented",
 )
 
 
@@ -37,7 +37,19 @@ def sample_sector_data():
     dates = pd.date_range(end=datetime.now(), periods=60, freq="D")
     np.random.seed(42)
 
-    sectors = ["XLK", "XLF", "XLE", "XLV", "XLY", "XLP", "XLI", "XLB", "XLRE", "XLU", "XLC"]
+    sectors = [
+        "XLK",
+        "XLF",
+        "XLE",
+        "XLV",
+        "XLY",
+        "XLP",
+        "XLI",
+        "XLB",
+        "XLRE",
+        "XLU",
+        "XLC",
+    ]
 
     data = []
     for sector in sectors:
@@ -46,13 +58,15 @@ def sample_sector_data():
         prices = base_price * np.cumprod(1 + returns)
 
         for i, date in enumerate(dates):
-            data.append({
-                "date": date,
-                "sector": sector,
-                "close": prices[i],
-                "volume": np.random.randint(10_000_000, 100_000_000),
-                "net_flow": np.random.normal(0, 50_000_000),
-            })
+            data.append(
+                {
+                    "date": date,
+                    "sector": sector,
+                    "close": prices[i],
+                    "volume": np.random.randint(10_000_000, 100_000_000),
+                    "net_flow": np.random.normal(0, 50_000_000),
+                }
+            )
 
     return pd.DataFrame(data)
 
@@ -75,14 +89,16 @@ def sample_rotation_matrix():
 @pytest.fixture
 def sample_momentum_data():
     """Sample sector momentum data."""
-    return pd.DataFrame({
-        "sector": ["XLK", "XLE", "XLV", "XLF", "XLY", "XLP", "XLI", "XLB"],
-        "momentum_1m": [0.08, -0.05, 0.03, 0.02, 0.06, 0.01, 0.04, -0.02],
-        "momentum_3m": [0.15, -0.10, 0.08, 0.05, 0.12, 0.04, 0.09, -0.03],
-        "momentum_6m": [0.25, -0.15, 0.12, 0.10, 0.20, 0.08, 0.15, -0.05],
-        "relative_strength": [1.2, 0.7, 1.0, 0.9, 1.1, 0.85, 1.05, 0.75],
-        "rank": [1, 8, 4, 5, 2, 6, 3, 7],
-    })
+    return pd.DataFrame(
+        {
+            "sector": ["XLK", "XLE", "XLV", "XLF", "XLY", "XLP", "XLI", "XLB"],
+            "momentum_1m": [0.08, -0.05, 0.03, 0.02, 0.06, 0.01, 0.04, -0.02],
+            "momentum_3m": [0.15, -0.10, 0.08, 0.05, 0.12, 0.04, 0.09, -0.03],
+            "momentum_6m": [0.25, -0.15, 0.12, 0.10, 0.20, 0.08, 0.15, -0.05],
+            "relative_strength": [1.2, 0.7, 1.0, 0.9, 1.1, 0.85, 1.05, 0.75],
+            "rank": [1, 8, 4, 5, 2, 6, 3, 7],
+        }
+    )
 
 
 @pytest.fixture
@@ -95,11 +111,15 @@ def empty_sector_data():
 def mock_data_manager_for_sectors():
     """Mock DataManager for sector rotation."""
     mock = Mock()
-    mock.get_sector_etf_data = AsyncMock(return_value=pd.DataFrame({
-        "date": pd.date_range(end=datetime.now(), periods=5, freq="D"),
-        "close": [100, 101, 102, 101, 103],
-        "volume": [10_000_000, 12_000_000, 11_000_000, 9_000_000, 15_000_000],
-    }))
+    mock.get_sector_etf_data = AsyncMock(
+        return_value=pd.DataFrame(
+            {
+                "date": pd.date_range(end=datetime.now(), periods=5, freq="D"),
+                "close": [100, 101, 102, 101, 103],
+                "volume": [10_000_000, 12_000_000, 11_000_000, 9_000_000, 15_000_000],
+            }
+        )
+    )
     return mock
 
 
@@ -125,7 +145,19 @@ class TestSectorRotationAnalyzerInit:
     def test_default_sectors(self):
         """Test default sector ETF list."""
         analyzer = SectorRotationAnalyzer()
-        expected_sectors = ["XLK", "XLF", "XLE", "XLV", "XLY", "XLP", "XLI", "XLB", "XLRE", "XLU", "XLC"]
+        expected_sectors = [
+            "XLK",
+            "XLF",
+            "XLE",
+            "XLV",
+            "XLY",
+            "XLP",
+            "XLI",
+            "XLB",
+            "XLRE",
+            "XLU",
+            "XLC",
+        ]
         assert set(analyzer.default_sectors) == set(expected_sectors)
 
     def test_custom_sectors(self):
@@ -169,7 +201,13 @@ class TestRotationPatternDetection:
         """Test that current_phase is valid."""
         analyzer = SectorRotationAnalyzer()
         result = analyzer.detect_rotation_pattern()
-        valid_phases = ["early_cycle", "mid_cycle", "late_cycle", "recession", "recovery"]
+        valid_phases = [
+            "early_cycle",
+            "mid_cycle",
+            "late_cycle",
+            "recession",
+            "recovery",
+        ]
         assert result["current_phase"] in valid_phases
 
     def test_rotation_direction_valid_values(self):
@@ -278,8 +316,12 @@ class TestSectorMomentumRanking:
         analyzer = SectorRotationAnalyzer()
         result = analyzer.rank_sector_momentum()
         expected_cols = [
-            "sector", "momentum_1m", "momentum_3m", "momentum_6m",
-            "relative_strength", "rank"
+            "sector",
+            "momentum_1m",
+            "momentum_3m",
+            "momentum_6m",
+            "relative_strength",
+            "rank",
         ]
         for col in expected_cols:
             if not result.empty:
@@ -400,7 +442,13 @@ class TestSectorFlowAnalysis:
         """Test that sector flows DataFrame has expected columns."""
         analyzer = SectorRotationAnalyzer()
         result = analyzer.get_sector_flows()
-        expected_cols = ["sector", "net_flow_1d", "net_flow_5d", "net_flow_20d", "flow_trend"]
+        expected_cols = [
+            "sector",
+            "net_flow_1d",
+            "net_flow_5d",
+            "net_flow_20d",
+            "flow_trend",
+        ]
         if not result.empty:
             for col in expected_cols:
                 assert col in result.columns, f"Missing column: {col}"
@@ -409,7 +457,13 @@ class TestSectorFlowAnalysis:
         """Test that flow_trend values are valid."""
         analyzer = SectorRotationAnalyzer()
         result = analyzer.get_sector_flows()
-        valid_trends = ["accelerating_inflow", "decelerating_inflow", "accelerating_outflow", "decelerating_outflow", "neutral"]
+        valid_trends = [
+            "accelerating_inflow",
+            "decelerating_inflow",
+            "accelerating_outflow",
+            "decelerating_outflow",
+            "neutral",
+        ]
         if not result.empty and "flow_trend" in result.columns:
             assert all(result["flow_trend"].isin(valid_trends))
 
@@ -425,7 +479,7 @@ class TestSectorRotationEdgeCases:
     def test_empty_sector_data(self, empty_sector_data):
         """Test with empty sector data."""
         analyzer = SectorRotationAnalyzer()
-        with patch.object(analyzer, '_get_sector_data', return_value=empty_sector_data):
+        with patch.object(analyzer, "_get_sector_data", return_value=empty_sector_data):
             result = analyzer.detect_rotation_pattern()
             assert result["confidence"] == 0.0
 
@@ -452,7 +506,9 @@ class TestSectorRotationEdgeCases:
         analyzer = SectorRotationAnalyzer()
         # Make all returns the same
         sample_sector_data["close"] = 100.0
-        with patch.object(analyzer, '_get_sector_data', return_value=sample_sector_data):
+        with patch.object(
+            analyzer, "_get_sector_data", return_value=sample_sector_data
+        ):
             result = analyzer.rank_sector_momentum()
             # Should handle gracefully
             assert isinstance(result, pd.DataFrame)
@@ -462,15 +518,28 @@ class TestSectorRotationEdgeCases:
         analyzer = SectorRotationAnalyzer()
         sample_sector_data.loc[0, "close"] = np.nan
         sample_sector_data.loc[5, "net_flow"] = np.nan
-        with patch.object(analyzer, '_get_sector_data', return_value=sample_sector_data):
+        with patch.object(
+            analyzer, "_get_sector_data", return_value=sample_sector_data
+        ):
             result = analyzer.detect_rotation_pattern()
             assert isinstance(result, dict)
 
     def test_extreme_momentum_values(self, sample_momentum_data):
         """Test with extreme momentum values."""
         analyzer = SectorRotationAnalyzer()
-        sample_momentum_data["momentum_1m"] = [10.0, -5.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # Extreme
-        with patch.object(analyzer, '_calculate_momentum', return_value=sample_momentum_data):
+        sample_momentum_data["momentum_1m"] = [
+            10.0,
+            -5.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]  # Extreme
+        with patch.object(
+            analyzer, "_calculate_momentum", return_value=sample_momentum_data
+        ):
             result = analyzer.rank_sector_momentum()
             assert isinstance(result, pd.DataFrame)
 

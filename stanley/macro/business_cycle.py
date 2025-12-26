@@ -294,14 +294,10 @@ class BusinessCycleAnalyzer:
         turning_points = self._enforce_alternation(peaks, troughs)
 
         # Step 3: Apply minimum phase length constraint
-        turning_points = self._apply_phase_constraints(
-            turning_points, min_phase_length
-        )
+        turning_points = self._apply_phase_constraints(turning_points, min_phase_length)
 
         # Step 4: Apply minimum cycle length constraint
-        turning_points = self._apply_cycle_constraints(
-            turning_points, min_cycle_length
-        )
+        turning_points = self._apply_cycle_constraints(turning_points, min_cycle_length)
 
         # Convert to DataFrame
         if turning_points:
@@ -451,9 +447,9 @@ class BusinessCycleAnalyzer:
         # Calculate weighted probability
         total_weight = sum(weights.values())
         if total_weight > 0:
-            probability = sum(
-                factors.get(k, 0) * w for k, w in weights.items()
-            ) / total_weight
+            probability = (
+                sum(factors.get(k, 0) * w for k, w in weights.items()) / total_weight
+            )
         else:
             probability = 0.0
 
@@ -771,9 +767,7 @@ class BusinessCycleAnalyzer:
         result = [points[0]]
         for i, point in enumerate(points[1:], 1):
             # Check if this completes a cycle
-            same_type_indices = [
-                j for j, p in enumerate(result) if p[1] == point[1]
-            ]
+            same_type_indices = [j for j, p in enumerate(result) if p[1] == point[1]]
             if same_type_indices:
                 last_same = result[same_type_indices[-1]]
                 if hasattr(point[0], "month"):

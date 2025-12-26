@@ -30,7 +30,7 @@ def sample_expiration_dates():
     """Generate sample expiration dates for testing."""
     today = datetime.now()
     return [
-        today + timedelta(days=7),   # Weekly
+        today + timedelta(days=7),  # Weekly
         today + timedelta(days=14),  # 2 weeks
         today + timedelta(days=30),  # Monthly
         today + timedelta(days=60),  # 2 months
@@ -64,25 +64,31 @@ def sample_options_chain(sample_expiration_dates):
             call_gamma = 0.05 * np.exp(-0.5 * ((strike - underlying_price) / 10) ** 2)
             call_volume = np.random.randint(100, 5000)
             call_oi = np.random.randint(1000, 50000)
-            call_bid = max(0.01, (underlying_price - strike) + call_iv * np.sqrt(dte / 365) * underlying_price * 0.1)
+            call_bid = max(
+                0.01,
+                (underlying_price - strike)
+                + call_iv * np.sqrt(dte / 365) * underlying_price * 0.1,
+            )
             call_ask = call_bid * 1.05
 
-            data.append({
-                "expiration": exp_date,
-                "strike": float(strike),
-                "option_type": "call",
-                "bid": round(call_bid, 2),
-                "ask": round(call_ask, 2),
-                "last_price": round((call_bid + call_ask) / 2, 2),
-                "volume": call_volume,
-                "open_interest": call_oi,
-                "implied_volatility": round(call_iv, 4),
-                "delta": round(call_delta, 4),
-                "gamma": round(call_gamma, 6),
-                "theta": round(-0.05 * call_iv, 4),
-                "vega": round(0.1 * np.sqrt(dte / 365), 4),
-                "underlying_price": underlying_price,
-            })
+            data.append(
+                {
+                    "expiration": exp_date,
+                    "strike": float(strike),
+                    "option_type": "call",
+                    "bid": round(call_bid, 2),
+                    "ask": round(call_ask, 2),
+                    "last_price": round((call_bid + call_ask) / 2, 2),
+                    "volume": call_volume,
+                    "open_interest": call_oi,
+                    "implied_volatility": round(call_iv, 4),
+                    "delta": round(call_delta, 4),
+                    "gamma": round(call_gamma, 6),
+                    "theta": round(-0.05 * call_iv, 4),
+                    "vega": round(0.1 * np.sqrt(dte / 365), 4),
+                    "underlying_price": underlying_price,
+                }
+            )
 
             # Put option
             put_iv = 0.28 + 0.12 * abs(moneyness - 1) + np.random.uniform(-0.02, 0.02)
@@ -90,25 +96,31 @@ def sample_options_chain(sample_expiration_dates):
             put_gamma = 0.05 * np.exp(-0.5 * ((strike - underlying_price) / 10) ** 2)
             put_volume = np.random.randint(50, 4000)
             put_oi = np.random.randint(500, 40000)
-            put_bid = max(0.01, (strike - underlying_price) + put_iv * np.sqrt(dte / 365) * underlying_price * 0.1)
+            put_bid = max(
+                0.01,
+                (strike - underlying_price)
+                + put_iv * np.sqrt(dte / 365) * underlying_price * 0.1,
+            )
             put_ask = put_bid * 1.05
 
-            data.append({
-                "expiration": exp_date,
-                "strike": float(strike),
-                "option_type": "put",
-                "bid": round(put_bid, 2),
-                "ask": round(put_ask, 2),
-                "last_price": round((put_bid + put_ask) / 2, 2),
-                "volume": put_volume,
-                "open_interest": put_oi,
-                "implied_volatility": round(put_iv, 4),
-                "delta": round(put_delta, 4),
-                "gamma": round(put_gamma, 6),
-                "theta": round(-0.06 * put_iv, 4),
-                "vega": round(0.1 * np.sqrt(dte / 365), 4),
-                "underlying_price": underlying_price,
-            })
+            data.append(
+                {
+                    "expiration": exp_date,
+                    "strike": float(strike),
+                    "option_type": "put",
+                    "bid": round(put_bid, 2),
+                    "ask": round(put_ask, 2),
+                    "last_price": round((put_bid + put_ask) / 2, 2),
+                    "volume": put_volume,
+                    "open_interest": put_oi,
+                    "implied_volatility": round(put_iv, 4),
+                    "delta": round(put_delta, 4),
+                    "gamma": round(put_gamma, 6),
+                    "theta": round(-0.06 * put_iv, 4),
+                    "vega": round(0.1 * np.sqrt(dte / 365), 4),
+                    "underlying_price": underlying_price,
+                }
+            )
 
     return pd.DataFrame(data)
 
@@ -116,72 +128,91 @@ def sample_options_chain(sample_expiration_dates):
 @pytest.fixture
 def empty_options_chain():
     """Empty options chain DataFrame with correct schema."""
-    return pd.DataFrame(columns=[
-        "expiration", "strike", "option_type", "bid", "ask", "last_price",
-        "volume", "open_interest", "implied_volatility", "delta", "gamma",
-        "theta", "vega", "underlying_price"
-    ])
+    return pd.DataFrame(
+        columns=[
+            "expiration",
+            "strike",
+            "option_type",
+            "bid",
+            "ask",
+            "last_price",
+            "volume",
+            "open_interest",
+            "implied_volatility",
+            "delta",
+            "gamma",
+            "theta",
+            "vega",
+            "underlying_price",
+        ]
+    )
 
 
 @pytest.fixture
 def single_option_chain():
     """Options chain with only a single option (no spread possible)."""
-    return pd.DataFrame([{
-        "expiration": datetime.now() + timedelta(days=30),
-        "strike": 150.0,
-        "option_type": "call",
-        "bid": 5.50,
-        "ask": 5.75,
-        "last_price": 5.625,
-        "volume": 1000,
-        "open_interest": 5000,
-        "implied_volatility": 0.30,
-        "delta": 0.50,
-        "gamma": 0.05,
-        "theta": -0.02,
-        "vega": 0.15,
-        "underlying_price": 150.0,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "expiration": datetime.now() + timedelta(days=30),
+                "strike": 150.0,
+                "option_type": "call",
+                "bid": 5.50,
+                "ask": 5.75,
+                "last_price": 5.625,
+                "volume": 1000,
+                "open_interest": 5000,
+                "implied_volatility": 0.30,
+                "delta": 0.50,
+                "gamma": 0.05,
+                "theta": -0.02,
+                "vega": 0.15,
+                "underlying_price": 150.0,
+            }
+        ]
+    )
 
 
 @pytest.fixture
 def zero_oi_options_chain(sample_expiration_dates):
     """Options chain with zero open interest."""
     exp_date = sample_expiration_dates[0]
-    return pd.DataFrame([
-        {
-            "expiration": exp_date,
-            "strike": 150.0,
-            "option_type": "call",
-            "bid": 5.50,
-            "ask": 5.75,
-            "last_price": 5.625,
-            "volume": 100,
-            "open_interest": 0,  # Zero OI
-            "implied_volatility": 0.30,
-            "delta": 0.50,
-            "gamma": 0.05,
-            "theta": -0.02,
-            "vega": 0.15,
-            "underlying_price": 150.0,
-        },
-        {
-            "expiration": exp_date,
-            "strike": 150.0,
-            "option_type": "put",
-            "bid": 4.50,
-            "ask": 4.75,
-            "last_price": 4.625,
-            "volume": 50,
-            "open_interest": 0,  # Zero OI
-            "implied_volatility": 0.32,
-            "delta": -0.48,
-            "gamma": 0.05,
-            "theta": -0.02,
-            "vega": 0.15,
-            "underlying_price": 150.0,
-        }
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "expiration": exp_date,
+                "strike": 150.0,
+                "option_type": "call",
+                "bid": 5.50,
+                "ask": 5.75,
+                "last_price": 5.625,
+                "volume": 100,
+                "open_interest": 0,  # Zero OI
+                "implied_volatility": 0.30,
+                "delta": 0.50,
+                "gamma": 0.05,
+                "theta": -0.02,
+                "vega": 0.15,
+                "underlying_price": 150.0,
+            },
+            {
+                "expiration": exp_date,
+                "strike": 150.0,
+                "option_type": "put",
+                "bid": 4.50,
+                "ask": 4.75,
+                "last_price": 4.625,
+                "volume": 50,
+                "open_interest": 0,  # Zero OI
+                "implied_volatility": 0.32,
+                "delta": -0.48,
+                "gamma": 0.05,
+                "theta": -0.02,
+                "vega": 0.15,
+                "underlying_price": 150.0,
+            },
+        ]
+    )
 
 
 @pytest.fixture
@@ -190,40 +221,42 @@ def expired_options_chain():
     past_date = datetime.now() - timedelta(days=7)
     future_date = datetime.now() + timedelta(days=30)
 
-    return pd.DataFrame([
-        {
-            "expiration": past_date,  # Expired
-            "strike": 150.0,
-            "option_type": "call",
-            "bid": 0.0,
-            "ask": 0.01,
-            "last_price": 0.005,
-            "volume": 0,
-            "open_interest": 1000,
-            "implied_volatility": 0.0,
-            "delta": 0.0,
-            "gamma": 0.0,
-            "theta": 0.0,
-            "vega": 0.0,
-            "underlying_price": 150.0,
-        },
-        {
-            "expiration": future_date,  # Valid
-            "strike": 150.0,
-            "option_type": "call",
-            "bid": 5.50,
-            "ask": 5.75,
-            "last_price": 5.625,
-            "volume": 1000,
-            "open_interest": 5000,
-            "implied_volatility": 0.30,
-            "delta": 0.50,
-            "gamma": 0.05,
-            "theta": -0.02,
-            "vega": 0.15,
-            "underlying_price": 150.0,
-        }
-    ])
+    return pd.DataFrame(
+        [
+            {
+                "expiration": past_date,  # Expired
+                "strike": 150.0,
+                "option_type": "call",
+                "bid": 0.0,
+                "ask": 0.01,
+                "last_price": 0.005,
+                "volume": 0,
+                "open_interest": 1000,
+                "implied_volatility": 0.0,
+                "delta": 0.0,
+                "gamma": 0.0,
+                "theta": 0.0,
+                "vega": 0.0,
+                "underlying_price": 150.0,
+            },
+            {
+                "expiration": future_date,  # Valid
+                "strike": 150.0,
+                "option_type": "call",
+                "bid": 5.50,
+                "ask": 5.75,
+                "last_price": 5.625,
+                "volume": 1000,
+                "open_interest": 5000,
+                "implied_volatility": 0.30,
+                "delta": 0.50,
+                "gamma": 0.05,
+                "theta": -0.02,
+                "vega": 0.15,
+                "underlying_price": 150.0,
+            },
+        ]
+    )
 
 
 @pytest.fixture
@@ -235,59 +268,61 @@ def unusual_activity_chain(sample_expiration_dates):
     exp_date = sample_expiration_dates[0]
     underlying_price = 150.0
 
-    return pd.DataFrame([
-        # Normal activity
-        {
-            "expiration": exp_date,
-            "strike": 145.0,
-            "option_type": "call",
-            "bid": 7.50,
-            "ask": 7.75,
-            "last_price": 7.625,
-            "volume": 500,
-            "open_interest": 5000,
-            "implied_volatility": 0.28,
-            "delta": 0.65,
-            "gamma": 0.04,
-            "theta": -0.02,
-            "vega": 0.15,
-            "underlying_price": underlying_price,
-        },
-        # UNUSUAL: Volume is 10x open interest
-        {
-            "expiration": exp_date,
-            "strike": 160.0,
-            "option_type": "call",
-            "bid": 2.50,
-            "ask": 2.75,
-            "last_price": 2.625,
-            "volume": 50000,  # Unusual volume
-            "open_interest": 5000,
-            "implied_volatility": 0.45,  # Elevated IV
-            "delta": 0.25,
-            "gamma": 0.03,
-            "theta": -0.03,
-            "vega": 0.20,
-            "underlying_price": underlying_price,
-        },
-        # UNUSUAL: Large block trade pattern
-        {
-            "expiration": exp_date,
-            "strike": 140.0,
-            "option_type": "put",
-            "bid": 3.00,
-            "ask": 3.25,
-            "last_price": 3.125,
-            "volume": 25000,  # Unusual volume
-            "open_interest": 2000,
-            "implied_volatility": 0.50,  # Very elevated IV
-            "delta": -0.30,
-            "gamma": 0.035,
-            "theta": -0.025,
-            "vega": 0.18,
-            "underlying_price": underlying_price,
-        },
-    ])
+    return pd.DataFrame(
+        [
+            # Normal activity
+            {
+                "expiration": exp_date,
+                "strike": 145.0,
+                "option_type": "call",
+                "bid": 7.50,
+                "ask": 7.75,
+                "last_price": 7.625,
+                "volume": 500,
+                "open_interest": 5000,
+                "implied_volatility": 0.28,
+                "delta": 0.65,
+                "gamma": 0.04,
+                "theta": -0.02,
+                "vega": 0.15,
+                "underlying_price": underlying_price,
+            },
+            # UNUSUAL: Volume is 10x open interest
+            {
+                "expiration": exp_date,
+                "strike": 160.0,
+                "option_type": "call",
+                "bid": 2.50,
+                "ask": 2.75,
+                "last_price": 2.625,
+                "volume": 50000,  # Unusual volume
+                "open_interest": 5000,
+                "implied_volatility": 0.45,  # Elevated IV
+                "delta": 0.25,
+                "gamma": 0.03,
+                "theta": -0.03,
+                "vega": 0.20,
+                "underlying_price": underlying_price,
+            },
+            # UNUSUAL: Large block trade pattern
+            {
+                "expiration": exp_date,
+                "strike": 140.0,
+                "option_type": "put",
+                "bid": 3.00,
+                "ask": 3.25,
+                "last_price": 3.125,
+                "volume": 25000,  # Unusual volume
+                "open_interest": 2000,
+                "implied_volatility": 0.50,  # Very elevated IV
+                "delta": -0.30,
+                "gamma": 0.035,
+                "theta": -0.025,
+                "vega": 0.18,
+                "underlying_price": underlying_price,
+            },
+        ]
+    )
 
 
 @pytest.fixture
@@ -327,6 +362,7 @@ class TestUnusualActivityDetection:
     def test_detects_high_volume_to_oi_ratio(self, unusual_activity_chain):
         """Test detection of options with volume >> open interest."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.detect_unusual_activity(unusual_activity_chain)
 
@@ -341,19 +377,22 @@ class TestUnusualActivityDetection:
     def test_detects_elevated_iv(self, unusual_activity_chain):
         """Test detection of elevated implied volatility."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.detect_unusual_activity(
-            unusual_activity_chain,
-            iv_threshold=0.40
+            unusual_activity_chain, iv_threshold=0.40
         )
 
         assert isinstance(result, pd.DataFrame)
-        assert "iv_percentile" in result.columns or "implied_volatility" in result.columns
+        assert (
+            "iv_percentile" in result.columns or "implied_volatility" in result.columns
+        )
 
     @pytest.mark.skip(reason="OptionsAnalyzer not yet implemented")
     def test_empty_chain_returns_empty(self, empty_options_chain):
         """Test with empty options chain."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.detect_unusual_activity(empty_options_chain)
 
@@ -364,12 +403,18 @@ class TestUnusualActivityDetection:
     def test_returns_expected_columns(self, sample_options_chain):
         """Test that result has expected columns."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.detect_unusual_activity(sample_options_chain)
 
         expected_cols = [
-            "strike", "option_type", "volume", "open_interest",
-            "volume_oi_ratio", "implied_volatility", "unusual_score"
+            "strike",
+            "option_type",
+            "volume",
+            "open_interest",
+            "volume_oi_ratio",
+            "implied_volatility",
+            "unusual_score",
         ]
         for col in expected_cols:
             assert col in result.columns
@@ -378,16 +423,15 @@ class TestUnusualActivityDetection:
     def test_volume_threshold_parameter(self, sample_options_chain):
         """Test minimum volume threshold parameter."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
 
         # High threshold should return fewer results
         result_high = analyzer.detect_unusual_activity(
-            sample_options_chain,
-            min_volume=10000
+            sample_options_chain, min_volume=10000
         )
         result_low = analyzer.detect_unusual_activity(
-            sample_options_chain,
-            min_volume=100
+            sample_options_chain, min_volume=100
         )
 
         assert len(result_high) <= len(result_low)
@@ -400,6 +444,7 @@ class TestGammaExposureCalculation:
     def test_returns_dict(self, sample_options_chain):
         """Test that method returns a dictionary."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_gamma_exposure(sample_options_chain, "AAPL")
 
@@ -409,6 +454,7 @@ class TestGammaExposureCalculation:
     def test_has_expected_keys(self, sample_options_chain):
         """Test that result has expected keys."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_gamma_exposure(sample_options_chain, "AAPL")
 
@@ -428,6 +474,7 @@ class TestGammaExposureCalculation:
     def test_gamma_flip_calculation(self, sample_options_chain):
         """Test gamma flip level calculation."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_gamma_exposure(sample_options_chain, "AAPL")
 
@@ -444,6 +491,7 @@ class TestGammaExposureCalculation:
     def test_empty_chain_handling(self, empty_options_chain):
         """Test with empty options chain."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_gamma_exposure(empty_options_chain, "AAPL")
 
@@ -454,6 +502,7 @@ class TestGammaExposureCalculation:
     def test_gamma_by_strike_dataframe(self, sample_options_chain):
         """Test gamma by strike returns DataFrame."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_gamma_exposure(sample_options_chain, "AAPL")
 
@@ -465,6 +514,7 @@ class TestGammaExposureCalculation:
     def test_zero_oi_handling(self, zero_oi_options_chain):
         """Test handling of zero open interest."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_gamma_exposure(zero_oi_options_chain, "AAPL")
 
@@ -479,6 +529,7 @@ class TestPutCallRatio:
     def test_returns_dict(self, sample_options_chain):
         """Test that method returns a dictionary."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_put_call_ratio(sample_options_chain)
 
@@ -488,6 +539,7 @@ class TestPutCallRatio:
     def test_has_expected_keys(self, sample_options_chain):
         """Test that result has expected keys."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_put_call_ratio(sample_options_chain)
 
@@ -505,6 +557,7 @@ class TestPutCallRatio:
     def test_ratio_calculation_accuracy(self, sample_options_chain):
         """Test accuracy of ratio calculation."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_put_call_ratio(sample_options_chain)
 
@@ -520,16 +573,24 @@ class TestPutCallRatio:
     def test_interpretation_values(self, sample_options_chain):
         """Test that interpretation is valid."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_put_call_ratio(sample_options_chain)
 
-        valid_interpretations = ["bullish", "bearish", "neutral", "extreme_fear", "extreme_greed"]
+        valid_interpretations = [
+            "bullish",
+            "bearish",
+            "neutral",
+            "extreme_fear",
+            "extreme_greed",
+        ]
         assert result["interpretation"] in valid_interpretations
 
     @pytest.mark.skip(reason="OptionsAnalyzer not yet implemented")
     def test_empty_chain_handling(self, empty_options_chain):
         """Test with empty options chain."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_put_call_ratio(empty_options_chain)
 
@@ -540,6 +601,7 @@ class TestPutCallRatio:
     def test_single_option_handling(self, single_option_chain):
         """Test with single option (only calls, no puts)."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_put_call_ratio(single_option_chain)
 
@@ -554,6 +616,7 @@ class TestSmartMoneyTracking:
     def test_returns_dataframe(self, sample_options_chain):
         """Test that method returns a DataFrame."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.track_smart_money(sample_options_chain)
 
@@ -563,13 +626,18 @@ class TestSmartMoneyTracking:
     def test_has_expected_columns(self, sample_options_chain):
         """Test that DataFrame has expected columns."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.track_smart_money(sample_options_chain)
 
         expected_cols = [
-            "strike", "option_type", "expiration",
-            "smart_money_score", "trade_size_indicator",
-            "positioning", "confidence"
+            "strike",
+            "option_type",
+            "expiration",
+            "smart_money_score",
+            "trade_size_indicator",
+            "positioning",
+            "confidence",
         ]
         for col in expected_cols:
             assert col in result.columns
@@ -578,6 +646,7 @@ class TestSmartMoneyTracking:
     def test_identifies_block_trades(self, unusual_activity_chain):
         """Test identification of block trade patterns."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.track_smart_money(unusual_activity_chain)
 
@@ -588,11 +657,11 @@ class TestSmartMoneyTracking:
     def test_premium_threshold(self, sample_options_chain):
         """Test minimum premium threshold for smart money detection."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
 
         result = analyzer.track_smart_money(
-            sample_options_chain,
-            min_premium=100000  # $100k minimum
+            sample_options_chain, min_premium=100000  # $100k minimum
         )
 
         # Verify all results meet threshold
@@ -604,6 +673,7 @@ class TestSmartMoneyTracking:
     def test_empty_chain_returns_empty(self, empty_options_chain):
         """Test with empty options chain."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.track_smart_money(empty_options_chain)
 
@@ -618,6 +688,7 @@ class TestMaxPainCalculation:
     def test_returns_dict(self, sample_options_chain):
         """Test that method returns a dictionary."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_max_pain(sample_options_chain)
 
@@ -627,6 +698,7 @@ class TestMaxPainCalculation:
     def test_has_expected_keys(self, sample_options_chain):
         """Test that result has expected keys."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_max_pain(sample_options_chain)
 
@@ -644,6 +716,7 @@ class TestMaxPainCalculation:
     def test_max_pain_within_strike_range(self, sample_options_chain):
         """Test that max pain is within the strike range."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_max_pain(sample_options_chain)
 
@@ -658,6 +731,7 @@ class TestMaxPainCalculation:
     def test_pain_by_strike_dataframe(self, sample_options_chain):
         """Test pain by strike returns DataFrame."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_max_pain(sample_options_chain)
 
@@ -669,12 +743,12 @@ class TestMaxPainCalculation:
     def test_expiration_filter(self, sample_options_chain, sample_expiration_dates):
         """Test filtering by specific expiration."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
 
         target_exp = sample_expiration_dates[0]
         result = analyzer.calculate_max_pain(
-            sample_options_chain,
-            expiration=target_exp
+            sample_options_chain, expiration=target_exp
         )
 
         assert result["expiration"] == target_exp
@@ -683,6 +757,7 @@ class TestMaxPainCalculation:
     def test_empty_chain_handling(self, empty_options_chain):
         """Test with empty options chain."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_max_pain(empty_options_chain)
 
@@ -693,6 +768,7 @@ class TestMaxPainCalculation:
     def test_zero_oi_handling(self, zero_oi_options_chain):
         """Test with zero open interest options."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_max_pain(zero_oi_options_chain)
 
@@ -707,6 +783,7 @@ class TestExpirationFlowAnalysis:
     def test_returns_dataframe(self, sample_options_chain):
         """Test that method returns a DataFrame."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.analyze_expiration_flow(sample_options_chain)
 
@@ -716,13 +793,20 @@ class TestExpirationFlowAnalysis:
     def test_has_expected_columns(self, sample_options_chain):
         """Test that DataFrame has expected columns."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.analyze_expiration_flow(sample_options_chain)
 
         expected_cols = [
-            "expiration", "days_to_expiry", "call_volume", "put_volume",
-            "call_oi", "put_oi", "net_premium_flow", "gamma_exposure",
-            "sentiment_score"
+            "expiration",
+            "days_to_expiry",
+            "call_volume",
+            "put_volume",
+            "call_oi",
+            "put_oi",
+            "net_premium_flow",
+            "gamma_exposure",
+            "sentiment_score",
         ]
         for col in expected_cols:
             assert col in result.columns
@@ -731,6 +815,7 @@ class TestExpirationFlowAnalysis:
     def test_sorted_by_expiration(self, sample_options_chain):
         """Test that results are sorted by expiration."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.analyze_expiration_flow(sample_options_chain)
 
@@ -742,6 +827,7 @@ class TestExpirationFlowAnalysis:
     def test_excludes_expired_options(self, expired_options_chain):
         """Test that expired options are excluded."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.analyze_expiration_flow(expired_options_chain)
 
@@ -753,6 +839,7 @@ class TestExpirationFlowAnalysis:
     def test_empty_chain_returns_empty(self, empty_options_chain):
         """Test with empty options chain."""
         from stanley.analytics.options import OptionsAnalyzer
+
         analyzer = OptionsAnalyzer()
         result = analyzer.analyze_expiration_flow(empty_options_chain)
 
@@ -865,22 +952,26 @@ class TestEdgeCases:
         from stanley.analytics.options import OptionsAnalyzer
 
         # Create deep ITM options
-        deep_itm = pd.DataFrame([{
-            "expiration": sample_expiration_dates[0],
-            "strike": 100.0,  # Very deep ITM for $150 stock
-            "option_type": "call",
-            "bid": 50.00,
-            "ask": 50.50,
-            "last_price": 50.25,
-            "volume": 100,
-            "open_interest": 500,
-            "implied_volatility": 0.15,
-            "delta": 0.99,
-            "gamma": 0.001,
-            "theta": -0.01,
-            "vega": 0.02,
-            "underlying_price": 150.0,
-        }])
+        deep_itm = pd.DataFrame(
+            [
+                {
+                    "expiration": sample_expiration_dates[0],
+                    "strike": 100.0,  # Very deep ITM for $150 stock
+                    "option_type": "call",
+                    "bid": 50.00,
+                    "ask": 50.50,
+                    "last_price": 50.25,
+                    "volume": 100,
+                    "open_interest": 500,
+                    "implied_volatility": 0.15,
+                    "delta": 0.99,
+                    "gamma": 0.001,
+                    "theta": -0.01,
+                    "vega": 0.02,
+                    "underlying_price": 150.0,
+                }
+            ]
+        )
 
         analyzer = OptionsAnalyzer()
         result = analyzer.calculate_gamma_exposure(deep_itm, "AAPL")
@@ -894,22 +985,26 @@ class TestEdgeCases:
         from stanley.analytics.options import OptionsAnalyzer
 
         # Create deep OTM options
-        deep_otm = pd.DataFrame([{
-            "expiration": sample_expiration_dates[0],
-            "strike": 250.0,  # Very deep OTM for $150 stock
-            "option_type": "call",
-            "bid": 0.01,
-            "ask": 0.05,
-            "last_price": 0.03,
-            "volume": 1000,
-            "open_interest": 10000,
-            "implied_volatility": 0.80,
-            "delta": 0.01,
-            "gamma": 0.001,
-            "theta": -0.001,
-            "vega": 0.01,
-            "underlying_price": 150.0,
-        }])
+        deep_otm = pd.DataFrame(
+            [
+                {
+                    "expiration": sample_expiration_dates[0],
+                    "strike": 250.0,  # Very deep OTM for $150 stock
+                    "option_type": "call",
+                    "bid": 0.01,
+                    "ask": 0.05,
+                    "last_price": 0.03,
+                    "volume": 1000,
+                    "open_interest": 10000,
+                    "implied_volatility": 0.80,
+                    "delta": 0.01,
+                    "gamma": 0.001,
+                    "theta": -0.001,
+                    "vega": 0.01,
+                    "underlying_price": 150.0,
+                }
+            ]
+        )
 
         analyzer = OptionsAnalyzer()
         result = analyzer.detect_unusual_activity(deep_otm)
@@ -922,22 +1017,26 @@ class TestEdgeCases:
         """Test handling of extremely high volume."""
         from stanley.analytics.options import OptionsAnalyzer
 
-        high_volume = pd.DataFrame([{
-            "expiration": sample_expiration_dates[0],
-            "strike": 150.0,
-            "option_type": "call",
-            "bid": 5.50,
-            "ask": 5.75,
-            "last_price": 5.625,
-            "volume": 10000000,  # 10M volume
-            "open_interest": 100000,
-            "implied_volatility": 0.50,
-            "delta": 0.50,
-            "gamma": 0.05,
-            "theta": -0.02,
-            "vega": 0.15,
-            "underlying_price": 150.0,
-        }])
+        high_volume = pd.DataFrame(
+            [
+                {
+                    "expiration": sample_expiration_dates[0],
+                    "strike": 150.0,
+                    "option_type": "call",
+                    "bid": 5.50,
+                    "ask": 5.75,
+                    "last_price": 5.625,
+                    "volume": 10000000,  # 10M volume
+                    "open_interest": 100000,
+                    "implied_volatility": 0.50,
+                    "delta": 0.50,
+                    "gamma": 0.05,
+                    "theta": -0.02,
+                    "vega": 0.15,
+                    "underlying_price": 150.0,
+                }
+            ]
+        )
 
         analyzer = OptionsAnalyzer()
         result = analyzer.detect_unusual_activity(high_volume)
@@ -950,22 +1049,26 @@ class TestEdgeCases:
         """Test handling of invalid negative values."""
         from stanley.analytics.options import OptionsAnalyzer
 
-        invalid_data = pd.DataFrame([{
-            "expiration": sample_expiration_dates[0],
-            "strike": 150.0,
-            "option_type": "call",
-            "bid": -1.0,  # Invalid negative
-            "ask": 5.75,
-            "last_price": 5.625,
-            "volume": -100,  # Invalid negative
-            "open_interest": 5000,
-            "implied_volatility": 0.30,
-            "delta": 0.50,
-            "gamma": 0.05,
-            "theta": -0.02,
-            "vega": 0.15,
-            "underlying_price": 150.0,
-        }])
+        invalid_data = pd.DataFrame(
+            [
+                {
+                    "expiration": sample_expiration_dates[0],
+                    "strike": 150.0,
+                    "option_type": "call",
+                    "bid": -1.0,  # Invalid negative
+                    "ask": 5.75,
+                    "last_price": 5.625,
+                    "volume": -100,  # Invalid negative
+                    "open_interest": 5000,
+                    "implied_volatility": 0.30,
+                    "delta": 0.50,
+                    "gamma": 0.05,
+                    "theta": -0.02,
+                    "vega": 0.15,
+                    "underlying_price": 150.0,
+                }
+            ]
+        )
 
         analyzer = OptionsAnalyzer()
         # Should handle gracefully (either filter or raise ValueError)
@@ -987,22 +1090,24 @@ class TestEdgeCases:
 
         data = []
         for exp in expirations:
-            data.append({
-                "expiration": exp,
-                "strike": 150.0,
-                "option_type": "call",
-                "bid": 5.00,
-                "ask": 5.25,
-                "last_price": 5.125,
-                "volume": 100,
-                "open_interest": 1000,
-                "implied_volatility": 0.30,
-                "delta": 0.50,
-                "gamma": 0.05,
-                "theta": -0.02,
-                "vega": 0.15,
-                "underlying_price": 150.0,
-            })
+            data.append(
+                {
+                    "expiration": exp,
+                    "strike": 150.0,
+                    "option_type": "call",
+                    "bid": 5.00,
+                    "ask": 5.25,
+                    "last_price": 5.125,
+                    "volume": 100,
+                    "open_interest": 1000,
+                    "implied_volatility": 0.30,
+                    "delta": 0.50,
+                    "gamma": 0.05,
+                    "theta": -0.02,
+                    "vega": 0.15,
+                    "underlying_price": 150.0,
+                }
+            )
 
         df = pd.DataFrame(data)
         analyzer = OptionsAnalyzer()
@@ -1020,22 +1125,24 @@ class TestEdgeCases:
 
         data = []
         for strike in strikes:
-            data.append({
-                "expiration": sample_expiration_dates[0],
-                "strike": float(strike),
-                "option_type": "call",
-                "bid": max(0.01, 150 - strike),
-                "ask": max(0.05, 150 - strike + 0.5),
-                "last_price": max(0.03, 150 - strike + 0.25),
-                "volume": 100,
-                "open_interest": 1000,
-                "implied_volatility": 0.30,
-                "delta": 0.50,
-                "gamma": 0.05,
-                "theta": -0.02,
-                "vega": 0.15,
-                "underlying_price": 150.0,
-            })
+            data.append(
+                {
+                    "expiration": sample_expiration_dates[0],
+                    "strike": float(strike),
+                    "option_type": "call",
+                    "bid": max(0.01, 150 - strike),
+                    "ask": max(0.05, 150 - strike + 0.5),
+                    "last_price": max(0.03, 150 - strike + 0.25),
+                    "volume": 100,
+                    "open_interest": 1000,
+                    "implied_volatility": 0.30,
+                    "delta": 0.50,
+                    "gamma": 0.05,
+                    "theta": -0.02,
+                    "vega": 0.15,
+                    "underlying_price": 150.0,
+                }
+            )
 
         df = pd.DataFrame(data)
         analyzer = OptionsAnalyzer()
@@ -1135,7 +1242,9 @@ class TestOptionsDataManagerIntegration:
 
     @pytest.mark.skip(reason="OptionsAnalyzer not yet implemented")
     @pytest.mark.asyncio
-    async def test_fetch_and_analyze_unusual_activity(self, mock_options_data_manager, sample_options_chain):
+    async def test_fetch_and_analyze_unusual_activity(
+        self, mock_options_data_manager, sample_options_chain
+    ):
         """Test fetching options chain and analyzing unusual activity."""
         from stanley.analytics.options import OptionsAnalyzer
 
@@ -1154,7 +1263,9 @@ class TestOptionsDataManagerIntegration:
 
     @pytest.mark.skip(reason="OptionsAnalyzer not yet implemented")
     @pytest.mark.asyncio
-    async def test_full_options_analysis_flow(self, mock_options_data_manager, sample_options_chain):
+    async def test_full_options_analysis_flow(
+        self, mock_options_data_manager, sample_options_chain
+    ):
         """Test complete options analysis workflow."""
         from stanley.analytics.options import OptionsAnalyzer
 

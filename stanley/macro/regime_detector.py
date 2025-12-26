@@ -245,9 +245,7 @@ class MacroRegimeDetector:
         regime, confidence, score = self._classify_regime(signals)
 
         # Calculate recession probability
-        recession_prob = await self._calculate_recession_probability(
-            country, signals
-        )
+        recession_prob = await self._calculate_recession_probability(country, signals)
 
         # Calculate risk score
         risk_score, risk_trend = self._calculate_risk_score(signals)
@@ -286,9 +284,7 @@ class MacroRegimeDetector:
             regime_duration_days=regime_duration,
         )
 
-    async def _get_yield_curve_signal(
-        self, country: str
-    ) -> RegimeSignal:
+    async def _get_yield_curve_signal(self, country: str) -> RegimeSignal:
         """Get yield curve component signal."""
         try:
             analysis = await self.yield_curve_analyzer.analyze_curve(country)
@@ -406,9 +402,7 @@ class MacroRegimeDetector:
             details={"stock_bond_corr": None},
         )
 
-    async def _get_business_cycle_signal(
-        self, country: str
-    ) -> RegimeSignal:
+    async def _get_business_cycle_signal(self, country: str) -> RegimeSignal:
         """Get business cycle phase signal."""
         # Placeholder - would integrate with BusinessCycleAnalyzer
         return RegimeSignal(
@@ -516,9 +510,7 @@ class MacroRegimeDetector:
         signals: List[RegimeSignal],
     ) -> float:
         """Calculate 12-month recession probability."""
-        yc_signal = next(
-            (s for s in signals if s.source == "yield_curve"), None
-        )
+        yc_signal = next((s for s in signals if s.source == "yield_curve"), None)
 
         if yc_signal and yc_signal.details.get("spread_3m10y") is not None:
             spread = yc_signal.details["spread_3m10y"]
@@ -529,9 +521,7 @@ class MacroRegimeDetector:
         # Fallback based on regime signals
         return 0.15  # Default moderate probability
 
-    def _calculate_risk_score(
-        self, signals: List[RegimeSignal]
-    ) -> tuple[float, str]:
+    def _calculate_risk_score(self, signals: List[RegimeSignal]) -> tuple[float, str]:
         """Calculate composite risk score 0-100."""
         risk_components = []
 

@@ -21,8 +21,7 @@ except ImportError:
 
 # Skip all tests if module not yet implemented
 pytestmark = pytest.mark.skipif(
-    SmartMoneyIndex is None,
-    reason="SmartMoneyIndex module not yet implemented"
+    SmartMoneyIndex is None, reason="SmartMoneyIndex module not yet implemented"
 )
 
 
@@ -36,14 +35,16 @@ def sample_smi_components():
     """Sample SMI component data."""
     dates = pd.date_range(end=datetime.now(), periods=30, freq="D")
     np.random.seed(42)
-    return pd.DataFrame({
-        "date": dates,
-        "institutional_flow": np.random.normal(0, 1000000, 30),
-        "dark_pool_activity": np.random.uniform(0.15, 0.35, 30),
-        "options_sentiment": np.random.uniform(-1, 1, 30),
-        "whale_accumulation": np.random.uniform(-1, 1, 30),
-        "sector_rotation_signal": np.random.uniform(-1, 1, 30),
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "institutional_flow": np.random.normal(0, 1000000, 30),
+            "dark_pool_activity": np.random.uniform(0.15, 0.35, 30),
+            "options_sentiment": np.random.uniform(-1, 1, 30),
+            "whale_accumulation": np.random.uniform(-1, 1, 30),
+            "sector_rotation_signal": np.random.uniform(-1, 1, 30),
+        }
+    )
 
 
 @pytest.fixture
@@ -60,12 +61,17 @@ def sample_smi_history():
         current = np.clip(current, 0, 100)
         smi_values.append(current)
 
-    return pd.DataFrame({
-        "date": dates,
-        "smi_value": smi_values,
-        "smi_signal": np.where(np.array(smi_values) > 70, "overbought",
-                              np.where(np.array(smi_values) < 30, "oversold", "neutral")),
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "smi_value": smi_values,
+            "smi_signal": np.where(
+                np.array(smi_values) > 70,
+                "overbought",
+                np.where(np.array(smi_values) < 30, "oversold", "neutral"),
+            ),
+        }
+    )
 
 
 @pytest.fixture
@@ -79,22 +85,30 @@ def sample_price_data():
     returns = np.random.normal(0.002, 0.015, len(dates))
     prices = base_price * np.cumprod(1 + returns)
 
-    return pd.DataFrame({
-        "date": dates,
-        "close": prices,
-        "high": prices * 1.01,
-        "low": prices * 0.99,
-        "volume": np.random.randint(1_000_000, 10_000_000, len(dates)),
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "close": prices,
+            "high": prices * 1.01,
+            "low": prices * 0.99,
+            "volume": np.random.randint(1_000_000, 10_000_000, len(dates)),
+        }
+    )
 
 
 @pytest.fixture
 def empty_component_data():
     """Empty component data DataFrame."""
-    return pd.DataFrame(columns=[
-        "date", "institutional_flow", "dark_pool_activity",
-        "options_sentiment", "whale_accumulation", "sector_rotation_signal"
-    ])
+    return pd.DataFrame(
+        columns=[
+            "date",
+            "institutional_flow",
+            "dark_pool_activity",
+            "options_sentiment",
+            "whale_accumulation",
+            "sector_rotation_signal",
+        ]
+    )
 
 
 @pytest.fixture
@@ -192,7 +206,15 @@ class TestSMICalculation:
         """Test that smi_signal is valid."""
         smi = SmartMoneyIndex()
         result = smi.calculate("AAPL")
-        valid_signals = ["strong_buy", "buy", "neutral", "sell", "strong_sell", "overbought", "oversold"]
+        valid_signals = [
+            "strong_buy",
+            "buy",
+            "neutral",
+            "sell",
+            "strong_sell",
+            "overbought",
+            "oversold",
+        ]
         assert result["smi_signal"] in valid_signals
 
     def test_components_is_dict(self):
@@ -266,9 +288,15 @@ class TestComponentWeighting:
         components = result["components"]
 
         # Each component should have a contribution
-        for component in ["institutional_flow", "dark_pool_activity", "options_sentiment"]:
+        for component in [
+            "institutional_flow",
+            "dark_pool_activity",
+            "options_sentiment",
+        ]:
             if component in components:
-                assert "value" in components[component] or isinstance(components[component], (int, float))
+                assert "value" in components[component] or isinstance(
+                    components[component], (int, float)
+                )
 
 
 # =============================================================================
@@ -290,7 +318,12 @@ class TestSignalGenerationThresholds:
     def test_set_thresholds(self):
         """Test setting custom thresholds."""
         smi = SmartMoneyIndex()
-        custom_thresholds = {"overbought": 80, "oversold": 20, "strong_buy": 15, "strong_sell": 85}
+        custom_thresholds = {
+            "overbought": 80,
+            "oversold": 20,
+            "strong_buy": 15,
+            "strong_sell": 85,
+        }
         smi.set_signal_thresholds(custom_thresholds)
         thresholds = smi.get_signal_thresholds()
         assert thresholds["overbought"] == 80
@@ -303,7 +336,9 @@ class TestSignalGenerationThresholds:
         sample_smi_components["institutional_flow"] = 10_000_000
         sample_smi_components["options_sentiment"] = 0.9
         sample_smi_components["whale_accumulation"] = 0.9
-        with patch.object(smi, '_get_component_data', return_value=sample_smi_components):
+        with patch.object(
+            smi, "_get_component_data", return_value=sample_smi_components
+        ):
             result = smi.calculate("AAPL")
             if result["smi_value"] > 70:
                 assert result["smi_signal"] in ["overbought", "strong_sell", "sell"]
@@ -315,7 +350,9 @@ class TestSignalGenerationThresholds:
         sample_smi_components["institutional_flow"] = -10_000_000
         sample_smi_components["options_sentiment"] = -0.9
         sample_smi_components["whale_accumulation"] = -0.9
-        with patch.object(smi, '_get_component_data', return_value=sample_smi_components):
+        with patch.object(
+            smi, "_get_component_data", return_value=sample_smi_components
+        ):
             result = smi.calculate("AAPL")
             if result["smi_value"] < 30:
                 assert result["smi_signal"] in ["oversold", "strong_buy", "buy"]
@@ -372,8 +409,8 @@ class TestDivergenceDetection:
         # SMI trending up
         sample_smi_history["smi_value"] = np.linspace(30, 70, len(sample_smi_history))
 
-        with patch.object(smi, '_get_price_data', return_value=sample_price_data):
-            with patch.object(smi, '_get_smi_history', return_value=sample_smi_history):
+        with patch.object(smi, "_get_price_data", return_value=sample_price_data):
+            with patch.object(smi, "_get_smi_history", return_value=sample_smi_history):
                 result = smi.detect_divergence("AAPL")
                 # May detect bullish divergence
                 assert isinstance(result, dict)
@@ -385,8 +422,8 @@ class TestDivergenceDetection:
         # SMI trending down
         sample_smi_history["smi_value"] = np.linspace(70, 30, len(sample_smi_history))
 
-        with patch.object(smi, '_get_price_data', return_value=sample_price_data):
-            with patch.object(smi, '_get_smi_history', return_value=sample_smi_history):
+        with patch.object(smi, "_get_price_data", return_value=sample_price_data):
+            with patch.object(smi, "_get_smi_history", return_value=sample_smi_history):
                 result = smi.detect_divergence("AAPL")
                 # May detect bearish divergence
                 assert isinstance(result, dict)
@@ -504,7 +541,9 @@ class TestSmartMoneyIndexEdgeCases:
     def test_empty_component_data(self, empty_component_data):
         """Test with empty component data."""
         smi = SmartMoneyIndex()
-        with patch.object(smi, '_get_component_data', return_value=empty_component_data):
+        with patch.object(
+            smi, "_get_component_data", return_value=empty_component_data
+        ):
             result = smi.calculate("AAPL")
             # Should return neutral/default values
             assert result["smi_value"] == 50.0 or 0 <= result["smi_value"] <= 100
@@ -513,7 +552,7 @@ class TestSmartMoneyIndexEdgeCases:
         """Test with missing component columns."""
         smi = SmartMoneyIndex()
         incomplete_data = sample_smi_components.drop(columns=["whale_accumulation"])
-        with patch.object(smi, '_get_component_data', return_value=incomplete_data):
+        with patch.object(smi, "_get_component_data", return_value=incomplete_data):
             result = smi.calculate("AAPL")
             # Should handle gracefully
             assert isinstance(result, dict)
@@ -523,7 +562,9 @@ class TestSmartMoneyIndexEdgeCases:
         smi = SmartMoneyIndex()
         sample_smi_components.loc[0, "institutional_flow"] = np.nan
         sample_smi_components.loc[5, "options_sentiment"] = np.nan
-        with patch.object(smi, '_get_component_data', return_value=sample_smi_components):
+        with patch.object(
+            smi, "_get_component_data", return_value=sample_smi_components
+        ):
             result = smi.calculate("AAPL")
             assert isinstance(result, dict)
             assert not np.isnan(result["smi_value"])
@@ -533,7 +574,9 @@ class TestSmartMoneyIndexEdgeCases:
         smi = SmartMoneyIndex()
         sample_smi_components["institutional_flow"] = 1e12  # Extreme
         sample_smi_components["options_sentiment"] = 100  # Out of normal range
-        with patch.object(smi, '_get_component_data', return_value=sample_smi_components):
+        with patch.object(
+            smi, "_get_component_data", return_value=sample_smi_components
+        ):
             result = smi.calculate("AAPL")
             # Should still return bounded value
             assert 0 <= result["smi_value"] <= 100

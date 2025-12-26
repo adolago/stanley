@@ -492,9 +492,11 @@ class VolatilityRegimeDetector:
                 prev_row = regime_df.iloc[prev_idx]
                 transitions.append(
                     {
-                        "date": row["date"].isoformat()
-                        if hasattr(row["date"], "isoformat")
-                        else str(row["date"]),
+                        "date": (
+                            row["date"].isoformat()
+                            if hasattr(row["date"], "isoformat")
+                            else str(row["date"])
+                        ),
                         "from_regime": prev_row["regime"],
                         "to_regime": row["regime"],
                         "vix_level": row["vix_level"],
@@ -533,9 +535,11 @@ class VolatilityRegimeDetector:
                 "avg_vix": regime_data["vix_level"].mean(),
                 "min_vix": regime_data["vix_level"].min(),
                 "max_vix": regime_data["vix_level"].max(),
-                "avg_duration": regime_data["regime_duration"].mean()
-                if "regime_duration" in regime_data.columns
-                else None,
+                "avg_duration": (
+                    regime_data["regime_duration"].mean()
+                    if "regime_duration" in regime_data.columns
+                    else None
+                ),
             }
 
         return stats

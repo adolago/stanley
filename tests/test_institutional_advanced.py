@@ -27,23 +27,27 @@ from stanley.analytics.institutional import InstitutionalAnalyzer
 @pytest.fixture
 def sample_13f_current():
     """Current quarter 13F filing data."""
-    return pd.DataFrame({
-        "symbol": ["AAPL", "MSFT", "GOOGL", "NVDA", "NEW_STOCK"],
-        "shares": [10000000, 8000000, 6000000, 7500000, 2000000],
-        "value": [1500000000, 1200000000, 900000000, 1125000000, 300000000],
-        "weight": [0.25, 0.20, 0.15, 0.19, 0.05],
-    })
+    return pd.DataFrame(
+        {
+            "symbol": ["AAPL", "MSFT", "GOOGL", "NVDA", "NEW_STOCK"],
+            "shares": [10000000, 8000000, 6000000, 7500000, 2000000],
+            "value": [1500000000, 1200000000, 900000000, 1125000000, 300000000],
+            "weight": [0.25, 0.20, 0.15, 0.19, 0.05],
+        }
+    )
 
 
 @pytest.fixture
 def sample_13f_previous():
     """Previous quarter 13F filing data."""
-    return pd.DataFrame({
-        "symbol": ["AAPL", "MSFT", "GOOGL", "NVDA", "OLD_STOCK"],
-        "shares": [8000000, 8000000, 7000000, 5000000, 3000000],
-        "value": [1200000000, 1200000000, 1050000000, 750000000, 450000000],
-        "weight": [0.22, 0.22, 0.19, 0.14, 0.08],
-    })
+    return pd.DataFrame(
+        {
+            "symbol": ["AAPL", "MSFT", "GOOGL", "NVDA", "OLD_STOCK"],
+            "shares": [8000000, 8000000, 7000000, 5000000, 3000000],
+            "value": [1200000000, 1200000000, 1050000000, 750000000, 450000000],
+            "weight": [0.22, 0.22, 0.19, 0.14, 0.08],
+        }
+    )
 
 
 @pytest.fixture
@@ -61,97 +65,111 @@ def sample_13f_previous_empty():
 @pytest.fixture
 def sample_whale_data():
     """Sample whale institution data with various AUM levels."""
-    return pd.DataFrame({
-        "manager_name": [
-            "Vanguard Group",
-            "BlackRock",
-            "State Street",
-            "Fidelity",
-            "Berkshire Hathaway",
-            "Small Fund A",
-            "Small Fund B",
-        ],
-        "manager_cik": [
-            "0000102909",
-            "0001390777",
-            "0000093751",
-            "0000315066",
-            "0001067983",
-            "0009999901",
-            "0009999902",
-        ],
-        "aum": [
-            7_000_000_000_000,  # $7T
-            8_000_000_000_000,  # $8T
-            3_000_000_000_000,  # $3T
-            4_000_000_000_000,  # $4T
-            500_000_000_000,    # $500B
-            50_000_000,         # $50M
-            100_000_000,        # $100M
-        ],
-        "position_change_pct": [0.15, 0.05, -0.10, 0.25, 0.50, 0.80, -0.20],
-        "shares_added": [5000000, 2000000, -3000000, 8000000, 10000000, 50000, -10000],
-        "value_change": [
-            750_000_000,
-            300_000_000,
-            -450_000_000,
-            1_200_000_000,
-            1_500_000_000,
-            7_500_000,
-            -1_500_000,
-        ],
-    })
+    return pd.DataFrame(
+        {
+            "manager_name": [
+                "Vanguard Group",
+                "BlackRock",
+                "State Street",
+                "Fidelity",
+                "Berkshire Hathaway",
+                "Small Fund A",
+                "Small Fund B",
+            ],
+            "manager_cik": [
+                "0000102909",
+                "0001390777",
+                "0000093751",
+                "0000315066",
+                "0001067983",
+                "0009999901",
+                "0009999902",
+            ],
+            "aum": [
+                7_000_000_000_000,  # $7T
+                8_000_000_000_000,  # $8T
+                3_000_000_000_000,  # $3T
+                4_000_000_000_000,  # $4T
+                500_000_000_000,  # $500B
+                50_000_000,  # $50M
+                100_000_000,  # $100M
+            ],
+            "position_change_pct": [0.15, 0.05, -0.10, 0.25, 0.50, 0.80, -0.20],
+            "shares_added": [
+                5000000,
+                2000000,
+                -3000000,
+                8000000,
+                10000000,
+                50000,
+                -10000,
+            ],
+            "value_change": [
+                750_000_000,
+                300_000_000,
+                -450_000_000,
+                1_200_000_000,
+                1_500_000_000,
+                7_500_000,
+                -1_500_000,
+            ],
+        }
+    )
 
 
 @pytest.fixture
 def sample_cross_filing_data():
     """Sample data for cross-filing analysis (multiple institutions, same symbol)."""
-    return pd.DataFrame({
-        "manager_name": [
-            "Vanguard",
-            "BlackRock",
-            "State Street",
-            "Fidelity",
-            "Bridgewater",
-        ],
-        "manager_cik": [
-            "0000102909",
-            "0001390777",
-            "0000093751",
-            "0000315066",
-            "0001350694",
-        ],
-        "symbol": ["AAPL", "AAPL", "AAPL", "AAPL", "AAPL"],
-        "action": ["increase", "increase", "decrease", "increase", "new"],
-        "change_percentage": [0.15, 0.08, -0.12, 0.20, 1.0],
-        "conviction_score": [0.7, 0.5, -0.6, 0.8, 0.9],
-        "aum": [
-            7_000_000_000_000,
-            8_000_000_000_000,
-            3_000_000_000_000,
-            4_000_000_000_000,
-            150_000_000_000,
-        ],
-    })
+    return pd.DataFrame(
+        {
+            "manager_name": [
+                "Vanguard",
+                "BlackRock",
+                "State Street",
+                "Fidelity",
+                "Bridgewater",
+            ],
+            "manager_cik": [
+                "0000102909",
+                "0001390777",
+                "0000093751",
+                "0000315066",
+                "0001350694",
+            ],
+            "symbol": ["AAPL", "AAPL", "AAPL", "AAPL", "AAPL"],
+            "action": ["increase", "increase", "decrease", "increase", "new"],
+            "change_percentage": [0.15, 0.08, -0.12, 0.20, 1.0],
+            "conviction_score": [0.7, 0.5, -0.6, 0.8, 0.9],
+            "aum": [
+                7_000_000_000_000,
+                8_000_000_000_000,
+                3_000_000_000_000,
+                4_000_000_000_000,
+                150_000_000_000,
+            ],
+        }
+    )
 
 
 @pytest.fixture
 def sample_cross_filing_conflicting():
     """Cross-filing data with conflicting signals."""
-    return pd.DataFrame({
-        "manager_name": ["Fund A", "Fund B", "Fund C", "Fund D"],
-        "manager_cik": ["001", "002", "003", "004"],
-        "symbol": ["TSLA", "TSLA", "TSLA", "TSLA"],
-        "action": ["increase", "decrease", "increase", "decrease"],
-        "change_percentage": [0.30, -0.25, 0.10, -0.35],
-        "conviction_score": [0.6, -0.7, 0.3, -0.8],
-        "aum": [
-            100_000_000_000,
-            100_000_000_000,
-            100_000_000_000,
-            100_000_000_000,
-        ],
-    })
+    return pd.DataFrame(
+        {
+            "manager_name": ["Fund A", "Fund B", "Fund C", "Fund D"],
+            "manager_cik": ["001", "002", "003", "004"],
+            "symbol": ["TSLA", "TSLA", "TSLA", "TSLA"],
+            "action": ["increase", "decrease", "increase", "decrease"],
+            "change_percentage": [0.30, -0.25, 0.10, -0.35],
+            "conviction_score": [0.6, -0.7, 0.3, -0.8],
+            "aum": [
+                100_000_000_000,
+                100_000_000_000,
+                100_000_000_000,
+                100_000_000_000,
+            ],
+        }
+    )
 
 
 @pytest.fixture
@@ -159,55 +177,83 @@ def sample_momentum_history():
     """Sample smart money momentum history over multiple periods."""
     dates = pd.date_range(end=datetime.now(), periods=12, freq="W")
     np.random.seed(42)
-    return pd.DataFrame({
-        "date": dates,
-        "net_flow": [
-            100000, 150000, 200000, 180000, 250000, 300000,
-            280000, 350000, 320000, 400000, 380000, 450000
-        ],
-        "institution_count": [50, 52, 55, 54, 58, 62, 60, 65, 63, 68, 66, 70],
-        "smart_money_score": [
-            0.1, 0.15, 0.22, 0.20, 0.28, 0.35,
-            0.32, 0.40, 0.38, 0.48, 0.45, 0.55
-        ],
-        "whale_activity": [2, 3, 4, 3, 5, 6, 5, 7, 6, 8, 7, 9],
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "net_flow": [
+                100000,
+                150000,
+                200000,
+                180000,
+                250000,
+                300000,
+                280000,
+                350000,
+                320000,
+                400000,
+                380000,
+                450000,
+            ],
+            "institution_count": [50, 52, 55, 54, 58, 62, 60, 65, 63, 68, 66, 70],
+            "smart_money_score": [
+                0.1,
+                0.15,
+                0.22,
+                0.20,
+                0.28,
+                0.35,
+                0.32,
+                0.40,
+                0.38,
+                0.48,
+                0.45,
+                0.55,
+            ],
+            "whale_activity": [2, 3, 4, 3, 5, 6, 5, 7, 6, 8, 7, 9],
+        }
+    )
 
 
 @pytest.fixture
 def sample_momentum_insufficient():
     """Insufficient momentum history (less than minimum required)."""
-    return pd.DataFrame({
-        "date": [datetime.now()],
-        "net_flow": [100000],
-        "institution_count": [50],
-        "smart_money_score": [0.1],
-        "whale_activity": [2],
-    })
+    return pd.DataFrame(
+        {
+            "date": [datetime.now()],
+            "net_flow": [100000],
+            "institution_count": [50],
+            "smart_money_score": [0.1],
+            "whale_activity": [2],
+        }
+    )
 
 
 @pytest.fixture
 def sample_single_institution():
     """Single institution data for edge case testing."""
-    return pd.DataFrame({
-        "manager_name": ["Solo Fund"],
-        "manager_cik": ["0001234567"],
-        "shares_held": [1000000],
-        "value_held": [100000000],
-        "ownership_percentage": [0.10],
-    })
+    return pd.DataFrame(
+        {
+            "manager_name": ["Solo Fund"],
+            "manager_cik": ["0001234567"],
+            "shares_held": [1000000],
+            "value_held": [100000000],
+            "ownership_percentage": [0.10],
+        }
+    )
 
 
 @pytest.fixture
 def sample_uniform_positions():
     """All institutions with identical position sizes."""
-    return pd.DataFrame({
-        "manager_name": ["Fund A", "Fund B", "Fund C", "Fund D"],
-        "manager_cik": ["001", "002", "003", "004"],
-        "shares_held": [1000000, 1000000, 1000000, 1000000],
-        "value_held": [100000000, 100000000, 100000000, 100000000],
-        "ownership_percentage": [0.025, 0.025, 0.025, 0.025],
-    })
+    return pd.DataFrame(
+        {
+            "manager_name": ["Fund A", "Fund B", "Fund C", "Fund D"],
+            "manager_cik": ["001", "002", "003", "004"],
+            "shares_held": [1000000, 1000000, 1000000, 1000000],
+            "value_held": [100000000, 100000000, 100000000, 100000000],
+            "ownership_percentage": [0.025, 0.025, 0.025, 0.025],
+        }
+    )
 
 
 # =============================================================================
@@ -221,7 +267,9 @@ class TestDetect13FChanges:
     def test_new_positions_detected(self, sample_13f_current, sample_13f_previous):
         """Test that new positions are correctly detected."""
         analyzer = InstitutionalAnalyzer()
-        result = analyzer._calculate_13f_changes(sample_13f_current, sample_13f_previous)
+        result = analyzer._calculate_13f_changes(
+            sample_13f_current, sample_13f_previous
+        )
 
         new_positions = result[result["change_type"] == "new"]
         assert len(new_positions) == 1
@@ -230,16 +278,22 @@ class TestDetect13FChanges:
     def test_closed_positions_detected(self, sample_13f_current, sample_13f_previous):
         """Test that closed positions are correctly detected."""
         analyzer = InstitutionalAnalyzer()
-        result = analyzer._calculate_13f_changes(sample_13f_current, sample_13f_previous)
+        result = analyzer._calculate_13f_changes(
+            sample_13f_current, sample_13f_previous
+        )
 
         closed_positions = result[result["change_type"] == "closed"]
         assert len(closed_positions) == 1
         assert "OLD_STOCK" in closed_positions["symbol"].values
 
-    def test_change_magnitude_calculation(self, sample_13f_current, sample_13f_previous):
+    def test_change_magnitude_calculation(
+        self, sample_13f_current, sample_13f_previous
+    ):
         """Test that change magnitude is calculated correctly."""
         analyzer = InstitutionalAnalyzer()
-        result = analyzer._calculate_13f_changes(sample_13f_current, sample_13f_previous)
+        result = analyzer._calculate_13f_changes(
+            sample_13f_current, sample_13f_previous
+        )
 
         # AAPL: 10M - 8M = 2M shares change
         aapl_row = result[result["symbol"] == "AAPL"].iloc[0]
@@ -253,10 +307,14 @@ class TestDetect13FChanges:
         googl_row = result[result["symbol"] == "GOOGL"].iloc[0]
         assert googl_row["shares_change"] == -1000000
 
-    def test_change_percentage_calculation(self, sample_13f_current, sample_13f_previous):
+    def test_change_percentage_calculation(
+        self, sample_13f_current, sample_13f_previous
+    ):
         """Test that change percentage is calculated correctly."""
         analyzer = InstitutionalAnalyzer()
-        result = analyzer._calculate_13f_changes(sample_13f_current, sample_13f_previous)
+        result = analyzer._calculate_13f_changes(
+            sample_13f_current, sample_13f_previous
+        )
 
         # AAPL: (10M - 8M) / 8M = 0.25 = 25%
         aapl_row = result[result["symbol"] == "AAPL"].iloc[0]
@@ -266,10 +324,14 @@ class TestDetect13FChanges:
         nvda_row = result[result["symbol"] == "NVDA"].iloc[0]
         assert abs(nvda_row["change_percentage"] - 0.50) < 0.001
 
-    def test_new_position_change_percentage(self, sample_13f_current, sample_13f_previous):
+    def test_new_position_change_percentage(
+        self, sample_13f_current, sample_13f_previous
+    ):
         """Test that new positions have change_percentage of 1.0 (100%)."""
         analyzer = InstitutionalAnalyzer()
-        result = analyzer._calculate_13f_changes(sample_13f_current, sample_13f_previous)
+        result = analyzer._calculate_13f_changes(
+            sample_13f_current, sample_13f_previous
+        )
 
         new_stock_row = result[result["symbol"] == "NEW_STOCK"].iloc[0]
         assert new_stock_row["change_percentage"] == 1.0
@@ -279,16 +341,16 @@ class TestDetect13FChanges:
     ):
         """Test that closed positions have -100% change (shares went to 0)."""
         analyzer = InstitutionalAnalyzer()
-        result = analyzer._calculate_13f_changes(sample_13f_current, sample_13f_previous)
+        result = analyzer._calculate_13f_changes(
+            sample_13f_current, sample_13f_previous
+        )
 
         old_stock_row = result[result["symbol"] == "OLD_STOCK"].iloc[0]
         # Closed means current shares = 0, previous > 0
         # change = (0 - prev) / prev = -1.0
         assert old_stock_row["shares_change"] == -3000000
 
-    def test_empty_current_filing(
-        self, sample_13f_current_empty, sample_13f_previous
-    ):
+    def test_empty_current_filing(self, sample_13f_current_empty, sample_13f_previous):
         """Test with empty current filing (all positions closed)."""
         analyzer = InstitutionalAnalyzer()
         result = analyzer._calculate_13f_changes(
@@ -299,9 +361,7 @@ class TestDetect13FChanges:
         assert len(result) == len(sample_13f_previous)
         assert all(result["change_type"] == "closed")
 
-    def test_empty_previous_filing(
-        self, sample_13f_current, sample_13f_previous_empty
-    ):
+    def test_empty_previous_filing(self, sample_13f_current, sample_13f_previous_empty):
         """Test with empty previous filing (all positions are new)."""
         analyzer = InstitutionalAnalyzer()
         result = analyzer._calculate_13f_changes(
@@ -328,7 +388,9 @@ class TestDetect13FChanges:
     ):
         """Test that results are sorted by change_percentage descending."""
         analyzer = InstitutionalAnalyzer()
-        result = analyzer._calculate_13f_changes(sample_13f_current, sample_13f_previous)
+        result = analyzer._calculate_13f_changes(
+            sample_13f_current, sample_13f_previous
+        )
 
         if len(result) > 1:
             for i in range(len(result) - 1):
@@ -340,7 +402,9 @@ class TestDetect13FChanges:
     def test_value_change_calculation(self, sample_13f_current, sample_13f_previous):
         """Test that value changes are calculated correctly."""
         analyzer = InstitutionalAnalyzer()
-        result = analyzer._calculate_13f_changes(sample_13f_current, sample_13f_previous)
+        result = analyzer._calculate_13f_changes(
+            sample_13f_current, sample_13f_previous
+        )
 
         # AAPL: 1.5B - 1.2B = 300M value change
         aapl_row = result[result["symbol"] == "AAPL"].iloc[0]
@@ -609,7 +673,13 @@ class TestClusterPositions:
     def test_smart_money_direction_bullish(self, sample_holdings_df):
         """Test smart money direction determination (bullish case)."""
         holdings = sample_holdings_df.copy()
-        holdings["change_direction"] = ["increase", "increase", "increase", "hold", "decrease"]
+        holdings["change_direction"] = [
+            "increase",
+            "increase",
+            "increase",
+            "hold",
+            "decrease",
+        ]
 
         # Calculate net direction
         increases = len(holdings[holdings["change_direction"] == "increase"])
@@ -627,7 +697,13 @@ class TestClusterPositions:
     def test_smart_money_direction_bearish(self, sample_holdings_df):
         """Test smart money direction determination (bearish case)."""
         holdings = sample_holdings_df.copy()
-        holdings["change_direction"] = ["decrease", "decrease", "decrease", "hold", "increase"]
+        holdings["change_direction"] = [
+            "decrease",
+            "decrease",
+            "decrease",
+            "hold",
+            "increase",
+        ]
 
         increases = len(holdings[holdings["change_direction"] == "increase"])
         decreases = len(holdings[holdings["change_direction"] == "decrease"])
@@ -715,9 +791,7 @@ class TestAnalyzeCrossFiling:
 
         # Weight conviction scores by AUM
         total_aum = data["aum"].sum()
-        weighted_conviction = (
-            (data["conviction_score"] * data["aum"]).sum() / total_aum
-        )
+        weighted_conviction = (data["conviction_score"] * data["aum"]).sum() / total_aum
 
         # Should be between -1 and 1
         assert -1 <= weighted_conviction <= 1
@@ -814,9 +888,7 @@ class TestTrackSmartMoneyMomentum:
     def test_trend_direction_detection_downtrend(self):
         """Test downtrend detection."""
         # Create downtrend data
-        data = pd.DataFrame({
-            "smart_money_score": [0.5, 0.45, 0.40, 0.35, 0.30, 0.25]
-        })
+        data = pd.DataFrame({"smart_money_score": [0.5, 0.45, 0.40, 0.35, 0.30, 0.25]})
 
         x = np.arange(len(data))
         y = data["smart_money_score"].values
@@ -848,7 +920,7 @@ class TestTrackSmartMoneyMomentum:
             rolling = data["smart_money_score"].rolling(window=window).mean()
             assert len(rolling) == len(data)
             # First (window-1) values should be NaN
-            assert pd.isna(rolling.iloc[:window - 1]).all()
+            assert pd.isna(rolling.iloc[: window - 1]).all()
 
     def test_insufficient_history(self, sample_momentum_insufficient):
         """Test handling of insufficient momentum history."""
@@ -867,7 +939,9 @@ class TestTrackSmartMoneyMomentum:
         data = sample_momentum_history
 
         # Calculate recent momentum
-        recent_momentum = data["smart_money_score"].iloc[-1] - data["smart_money_score"].iloc[-4]
+        recent_momentum = (
+            data["smart_money_score"].iloc[-1] - data["smart_money_score"].iloc[-4]
+        )
 
         # Classify strength
         if abs(recent_momentum) >= 0.3:
@@ -893,12 +967,14 @@ class TestEdgeCasesAdvanced:
         """Test when all positions are new (no previous filing)."""
         analyzer = InstitutionalAnalyzer()
 
-        current = pd.DataFrame({
-            "symbol": ["AAPL", "MSFT"],
-            "shares": [1000, 2000],
-            "value": [100000, 200000],
-            "weight": [0.4, 0.6],
-        })
+        current = pd.DataFrame(
+            {
+                "symbol": ["AAPL", "MSFT"],
+                "shares": [1000, 2000],
+                "value": [100000, 200000],
+                "weight": [0.4, 0.6],
+            }
+        )
         previous = pd.DataFrame(columns=["symbol", "shares", "value", "weight"])
 
         result = analyzer._calculate_13f_changes(current, previous)
@@ -911,12 +987,14 @@ class TestEdgeCasesAdvanced:
         analyzer = InstitutionalAnalyzer()
 
         current = pd.DataFrame(columns=["symbol", "shares", "value", "weight"])
-        previous = pd.DataFrame({
-            "symbol": ["AAPL", "MSFT"],
-            "shares": [1000, 2000],
-            "value": [100000, 200000],
-            "weight": [0.4, 0.6],
-        })
+        previous = pd.DataFrame(
+            {
+                "symbol": ["AAPL", "MSFT"],
+                "shares": [1000, 2000],
+                "value": [100000, 200000],
+                "weight": [0.4, 0.6],
+            }
+        )
 
         result = analyzer._calculate_13f_changes(current, previous)
 
@@ -927,12 +1005,14 @@ class TestEdgeCasesAdvanced:
         """Test when there are no changes between filings."""
         analyzer = InstitutionalAnalyzer()
 
-        filing = pd.DataFrame({
-            "symbol": ["AAPL", "MSFT"],
-            "shares": [1000, 2000],
-            "value": [100000, 200000],
-            "weight": [0.4, 0.6],
-        })
+        filing = pd.DataFrame(
+            {
+                "symbol": ["AAPL", "MSFT"],
+                "shares": [1000, 2000],
+                "value": [100000, 200000],
+                "weight": [0.4, 0.6],
+            }
+        )
 
         result = analyzer._calculate_13f_changes(filing, filing.copy())
 
@@ -945,18 +1025,22 @@ class TestEdgeCasesAdvanced:
         """Test with very small position changes."""
         analyzer = InstitutionalAnalyzer()
 
-        current = pd.DataFrame({
-            "symbol": ["AAPL"],
-            "shares": [1000001],
-            "value": [100000100],
-            "weight": [1.0],
-        })
-        previous = pd.DataFrame({
-            "symbol": ["AAPL"],
-            "shares": [1000000],
-            "value": [100000000],
-            "weight": [1.0],
-        })
+        current = pd.DataFrame(
+            {
+                "symbol": ["AAPL"],
+                "shares": [1000001],
+                "value": [100000100],
+                "weight": [1.0],
+            }
+        )
+        previous = pd.DataFrame(
+            {
+                "symbol": ["AAPL"],
+                "shares": [1000000],
+                "value": [100000000],
+                "weight": [1.0],
+            }
+        )
 
         result = analyzer._calculate_13f_changes(current, previous)
 
@@ -968,18 +1052,22 @@ class TestEdgeCasesAdvanced:
         """Test with very large position values (billions)."""
         analyzer = InstitutionalAnalyzer()
 
-        current = pd.DataFrame({
-            "symbol": ["MEGA"],
-            "shares": [10_000_000_000],  # 10 billion shares
-            "value": [1_000_000_000_000],  # $1 trillion
-            "weight": [1.0],
-        })
-        previous = pd.DataFrame({
-            "symbol": ["MEGA"],
-            "shares": [5_000_000_000],  # 5 billion shares
-            "value": [500_000_000_000],  # $500 billion
-            "weight": [1.0],
-        })
+        current = pd.DataFrame(
+            {
+                "symbol": ["MEGA"],
+                "shares": [10_000_000_000],  # 10 billion shares
+                "value": [1_000_000_000_000],  # $1 trillion
+                "weight": [1.0],
+            }
+        )
+        previous = pd.DataFrame(
+            {
+                "symbol": ["MEGA"],
+                "shares": [5_000_000_000],  # 5 billion shares
+                "value": [500_000_000_000],  # $500 billion
+                "weight": [1.0],
+            }
+        )
 
         result = analyzer._calculate_13f_changes(current, previous)
 
@@ -988,17 +1076,19 @@ class TestEdgeCasesAdvanced:
 
     def test_unicode_manager_names(self):
         """Test handling of unicode characters in manager names."""
-        holdings = pd.DataFrame({
-            "manager_name": [
-                "Deutsche Bank AG",
-                "Societe Generale",
-                "Credit Agricole",
-            ],
-            "manager_cik": ["001", "002", "003"],
-            "shares_held": [1000, 2000, 3000],
-            "value_held": [100000, 200000, 300000],
-            "ownership_percentage": [0.1, 0.2, 0.3],
-        })
+        holdings = pd.DataFrame(
+            {
+                "manager_name": [
+                    "Deutsche Bank AG",
+                    "Societe Generale",
+                    "Credit Agricole",
+                ],
+                "manager_cik": ["001", "002", "003"],
+                "shares_held": [1000, 2000, 3000],
+                "value_held": [100000, 200000, 300000],
+                "ownership_percentage": [0.1, 0.2, 0.3],
+            }
+        )
 
         assert len(holdings) == 3
         assert "Deutsche Bank AG" in holdings["manager_name"].values
@@ -1008,18 +1098,22 @@ class TestEdgeCasesAdvanced:
         analyzer = InstitutionalAnalyzer()
 
         # Some filings may have duplicate entries for same symbol (e.g., different share classes)
-        current = pd.DataFrame({
-            "symbol": ["AAPL", "AAPL", "MSFT"],  # Duplicate AAPL
-            "shares": [1000, 500, 2000],
-            "value": [100000, 50000, 200000],
-            "weight": [0.3, 0.15, 0.55],
-        })
-        previous = pd.DataFrame({
-            "symbol": ["AAPL", "MSFT"],
-            "shares": [1200, 1800],
-            "value": [120000, 180000],
-            "weight": [0.4, 0.6],
-        })
+        current = pd.DataFrame(
+            {
+                "symbol": ["AAPL", "AAPL", "MSFT"],  # Duplicate AAPL
+                "shares": [1000, 500, 2000],
+                "value": [100000, 50000, 200000],
+                "weight": [0.3, 0.15, 0.55],
+            }
+        )
+        previous = pd.DataFrame(
+            {
+                "symbol": ["AAPL", "MSFT"],
+                "shares": [1200, 1800],
+                "value": [120000, 180000],
+                "weight": [0.4, 0.6],
+            }
+        )
 
         # The merge behavior with duplicates - verify it doesn't crash
         result = analyzer._calculate_13f_changes(current, previous)
@@ -1090,20 +1184,25 @@ class TestPerformanceAdvanced:
         # Create large filing with 1000 positions
         np.random.seed(42)
         symbols = [f"STOCK_{i}" for i in range(1000)]
-        current = pd.DataFrame({
-            "symbol": symbols,
-            "shares": np.random.randint(1000, 10000000, 1000),
-            "value": np.random.randint(100000, 1000000000, 1000),
-            "weight": np.random.uniform(0.001, 0.1, 1000),
-        })
-        previous = pd.DataFrame({
-            "symbol": symbols,
-            "shares": np.random.randint(1000, 10000000, 1000),
-            "value": np.random.randint(100000, 1000000000, 1000),
-            "weight": np.random.uniform(0.001, 0.1, 1000),
-        })
+        current = pd.DataFrame(
+            {
+                "symbol": symbols,
+                "shares": np.random.randint(1000, 10000000, 1000),
+                "value": np.random.randint(100000, 1000000000, 1000),
+                "weight": np.random.uniform(0.001, 0.1, 1000),
+            }
+        )
+        previous = pd.DataFrame(
+            {
+                "symbol": symbols,
+                "shares": np.random.randint(1000, 10000000, 1000),
+                "value": np.random.randint(100000, 1000000000, 1000),
+                "weight": np.random.uniform(0.001, 0.1, 1000),
+            }
+        )
 
         import time
+
         start = time.time()
         result = analyzer._calculate_13f_changes(current, previous)
         elapsed = time.time() - start
@@ -1119,6 +1218,7 @@ class TestPerformanceAdvanced:
         universe = [f"STOCK_{i}" for i in range(100)]
 
         import time
+
         start = time.time()
         result = analyzer.get_institutional_sentiment(universe)
         elapsed = time.time() - start

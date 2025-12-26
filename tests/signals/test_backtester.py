@@ -25,6 +25,7 @@ try:
         PerformanceMetrics,
         AttributionAnalysis,
     )
+
     HAS_SIGNALS_MODULE = True
 except ImportError:
     HAS_SIGNALS_MODULE = False
@@ -36,8 +37,7 @@ except ImportError:
     AttributionAnalysis = None
 
 pytestmark = pytest.mark.skipif(
-    not HAS_SIGNALS_MODULE,
-    reason="stanley.signals module not yet implemented"
+    not HAS_SIGNALS_MODULE, reason="stanley.signals module not yet implemented"
 )
 
 
@@ -130,9 +130,7 @@ class TestBacktestExecution:
     ):
         """Test that run_backtest returns a BacktestResult."""
         backtester = Backtester(data_manager=mock_data_manager)
-        mock_data_manager.get_price_history = AsyncMock(
-            return_value=sample_price_data
-        )
+        mock_data_manager.get_price_history = AsyncMock(return_value=sample_price_data)
 
         result = backtester.run_backtest(
             symbols=["AAPL", "MSFT", "GOOGL"],
@@ -148,9 +146,7 @@ class TestBacktestExecution:
     ):
         """Test that BacktestResult has all required fields."""
         backtester = Backtester(data_manager=mock_data_manager)
-        mock_data_manager.get_price_history = AsyncMock(
-            return_value=sample_price_data
-        )
+        mock_data_manager.get_price_history = AsyncMock(return_value=sample_price_data)
 
         result = backtester.run_backtest(
             symbols=["AAPL"],
@@ -170,9 +166,7 @@ class TestBacktestExecution:
     ):
         """Test that backtest generates trade records."""
         backtester = Backtester(data_manager=mock_data_manager)
-        mock_data_manager.get_price_history = AsyncMock(
-            return_value=sample_price_data
-        )
+        mock_data_manager.get_price_history = AsyncMock(return_value=sample_price_data)
 
         result = backtester.run_backtest(
             symbols=["AAPL", "MSFT"],
@@ -194,9 +188,7 @@ class TestBacktestExecution:
             max_position_size_pct=0.05,
         )
         backtester = Backtester(data_manager=mock_data_manager, config=config)
-        mock_data_manager.get_price_history = AsyncMock(
-            return_value=sample_price_data
-        )
+        mock_data_manager.get_price_history = AsyncMock(return_value=sample_price_data)
 
         result = backtester.run_backtest(
             symbols=["AAPL"],
@@ -233,9 +225,7 @@ class TestPerformanceMetrics:
         np.random.seed(42)
         returns = pd.Series(np.random.normal(0.001, 0.02, 252))
 
-        sharpe = backtester._calculate_sharpe_ratio(
-            returns, risk_free_rate=0.02
-        )
+        sharpe = backtester._calculate_sharpe_ratio(returns, risk_free_rate=0.02)
 
         assert isinstance(sharpe, float)
         assert not np.isnan(sharpe)
@@ -277,9 +267,7 @@ class TestPerformanceMetrics:
         np.random.seed(42)
         returns = pd.Series(np.random.normal(0.001, 0.02, 252))
 
-        sortino = backtester._calculate_sortino_ratio(
-            returns, risk_free_rate=0.02
-        )
+        sortino = backtester._calculate_sortino_ratio(returns, risk_free_rate=0.02)
 
         assert isinstance(sortino, float)
         assert not np.isnan(sortino)
@@ -314,9 +302,7 @@ class TestPerformanceMetrics:
 class TestAttributionAnalysis:
     """Tests for attribution analysis."""
 
-    def test_attribution_by_symbol(
-        self, mock_data_manager, sample_trade_records
-    ):
+    def test_attribution_by_symbol(self, mock_data_manager, sample_trade_records):
         """Test attribution analysis by symbol."""
         backtester = Backtester(data_manager=mock_data_manager)
         trades = [Trade(**record) for record in sample_trade_records]
@@ -327,9 +313,7 @@ class TestAttributionAnalysis:
         assert "AAPL" in attribution.breakdown
         assert "MSFT" in attribution.breakdown
 
-    def test_attribution_by_direction(
-        self, mock_data_manager, sample_trade_records
-    ):
+    def test_attribution_by_direction(self, mock_data_manager, sample_trade_records):
         """Test attribution analysis by trade direction."""
         backtester = Backtester(data_manager=mock_data_manager)
         trades = [Trade(**record) for record in sample_trade_records]
@@ -346,9 +330,7 @@ class TestAttributionAnalysis:
         backtester = Backtester(data_manager=mock_data_manager)
         trades = [Trade(**record) for record in sample_trade_records]
 
-        attribution = backtester.analyze_attribution(
-            trades, by="signal_strength"
-        )
+        attribution = backtester.analyze_attribution(trades, by="signal_strength")
 
         assert isinstance(attribution, AttributionAnalysis)
         # Should have strength buckets
@@ -451,9 +433,7 @@ class TestBacktestWithMockData:
 
         assert isinstance(result, BacktestResult)
 
-    def test_backtest_slippage_applied(
-        self, sample_price_data, sample_signals_list
-    ):
+    def test_backtest_slippage_applied(self, sample_price_data, sample_signals_list):
         """Test that slippage is applied to trades."""
         config = BacktestConfig(slippage_pct=0.01)  # 1% slippage
         backtester = Backtester(config=config)
@@ -469,10 +449,7 @@ class TestBacktestWithMockData:
                 # Entry should be higher than ideal (slippage)
                 pass  # Verification depends on implementation
 
-
-    def test_backtest_commission_applied(
-        self, sample_price_data, sample_signals_list
-    ):
+    def test_backtest_commission_applied(self, sample_price_data, sample_signals_list):
         """Test that commissions are applied to trades."""
         config = BacktestConfig(commission_per_trade=10.0)
         backtester = Backtester(config=config)
@@ -484,9 +461,7 @@ class TestBacktestWithMockData:
 
         # Total commissions should be num_trades * 2 * commission (entry + exit)
         expected_commission = len(result.trades) * 2 * 10.0
-        assert result.total_commission == pytest.approx(
-            expected_commission, rel=0.1
-        )
+        assert result.total_commission == pytest.approx(expected_commission, rel=0.1)
 
 
 # =============================================================================
@@ -526,9 +501,7 @@ class TestBacktesterEdgeCases:
         # Should handle gracefully, possibly with fewer/no trades
         assert isinstance(result, BacktestResult)
 
-    def test_backtest_empty_price_data(
-        self, empty_price_data, sample_signals_list
-    ):
+    def test_backtest_empty_price_data(self, empty_price_data, sample_signals_list):
         """Test backtest with empty price data."""
         backtester = Backtester()
 
@@ -596,11 +569,13 @@ class TestBacktesterEdgeCases:
         backtester = Backtester()
 
         # Price data with no movement
-        static_prices = pd.DataFrame({
-            "date": pd.date_range(end=datetime.now(), periods=100, freq="B"),
-            "close": [100.0] * 100,
-            "volume": [1000000] * 100,
-        })
+        static_prices = pd.DataFrame(
+            {
+                "date": pd.date_range(end=datetime.now(), periods=100, freq="B"),
+                "close": [100.0] * 100,
+                "volume": [1000000] * 100,
+            }
+        )
 
         signals = [
             {
@@ -629,9 +604,7 @@ class TestBacktesterEdgeCases:
 class TestBacktesterIntegration:
     """Integration tests for Backtester with SignalGenerator."""
 
-    def test_backtest_with_signal_generator(
-        self, mock_data_manager, sample_price_data
-    ):
+    def test_backtest_with_signal_generator(self, mock_data_manager, sample_price_data):
         """Test backtest using signals from SignalGenerator."""
         from stanley.signals import SignalGenerator
 
@@ -641,9 +614,7 @@ class TestBacktesterIntegration:
             signal_generator=generator,
         )
 
-        mock_data_manager.get_price_history = AsyncMock(
-            return_value=sample_price_data
-        )
+        mock_data_manager.get_price_history = AsyncMock(return_value=sample_price_data)
 
         result = backtester.run_backtest(
             symbols=["AAPL", "MSFT"],

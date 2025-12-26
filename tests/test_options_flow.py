@@ -21,8 +21,7 @@ except ImportError:
 
 # Skip all tests if module not yet implemented
 pytestmark = pytest.mark.skipif(
-    OptionsFlowAnalyzer is None,
-    reason="OptionsFlowAnalyzer module not yet implemented"
+    OptionsFlowAnalyzer is None, reason="OptionsFlowAnalyzer module not yet implemented"
 )
 
 
@@ -36,69 +35,135 @@ def sample_options_data():
     """Sample options flow data."""
     dates = pd.date_range(end=datetime.now(), periods=20, freq="D")
     np.random.seed(42)
-    return pd.DataFrame({
-        "date": dates,
-        "symbol": ["AAPL"] * 20,
-        "call_volume": np.random.randint(50000, 200000, 20),
-        "put_volume": np.random.randint(30000, 150000, 20),
-        "call_premium": np.random.uniform(10_000_000, 50_000_000, 20),
-        "put_premium": np.random.uniform(5_000_000, 30_000_000, 20),
-        "call_oi": np.random.randint(100000, 500000, 20),
-        "put_oi": np.random.randint(80000, 400000, 20),
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "symbol": ["AAPL"] * 20,
+            "call_volume": np.random.randint(50000, 200000, 20),
+            "put_volume": np.random.randint(30000, 150000, 20),
+            "call_premium": np.random.uniform(10_000_000, 50_000_000, 20),
+            "put_premium": np.random.uniform(5_000_000, 30_000_000, 20),
+            "call_oi": np.random.randint(100000, 500000, 20),
+            "put_oi": np.random.randint(80000, 400000, 20),
+        }
+    )
 
 
 @pytest.fixture
 def sample_unusual_activity():
     """Sample unusual options activity data."""
-    return pd.DataFrame({
-        "timestamp": pd.date_range(end=datetime.now(), periods=10, freq="h"),
-        "symbol": ["AAPL"] * 10,
-        "option_type": ["call", "put", "call", "call", "put", "call", "put", "call", "call", "put"],
-        "strike": [150, 145, 155, 160, 140, 150, 148, 152, 155, 145],
-        "expiry": pd.date_range(start=datetime.now() + timedelta(days=30), periods=10, freq="7D"),
-        "volume": [50000, 30000, 45000, 60000, 25000, 55000, 35000, 40000, 70000, 20000],
-        "open_interest": [5000, 3000, 4000, 6000, 2000, 5500, 3200, 4500, 8000, 1800],
-        "premium": [2_500_000, 1_500_000, 2_200_000, 3_000_000, 1_200_000, 2_700_000, 1_700_000, 2_000_000, 3_500_000, 1_000_000],
-        "unusual_score": [8.5, 7.2, 8.0, 9.1, 6.5, 8.3, 7.0, 7.8, 9.5, 6.0],
-    })
+    return pd.DataFrame(
+        {
+            "timestamp": pd.date_range(end=datetime.now(), periods=10, freq="h"),
+            "symbol": ["AAPL"] * 10,
+            "option_type": [
+                "call",
+                "put",
+                "call",
+                "call",
+                "put",
+                "call",
+                "put",
+                "call",
+                "call",
+                "put",
+            ],
+            "strike": [150, 145, 155, 160, 140, 150, 148, 152, 155, 145],
+            "expiry": pd.date_range(
+                start=datetime.now() + timedelta(days=30), periods=10, freq="7D"
+            ),
+            "volume": [
+                50000,
+                30000,
+                45000,
+                60000,
+                25000,
+                55000,
+                35000,
+                40000,
+                70000,
+                20000,
+            ],
+            "open_interest": [
+                5000,
+                3000,
+                4000,
+                6000,
+                2000,
+                5500,
+                3200,
+                4500,
+                8000,
+                1800,
+            ],
+            "premium": [
+                2_500_000,
+                1_500_000,
+                2_200_000,
+                3_000_000,
+                1_200_000,
+                2_700_000,
+                1_700_000,
+                2_000_000,
+                3_500_000,
+                1_000_000,
+            ],
+            "unusual_score": [8.5, 7.2, 8.0, 9.1, 6.5, 8.3, 7.0, 7.8, 9.5, 6.0],
+        }
+    )
 
 
 @pytest.fixture
 def sample_large_trades():
     """Sample large options trades."""
-    return pd.DataFrame({
-        "timestamp": pd.date_range(end=datetime.now(), periods=5, freq="2h"),
-        "symbol": ["AAPL"] * 5,
-        "option_type": ["call", "call", "put", "call", "put"],
-        "strike": [150, 155, 145, 160, 140],
-        "expiry": pd.date_range(start=datetime.now() + timedelta(days=45), periods=5, freq="14D"),
-        "size": [10000, 8000, 12000, 15000, 9000],
-        "premium": [5_000_000, 4_000_000, 6_000_000, 7_500_000, 4_500_000],
-        "trade_type": ["sweep", "block", "sweep", "sweep", "block"],
-        "sentiment": ["bullish", "bullish", "bearish", "bullish", "bearish"],
-    })
+    return pd.DataFrame(
+        {
+            "timestamp": pd.date_range(end=datetime.now(), periods=5, freq="2h"),
+            "symbol": ["AAPL"] * 5,
+            "option_type": ["call", "call", "put", "call", "put"],
+            "strike": [150, 155, 145, 160, 140],
+            "expiry": pd.date_range(
+                start=datetime.now() + timedelta(days=45), periods=5, freq="14D"
+            ),
+            "size": [10000, 8000, 12000, 15000, 9000],
+            "premium": [5_000_000, 4_000_000, 6_000_000, 7_500_000, 4_500_000],
+            "trade_type": ["sweep", "block", "sweep", "sweep", "block"],
+            "sentiment": ["bullish", "bullish", "bearish", "bullish", "bearish"],
+        }
+    )
 
 
 @pytest.fixture
 def empty_options_data():
     """Empty options data DataFrame."""
-    return pd.DataFrame(columns=[
-        "date", "symbol", "call_volume", "put_volume",
-        "call_premium", "put_premium", "call_oi", "put_oi"
-    ])
+    return pd.DataFrame(
+        columns=[
+            "date",
+            "symbol",
+            "call_volume",
+            "put_volume",
+            "call_premium",
+            "put_premium",
+            "call_oi",
+            "put_oi",
+        ]
+    )
 
 
 @pytest.fixture
 def mock_data_manager_for_options():
     """Mock DataManager for options flow."""
     mock = Mock()
-    mock.get_options_flow = AsyncMock(return_value=pd.DataFrame({
-        "call_volume": [100000],
-        "put_volume": [80000],
-        "call_premium": [25_000_000],
-        "put_premium": [15_000_000],
-    }))
+    mock.get_options_flow = AsyncMock(
+        return_value=pd.DataFrame(
+            {
+                "call_volume": [100000],
+                "put_volume": [80000],
+                "call_premium": [25_000_000],
+                "put_premium": [15_000_000],
+            }
+        )
+    )
     mock.get_unusual_options_activity = AsyncMock(return_value=pd.DataFrame())
     return mock
 
@@ -152,8 +217,13 @@ class TestUnusualActivityDetection:
         analyzer = OptionsFlowAnalyzer()
         result = analyzer.detect_unusual_activity("AAPL")
         expected_cols = [
-            "symbol", "option_type", "strike", "expiry",
-            "volume", "open_interest", "unusual_score"
+            "symbol",
+            "option_type",
+            "strike",
+            "expiry",
+            "volume",
+            "open_interest",
+            "unusual_score",
         ]
         if not result.empty:
             for col in expected_cols:
@@ -165,12 +235,17 @@ class TestUnusualActivityDetection:
         result = analyzer.detect_unusual_activity("AAPL")
         if len(result) > 1 and "unusual_score" in result.columns:
             for i in range(len(result) - 1):
-                assert result["unusual_score"].iloc[i] >= result["unusual_score"].iloc[i + 1]
+                assert (
+                    result["unusual_score"].iloc[i]
+                    >= result["unusual_score"].iloc[i + 1]
+                )
 
     def test_threshold_filtering(self, sample_unusual_activity):
         """Test that threshold filters correctly."""
         analyzer = OptionsFlowAnalyzer(unusual_threshold=8.0)
-        with patch.object(analyzer, '_get_options_activity', return_value=sample_unusual_activity):
+        with patch.object(
+            analyzer, "_get_options_activity", return_value=sample_unusual_activity
+        ):
             result = analyzer.detect_unusual_activity("AAPL")
             # All results should have score >= threshold
             if not result.empty and "unusual_score" in result.columns:
@@ -234,14 +309,22 @@ class TestPutCallRatio:
         """Test that sentiment_signal is valid."""
         analyzer = OptionsFlowAnalyzer()
         result = analyzer.calculate_put_call_ratio("AAPL")
-        valid_signals = ["bullish", "bearish", "neutral", "extreme_bullish", "extreme_bearish"]
+        valid_signals = [
+            "bullish",
+            "bearish",
+            "neutral",
+            "extreme_bullish",
+            "extreme_bearish",
+        ]
         assert result["sentiment_signal"] in valid_signals
 
     def test_high_put_call_ratio_bearish(self, sample_options_data):
         """Test that high put/call ratio signals bearish."""
         analyzer = OptionsFlowAnalyzer()
         sample_options_data["put_volume"] = sample_options_data["call_volume"] * 2
-        with patch.object(analyzer, '_get_options_data', return_value=sample_options_data):
+        with patch.object(
+            analyzer, "_get_options_data", return_value=sample_options_data
+        ):
             result = analyzer.calculate_put_call_ratio("AAPL")
             assert result["volume_ratio"] > 1.0
 
@@ -249,7 +332,9 @@ class TestPutCallRatio:
         """Test that low put/call ratio signals bullish."""
         analyzer = OptionsFlowAnalyzer()
         sample_options_data["put_volume"] = sample_options_data["call_volume"] // 2
-        with patch.object(analyzer, '_get_options_data', return_value=sample_options_data):
+        with patch.object(
+            analyzer, "_get_options_data", return_value=sample_options_data
+        ):
             result = analyzer.calculate_put_call_ratio("AAPL")
             assert result["volume_ratio"] < 1.0
 
@@ -280,7 +365,9 @@ class TestLargeTradesFiltering:
     def test_min_size_filter(self, sample_large_trades):
         """Test minimum size filter."""
         analyzer = OptionsFlowAnalyzer()
-        with patch.object(analyzer, '_get_large_trades_data', return_value=sample_large_trades):
+        with patch.object(
+            analyzer, "_get_large_trades_data", return_value=sample_large_trades
+        ):
             result = analyzer.get_large_trades("AAPL", min_size=10000)
             if not result.empty:
                 assert all(result["size"] >= 10000)
@@ -288,7 +375,9 @@ class TestLargeTradesFiltering:
     def test_min_premium_filter(self, sample_large_trades):
         """Test minimum premium filter."""
         analyzer = OptionsFlowAnalyzer()
-        with patch.object(analyzer, '_get_large_trades_data', return_value=sample_large_trades):
+        with patch.object(
+            analyzer, "_get_large_trades_data", return_value=sample_large_trades
+        ):
             result = analyzer.get_large_trades("AAPL", min_premium=5_000_000)
             if not result.empty:
                 assert all(result["premium"] >= 5_000_000)
@@ -296,7 +385,9 @@ class TestLargeTradesFiltering:
     def test_trade_type_filter(self, sample_large_trades):
         """Test trade type filter (sweep vs block)."""
         analyzer = OptionsFlowAnalyzer()
-        with patch.object(analyzer, '_get_large_trades_data', return_value=sample_large_trades):
+        with patch.object(
+            analyzer, "_get_large_trades_data", return_value=sample_large_trades
+        ):
             result = analyzer.get_large_trades("AAPL", trade_type="sweep")
             if not result.empty and "trade_type" in result.columns:
                 assert all(result["trade_type"] == "sweep")
@@ -388,7 +479,9 @@ class TestOptionsFlowEdgeCases:
     def test_empty_options_data(self, empty_options_data):
         """Test with empty options data."""
         analyzer = OptionsFlowAnalyzer()
-        with patch.object(analyzer, '_get_options_data', return_value=empty_options_data):
+        with patch.object(
+            analyzer, "_get_options_data", return_value=empty_options_data
+        ):
             result = analyzer.calculate_put_call_ratio("AAPL")
             assert result["volume_ratio"] == 0.0 or np.isnan(result["volume_ratio"])
 
@@ -396,7 +489,9 @@ class TestOptionsFlowEdgeCases:
         """Test with zero call volume (division by zero)."""
         analyzer = OptionsFlowAnalyzer()
         sample_options_data["call_volume"] = 0
-        with patch.object(analyzer, '_get_options_data', return_value=sample_options_data):
+        with patch.object(
+            analyzer, "_get_options_data", return_value=sample_options_data
+        ):
             result = analyzer.calculate_put_call_ratio("AAPL")
             # Should handle gracefully (inf or special value)
             assert isinstance(result["volume_ratio"], (int, float))
@@ -405,7 +500,9 @@ class TestOptionsFlowEdgeCases:
         """Test with zero put volume."""
         analyzer = OptionsFlowAnalyzer()
         sample_options_data["put_volume"] = 0
-        with patch.object(analyzer, '_get_options_data', return_value=sample_options_data):
+        with patch.object(
+            analyzer, "_get_options_data", return_value=sample_options_data
+        ):
             result = analyzer.calculate_put_call_ratio("AAPL")
             assert result["volume_ratio"] == 0.0
 
@@ -442,7 +539,9 @@ class TestOptionsFlowEdgeCases:
         analyzer = OptionsFlowAnalyzer()
         sample_options_data.loc[0, "call_premium"] = np.nan
         sample_options_data.loc[1, "put_premium"] = np.nan
-        with patch.object(analyzer, '_get_options_data', return_value=sample_options_data):
+        with patch.object(
+            analyzer, "_get_options_data", return_value=sample_options_data
+        ):
             result = analyzer.aggregate_options_sentiment("AAPL")
             # Should not crash
             assert isinstance(result, dict)

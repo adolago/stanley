@@ -191,9 +191,7 @@ class YieldCurveAnalyzer:
             percentile_vs_history=percentiles,
         )
 
-    async def _fetch_curve_points(
-        self, country: str
-    ) -> List[YieldCurvePoint]:
+    async def _fetch_curve_points(self, country: str) -> List[YieldCurvePoint]:
         """Fetch yield curve data points."""
         points = []
 
@@ -246,9 +244,7 @@ class YieldCurveAnalyzer:
 
         return points
 
-    async def _get_rate(
-        self, country: str, rate_type: str
-    ) -> Optional[float]:
+    async def _get_rate(self, country: str, rate_type: str) -> Optional[float]:
         """Get a specific interest rate."""
         try:
             if self.dbnomics is None:
@@ -417,7 +413,9 @@ class YieldCurveAnalyzer:
         new_row = pd.DataFrame([current_spreads])
         self._curve_history[history_key] = pd.concat(
             [history, new_row], ignore_index=True
-        ).tail(60)  # Keep 60 days
+        ).tail(
+            60
+        )  # Keep 60 days
 
         if len(self._curve_history[history_key]) < 5:
             return CurveDynamic.STABLE

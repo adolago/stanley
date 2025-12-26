@@ -1132,9 +1132,7 @@ async def get_gamma_exposure(symbol: str):
         return create_response(error=str(e), success=False)
 
 
-@app.get(
-    "/api/options/{symbol}/unusual", response_model=ApiResponse, tags=["Options"]
-)
+@app.get("/api/options/{symbol}/unusual", response_model=ApiResponse, tags=["Options"])
 async def get_unusual_options_activity(
     symbol: str, volume_threshold: float = 2.0, min_premium: float = 50000
 ):
@@ -1190,9 +1188,7 @@ async def get_unusual_options_activity(
         return create_response(error=str(e), success=False)
 
 
-@app.get(
-    "/api/options/{symbol}/put-call", response_model=ApiResponse, tags=["Options"]
-)
+@app.get("/api/options/{symbol}/put-call", response_model=ApiResponse, tags=["Options"])
 async def get_put_call_analysis(symbol: str):
     """
     Get put/call flow analysis for a symbol.
@@ -1297,9 +1293,7 @@ async def get_smart_money_trades(symbol: str, min_premium: float = 100000):
         return create_response(error=str(e), success=False)
 
 
-@app.get(
-    "/api/options/{symbol}/max-pain", response_model=ApiResponse, tags=["Options"]
-)
+@app.get("/api/options/{symbol}/max-pain", response_model=ApiResponse, tags=["Options"])
 async def get_max_pain(symbol: str, expiration: Optional[str] = None):
     """
     Get max pain analysis for a symbol.
@@ -1467,7 +1461,9 @@ class WhaleAlert(BaseModel):
     """Whale activity alert."""
 
     symbol: str
-    alertType: str  # "large_accumulation", "large_distribution", "new_whale", "whale_exit"
+    alertType: (
+        str  # "large_accumulation", "large_distribution", "new_whale", "whale_exit"
+    )
     managerName: str
     significance: str  # "high", "medium", "low"
     sharesChanged: int
@@ -1597,7 +1593,9 @@ class InstitutionalAlert(BaseModel):
     """Institutional position change alert."""
 
     symbol: str
-    alertType: str  # "large_increase", "large_decrease", "new_position", "exit_position"
+    alertType: (
+        str  # "large_increase", "large_decrease", "new_position", "exit_position"
+    )
     managerName: str
     managerType: str  # "hedge_fund", "mutual_fund", "pension", "other"
     previousShares: int
@@ -2162,15 +2160,19 @@ async def get_13f_changes(symbol: str, conviction_threshold: float = 0.05):
 
         changes_list = []
         for _, row in changes_df.iterrows():
-            changes_list.append({
-                "managerName": str(row.get("manager_name", "")),
-                "changeType": str(row.get("change_type", "")),
-                "sharesCurrent": int(row.get("shares_current", 0)),
-                "sharesPrevious": int(row.get("shares_previous", 0)),
-                "changeMagnitude": int(row.get("change_magnitude", 0)),
-                "changePercentage": round(float(row.get("change_percentage", 0)), 4),
-                "convictionScore": round(float(row.get("conviction_score", 0)), 4),
-            })
+            changes_list.append(
+                {
+                    "managerName": str(row.get("manager_name", "")),
+                    "changeType": str(row.get("change_type", "")),
+                    "sharesCurrent": int(row.get("shares_current", 0)),
+                    "sharesPrevious": int(row.get("shares_previous", 0)),
+                    "changeMagnitude": int(row.get("change_magnitude", 0)),
+                    "changePercentage": round(
+                        float(row.get("change_percentage", 0)), 4
+                    ),
+                    "convictionScore": round(float(row.get("conviction_score", 0)), 4),
+                }
+            )
 
         return create_response(data=changes_list)
 
@@ -2219,14 +2221,16 @@ async def get_whale_accumulation(
 
         whales_list = []
         for _, row in whales_df.iterrows():
-            whales_list.append({
-                "institutionName": str(row.get("institution_name", "")),
-                "changeType": str(row.get("change_type", "")),
-                "magnitude": round(float(row.get("magnitude", 0)), 4),
-                "estimatedAum": float(row.get("estimated_aum", 0)),
-                "alertLevel": str(row.get("alert_level", "")),
-                "sharesChanged": int(row.get("shares_changed", 0)),
-            })
+            whales_list.append(
+                {
+                    "institutionName": str(row.get("institution_name", "")),
+                    "changeType": str(row.get("change_type", "")),
+                    "magnitude": round(float(row.get("magnitude", 0)), 4),
+                    "estimatedAum": float(row.get("estimated_aum", 0)),
+                    "alertLevel": str(row.get("alert_level", "")),
+                    "sharesChanged": int(row.get("shares_changed", 0)),
+                }
+            )
 
         return create_response(data=whales_list)
 
@@ -2262,14 +2266,16 @@ async def get_institutional_sentiment_score(symbol: str):
 
         sentiment = app_state.institutional_analyzer.calculate_sentiment_score(symbol)
 
-        return create_response(data={
-            "symbol": symbol,
-            "score": sentiment["score"],
-            "classification": sentiment["classification"],
-            "confidence": sentiment["confidence"],
-            "contributingFactors": sentiment["contributing_factors"],
-            "weightsUsed": sentiment["weights_used"],
-        })
+        return create_response(
+            data={
+                "symbol": symbol,
+                "score": sentiment["score"],
+                "classification": sentiment["classification"],
+                "confidence": sentiment["confidence"],
+                "contributingFactors": sentiment["contributing_factors"],
+                "weightsUsed": sentiment["weights_used"],
+            }
+        )
 
     except HTTPException:
         raise
@@ -2302,25 +2308,31 @@ async def get_position_clusters(symbol: str, n_clusters: int = 4):
                 status_code=503, detail="Institutional analyzer not initialized"
             )
 
-        clusters = app_state.institutional_analyzer.cluster_positions(symbol, n_clusters)
+        clusters = app_state.institutional_analyzer.cluster_positions(
+            symbol, n_clusters
+        )
 
         # Convert cluster_labels DataFrame to list if not empty
         cluster_labels = []
         if not clusters["cluster_labels"].empty:
             for _, row in clusters["cluster_labels"].iterrows():
-                cluster_labels.append({
-                    "managerName": str(row.get("manager_name", "")),
-                    "cluster": int(row.get("cluster", 0)),
-                    "clusterName": str(row.get("cluster_name", "")),
-                })
+                cluster_labels.append(
+                    {
+                        "managerName": str(row.get("manager_name", "")),
+                        "cluster": int(row.get("cluster", 0)),
+                        "clusterName": str(row.get("cluster_name", "")),
+                    }
+                )
 
-        return create_response(data={
-            "symbol": symbol,
-            "clusterLabels": cluster_labels,
-            "clusterStats": clusters["cluster_stats"],
-            "smartMoneyDirection": clusters["smart_money_direction"],
-            "clusterSummary": clusters["cluster_summary"],
-        })
+        return create_response(
+            data={
+                "symbol": symbol,
+                "clusterLabels": cluster_labels,
+                "clusterStats": clusters["cluster_stats"],
+                "smartMoneyDirection": clusters["smart_money_direction"],
+                "clusterSummary": clusters["cluster_summary"],
+            }
+        )
 
     except HTTPException:
         raise
@@ -2357,17 +2369,19 @@ async def get_cross_filing_analysis(symbol: str, min_filers: int = 3):
             symbol, min_filers
         )
 
-        return create_response(data={
-            "symbol": symbol,
-            "institutionCount": cross_analysis["institution_count"],
-            "institutionAgreement": cross_analysis["institution_agreement"],
-            "consensusDirection": cross_analysis["consensus_direction"],
-            "crossFilingScore": cross_analysis["cross_filing_score"],
-            "filingBreakdown": cross_analysis["filing_breakdown"],
-            "buyersCount": cross_analysis.get("buyers_count", 0),
-            "sellersCount": cross_analysis.get("sellers_count", 0),
-            "holdersCount": cross_analysis.get("holders_count", 0),
-        })
+        return create_response(
+            data={
+                "symbol": symbol,
+                "institutionCount": cross_analysis["institution_count"],
+                "institutionAgreement": cross_analysis["institution_agreement"],
+                "consensusDirection": cross_analysis["consensus_direction"],
+                "crossFilingScore": cross_analysis["cross_filing_score"],
+                "filingBreakdown": cross_analysis["filing_breakdown"],
+                "buyersCount": cross_analysis.get("buyers_count", 0),
+                "sellersCount": cross_analysis.get("sellers_count", 0),
+                "holdersCount": cross_analysis.get("holders_count", 0),
+            }
+        )
 
     except HTTPException:
         raise
@@ -2409,16 +2423,18 @@ async def get_smart_money_momentum(
             symbol, window_quarters, weight_by_performance
         )
 
-        return create_response(data={
-            "symbol": symbol,
-            "momentumScore": momentum["momentum_score"],
-            "trendDirection": momentum["trend_direction"],
-            "acceleration": momentum["acceleration"],
-            "quarterlyMomentum": momentum["quarterly_momentum"],
-            "topMovers": momentum["top_movers"],
-            "signalStrength": momentum["signal_strength"],
-            "windowQuarters": momentum["window_quarters"],
-        })
+        return create_response(
+            data={
+                "symbol": symbol,
+                "momentumScore": momentum["momentum_score"],
+                "trendDirection": momentum["trend_direction"],
+                "acceleration": momentum["acceleration"],
+                "quarterlyMomentum": momentum["quarterly_momentum"],
+                "topMovers": momentum["top_movers"],
+                "signalStrength": momentum["signal_strength"],
+                "windowQuarters": momentum["window_quarters"],
+            }
+        )
 
     except HTTPException:
         raise
@@ -2456,38 +2472,44 @@ async def get_smart_money_flow(symbol: str):
         buying_list = []
         if not flow["buying_activity"].empty:
             for _, row in flow["buying_activity"].iterrows():
-                buying_list.append({
-                    "managerName": str(row.get("manager_name", "")),
-                    "managerCik": str(row.get("manager_cik", "")),
-                    "sharesAdded": int(row.get("shares_added", 0)),
-                    "valueAdded": float(row.get("value_added", 0)),
-                    "performanceScore": float(row.get("performance_score", 0)),
-                })
+                buying_list.append(
+                    {
+                        "managerName": str(row.get("manager_name", "")),
+                        "managerCik": str(row.get("manager_cik", "")),
+                        "sharesAdded": int(row.get("shares_added", 0)),
+                        "valueAdded": float(row.get("value_added", 0)),
+                        "performanceScore": float(row.get("performance_score", 0)),
+                    }
+                )
 
         selling_list = []
         if not flow["selling_activity"].empty:
             for _, row in flow["selling_activity"].iterrows():
-                selling_list.append({
-                    "managerName": str(row.get("manager_name", "")),
-                    "managerCik": str(row.get("manager_cik", "")),
-                    "sharesSold": int(row.get("shares_sold", 0)),
-                    "valueSold": float(row.get("value_sold", 0)),
-                    "performanceScore": float(row.get("performance_score", 0)),
-                })
+                selling_list.append(
+                    {
+                        "managerName": str(row.get("manager_name", "")),
+                        "managerCik": str(row.get("manager_cik", "")),
+                        "sharesSold": int(row.get("shares_sold", 0)),
+                        "valueSold": float(row.get("value_sold", 0)),
+                        "performanceScore": float(row.get("performance_score", 0)),
+                    }
+                )
 
-        return create_response(data={
-            "symbol": symbol,
-            "netFlow": flow["net_flow"],
-            "weightedFlow": flow["weighted_flow"],
-            "signal": flow["signal"],
-            "signalStrength": flow["signal_strength"],
-            "buyersCount": flow["buyers_count"],
-            "sellersCount": flow["sellers_count"],
-            "buyingActivity": buying_list,
-            "sellingActivity": selling_list,
-            "coordinatedBuying": flow["coordinated_buying"],
-            "coordinatedSelling": flow["coordinated_selling"],
-        })
+        return create_response(
+            data={
+                "symbol": symbol,
+                "netFlow": flow["net_flow"],
+                "weightedFlow": flow["weighted_flow"],
+                "signal": flow["signal"],
+                "signalStrength": flow["signal_strength"],
+                "buyersCount": flow["buyers_count"],
+                "sellersCount": flow["sellers_count"],
+                "buyingActivity": buying_list,
+                "sellingActivity": selling_list,
+                "coordinatedBuying": flow["coordinated_buying"],
+                "coordinatedSelling": flow["coordinated_selling"],
+            }
+        )
 
     except HTTPException:
         raise
@@ -2524,17 +2546,21 @@ async def get_new_positions_alerts(lookback_days: int = 45, min_value: float = 1
 
         alerts_list = []
         for _, row in alerts_df.iterrows():
-            alerts_list.append({
-                "symbol": str(row.get("symbol", "")),
-                "managerName": str(row.get("manager_name", "")),
-                "managerCik": str(row.get("manager_cik", "")),
-                "positionValue": float(row.get("position_value", 0)),
-                "shares": int(row.get("shares", 0)),
-                "weight": round(float(row.get("weight", 0)), 4),
-                "managerPerformanceScore": float(row.get("manager_performance_score", 0)),
-                "alertType": str(row.get("alert_type", "")),
-                "significance": round(float(row.get("significance", 0)), 4),
-            })
+            alerts_list.append(
+                {
+                    "symbol": str(row.get("symbol", "")),
+                    "managerName": str(row.get("manager_name", "")),
+                    "managerCik": str(row.get("manager_cik", "")),
+                    "positionValue": float(row.get("position_value", 0)),
+                    "shares": int(row.get("shares", 0)),
+                    "weight": round(float(row.get("weight", 0)), 4),
+                    "managerPerformanceScore": float(
+                        row.get("manager_performance_score", 0)
+                    ),
+                    "alertType": str(row.get("alert_type", "")),
+                    "significance": round(float(row.get("significance", 0)), 4),
+                }
+            )
 
         return create_response(data=alerts_list)
 
@@ -2573,14 +2599,18 @@ async def get_coordinated_buying_alerts(min_buyers: int = 3, lookback_days: int 
 
         alerts_list = []
         for _, row in alerts_df.iterrows():
-            alerts_list.append({
-                "symbol": str(row.get("symbol", "")),
-                "buyersCount": int(row.get("buyers_count", 0)),
-                "totalValueAdded": float(row.get("total_value_added", 0)),
-                "avgBuyerPerformance": round(float(row.get("avg_buyer_performance", 0)), 4),
-                "signalStrength": round(float(row.get("signal_strength", 0)), 4),
-                "buyers": row.get("buyers", []),
-            })
+            alerts_list.append(
+                {
+                    "symbol": str(row.get("symbol", "")),
+                    "buyersCount": int(row.get("buyers_count", 0)),
+                    "totalValueAdded": float(row.get("total_value_added", 0)),
+                    "avgBuyerPerformance": round(
+                        float(row.get("avg_buyer_performance", 0)), 4
+                    ),
+                    "signalStrength": round(float(row.get("signal_strength", 0)), 4),
+                    "buyers": row.get("buyers", []),
+                }
+            )
 
         return create_response(data=alerts_list)
 
@@ -2619,15 +2649,17 @@ async def get_conviction_picks(min_weight: float = 0.05, top_n_managers: int = 5
 
         picks_list = []
         for _, row in picks_df.iterrows():
-            picks_list.append({
-                "symbol": str(row.get("symbol", "")),
-                "holders": row.get("holders", []),
-                "avgWeight": round(float(row.get("avg_weight", 0)), 4),
-                "maxWeight": round(float(row.get("max_weight", 0)), 4),
-                "holderCount": int(row.get("holder_count", 0)),
-                "totalValue": float(row.get("total_value", 0)),
-                "avgManagerScore": round(float(row.get("avg_manager_score", 0)), 4),
-            })
+            picks_list.append(
+                {
+                    "symbol": str(row.get("symbol", "")),
+                    "holders": row.get("holders", []),
+                    "avgWeight": round(float(row.get("avg_weight", 0)), 4),
+                    "maxWeight": round(float(row.get("max_weight", 0)), 4),
+                    "holderCount": int(row.get("holder_count", 0)),
+                    "totalValue": float(row.get("total_value", 0)),
+                    "avgManagerScore": round(float(row.get("avg_manager_score", 0)), 4),
+                }
+            )
 
         return create_response(data=picks_list)
 
@@ -2665,13 +2697,23 @@ async def get_13f_filing_calendar(quarters_ahead: int = 4):
 
         calendar_list = []
         for _, row in calendar_df.iterrows():
-            calendar_list.append({
-                "quarter": str(row.get("quarter", "")),
-                "quarterEnd": row["quarter_end"].isoformat() if pd.notna(row.get("quarter_end")) else None,
-                "filingDeadline": row["filing_deadline"].isoformat() if pd.notna(row.get("filing_deadline")) else None,
-                "status": str(row.get("status", "")),
-                "daysUntilDeadline": int(row.get("days_until_deadline", 0)),
-            })
+            calendar_list.append(
+                {
+                    "quarter": str(row.get("quarter", "")),
+                    "quarterEnd": (
+                        row["quarter_end"].isoformat()
+                        if pd.notna(row.get("quarter_end"))
+                        else None
+                    ),
+                    "filingDeadline": (
+                        row["filing_deadline"].isoformat()
+                        if pd.notna(row.get("filing_deadline"))
+                        else None
+                    ),
+                    "status": str(row.get("status", "")),
+                    "daysUntilDeadline": int(row.get("days_until_deadline", 0)),
+                }
+            )
 
         return create_response(data=calendar_list)
 
@@ -2698,9 +2740,7 @@ async def get_etf_flows(
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         symbol_list = symbols.split(",") if symbols else None
         flows = await app_state.etf_analyzer.get_etf_flows(
@@ -2729,9 +2769,7 @@ async def get_etf_flow_detail(symbol: str, lookback_days: int = 30):
         symbol = symbol.upper()
 
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         activity = await app_state.etf_analyzer.get_creation_redemption_activity(
             symbol, lookback_days
@@ -2760,9 +2798,7 @@ async def get_sector_rotation(lookback_days: int = 63):
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         signals = await app_state.etf_analyzer.get_sector_rotation(lookback_days)
 
@@ -2785,9 +2821,7 @@ async def get_sector_heatmap(period: str = "1m"):
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         heatmap = await app_state.etf_analyzer.get_sector_heatmap(period)
 
@@ -2812,9 +2846,7 @@ async def get_smart_beta_flows(lookback_days: int = 63):
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         flows = await app_state.etf_analyzer.get_smart_beta_flows(lookback_days)
 
@@ -2827,9 +2859,7 @@ async def get_smart_beta_flows(lookback_days: int = 63):
         return create_response(error=str(e), success=False)
 
 
-@app.get(
-    "/api/etf/factor-rotation", response_model=ApiResponse, tags=["ETF Analytics"]
-)
+@app.get("/api/etf/factor-rotation", response_model=ApiResponse, tags=["ETF Analytics"])
 async def get_factor_rotation():
     """
     Get factor rotation signals for tactical allocation.
@@ -2838,9 +2868,7 @@ async def get_factor_rotation():
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         signals = await app_state.etf_analyzer.get_factor_rotation_signals()
 
@@ -2865,9 +2893,7 @@ async def get_thematic_flows(lookback_days: int = 90):
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         flows = await app_state.etf_analyzer.get_thematic_flows(lookback_days)
 
@@ -2889,9 +2915,7 @@ async def get_theme_dashboard():
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         dashboard = await app_state.etf_analyzer.get_theme_dashboard()
 
@@ -2904,9 +2928,7 @@ async def get_theme_dashboard():
         return create_response(error=str(e), success=False)
 
 
-@app.get(
-    "/api/etf/institutional", response_model=ApiResponse, tags=["ETF Analytics"]
-)
+@app.get("/api/etf/institutional", response_model=ApiResponse, tags=["ETF Analytics"])
 async def get_institutional_etf_positioning(symbols: Optional[str] = None):
     """
     Get institutional ETF positioning analysis.
@@ -2918,9 +2940,7 @@ async def get_institutional_etf_positioning(symbols: Optional[str] = None):
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         symbol_list = symbols.split(",") if symbols else None
         positioning = await app_state.etf_analyzer.get_institutional_etf_positioning(
@@ -2945,9 +2965,7 @@ async def get_etf_flow_overview():
     """
     try:
         if not app_state.etf_analyzer:
-            raise HTTPException(
-                status_code=503, detail="ETF analyzer not initialized"
-            )
+            raise HTTPException(status_code=503, detail="ETF analyzer not initialized")
 
         overview = await app_state.etf_analyzer.get_flow_overview()
 
@@ -3052,9 +3070,7 @@ async def get_block_trades(
     response_model=ApiResponse,
     tags=["Money Flow"],
 )
-async def get_sector_rotation(
-    sectors: Optional[str] = None, lookback_days: int = 21
-):
+async def get_sector_rotation(sectors: Optional[str] = None, lookback_days: int = 21):
     """
     Detect sector rotation patterns.
 
@@ -3118,9 +3134,7 @@ async def track_smart_money(symbol: str, lookback_days: int = 21):
                 status_code=503, detail="Money flow analyzer not initialized"
             )
 
-        metrics = app_state.money_flow_analyzer.track_smart_money(
-            symbol, lookback_days
-        )
+        metrics = app_state.money_flow_analyzer.track_smart_money(symbol, lookback_days)
 
         return create_response(data=metrics.to_dict())
 
@@ -3435,9 +3449,11 @@ async def get_earnings_quality(symbol: str, manufacturing: bool = False):
 
         response = EarningsQualityResponse(
             symbol=symbol,
-            overallQuality=result.overall_quality.value
-            if hasattr(result.overall_quality, "value")
-            else str(result.overall_quality),
+            overallQuality=(
+                result.overall_quality.value
+                if hasattr(result.overall_quality, "value")
+                else str(result.overall_quality)
+            ),
             mScore=result.m_score.m_score,
             mScoreRisk=result.m_score.manipulation_risk,
             fScore=result.f_score.f_score,
@@ -3631,9 +3647,11 @@ async def get_red_flags(symbol: str):
                 {
                     "category": flag.category,
                     "description": flag.description,
-                    "severity": flag.severity.value
-                    if hasattr(flag.severity, "value")
-                    else str(flag.severity),
+                    "severity": (
+                        flag.severity.value
+                        if hasattr(flag.severity, "value")
+                        else str(flag.severity)
+                    ),
                     "metric": flag.metric,
                     "value": flag.value,
                     "threshold": flag.threshold,
@@ -3831,9 +3849,11 @@ async def get_comprehensive_accounting_quality(
                     symbol, manufacturing=manufacturing
                 )
                 report["earningsQuality"] = {
-                    "overallQuality": eq_result.overall_quality.value
-                    if hasattr(eq_result.overall_quality, "value")
-                    else str(eq_result.overall_quality),
+                    "overallQuality": (
+                        eq_result.overall_quality.value
+                        if hasattr(eq_result.overall_quality, "value")
+                        else str(eq_result.overall_quality)
+                    ),
                     "mScore": {
                         "score": eq_result.m_score.m_score,
                         "risk": eq_result.m_score.manipulation_risk,
@@ -3864,9 +3884,11 @@ async def get_comprehensive_accounting_quality(
                         {
                             "category": flag.category,
                             "description": flag.description,
-                            "severity": flag.severity.value
-                            if hasattr(flag.severity, "value")
-                            else str(flag.severity),
+                            "severity": (
+                                flag.severity.value
+                                if hasattr(flag.severity, "value")
+                                else str(flag.severity)
+                            ),
                         }
                     )
                 report["redFlags"] = {
@@ -4000,9 +4022,13 @@ class BacktestRequest(BaseModel):
     """Request for signal backtesting."""
 
     symbols: List[str] = Field(..., description="Symbols to backtest")
-    start_date: Optional[str] = Field(default=None, description="Start date (YYYY-MM-DD)")
+    start_date: Optional[str] = Field(
+        default=None, description="Start date (YYYY-MM-DD)"
+    )
     end_date: Optional[str] = Field(default=None, description="End date (YYYY-MM-DD)")
-    holding_period_days: int = Field(default=30, ge=1, le=365, description="Holding period")
+    holding_period_days: int = Field(
+        default=30, ge=1, le=365, description="Holding period"
+    )
 
 
 @app.get("/api/signals/{symbol}", response_model=ApiResponse, tags=["Signals"])
@@ -4084,7 +4110,9 @@ async def generate_signals(request: SignalRequest):
         return create_response(error=str(e), success=False)
 
 
-@app.get("/api/signals/{symbol}/composite", response_model=ApiResponse, tags=["Signals"])
+@app.get(
+    "/api/signals/{symbol}/composite", response_model=ApiResponse, tags=["Signals"]
+)
 async def get_composite_score(symbol: str):
     """
     Get detailed composite score breakdown for a symbol.
@@ -4138,7 +4166,9 @@ async def get_signal_performance_stats():
         return create_response(error=str(e), success=False)
 
 
-@app.get("/api/signals/performance/history", response_model=ApiResponse, tags=["Signals"])
+@app.get(
+    "/api/signals/performance/history", response_model=ApiResponse, tags=["Signals"]
+)
 async def get_signal_history(
     symbol: Optional[str] = None,
     limit: int = 100,

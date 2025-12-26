@@ -90,10 +90,7 @@ impl StanleyClient {
     }
 
     /// Get dark pool activity
-    pub async fn get_dark_pool_activity(
-        &self,
-        symbol: &str,
-    ) -> Result<DarkPoolResponse, ApiError> {
+    pub async fn get_dark_pool_activity(&self, symbol: &str) -> Result<DarkPoolResponse, ApiError> {
         let url = format!("{}/api/dark-pool/{}", self.base_url, symbol);
         let response = self
             .client

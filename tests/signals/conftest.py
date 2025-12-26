@@ -40,14 +40,16 @@ def sample_price_data(sample_dates):
     open_prices = low + (high - low) * np.random.random(n)
     volume = np.random.randint(1000000, 10000000, n)
 
-    return pd.DataFrame({
-        "date": sample_dates,
-        "open": open_prices,
-        "high": high,
-        "low": low,
-        "close": prices,
-        "volume": volume,
-    })
+    return pd.DataFrame(
+        {
+            "date": sample_dates,
+            "open": open_prices,
+            "high": high,
+            "low": low,
+            "close": prices,
+            "volume": volume,
+        }
+    )
 
 
 @pytest.fixture
@@ -62,11 +64,13 @@ def sample_multi_symbol_prices(sample_dates):
         np.random.seed(42 + i)  # Different seed per symbol
         returns = np.random.normal(0.0005 + i * 0.0001, 0.02 + i * 0.002, n)
         prices = (100 + i * 50) * np.exp(np.cumsum(returns))
-        price_data[symbol] = pd.DataFrame({
-            "date": sample_dates,
-            "close": prices,
-            "volume": np.random.randint(1000000, 10000000, n),
-        })
+        price_data[symbol] = pd.DataFrame(
+            {
+                "date": sample_dates,
+                "close": prices,
+                "volume": np.random.randint(1000000, 10000000, n),
+            }
+        )
 
     return price_data
 
@@ -161,11 +165,13 @@ def mock_data_manager():
 
     # Mock price data methods
     mock.get_price_history = AsyncMock(
-        return_value=pd.DataFrame({
-            "date": pd.date_range(end=datetime.now(), periods=100, freq="B"),
-            "close": np.random.normal(100, 10, 100),
-            "volume": np.random.randint(1000000, 10000000, 100),
-        })
+        return_value=pd.DataFrame(
+            {
+                "date": pd.date_range(end=datetime.now(), periods=100, freq="B"),
+                "close": np.random.normal(100, 10, 100),
+                "volume": np.random.randint(1000000, 10000000, 100),
+            }
+        )
     )
 
     # Mock money flow methods
@@ -217,11 +223,13 @@ def mock_money_flow_analyzer():
         }
     )
     mock.analyze_sector_flow = Mock(
-        return_value=pd.DataFrame({
-            "sector": ["XLK", "XLF", "XLE"],
-            "net_flow_1m": [1000000, -500000, 200000],
-            "confidence_score": [0.8, 0.6, 0.5],
-        }).set_index("sector")
+        return_value=pd.DataFrame(
+            {
+                "sector": ["XLK", "XLF", "XLE"],
+                "net_flow_1m": [1000000, -500000, 200000],
+                "confidence_score": [0.8, 0.6, 0.5],
+            }
+        ).set_index("sector")
     )
     return mock
 
@@ -320,22 +328,22 @@ def sample_backtest_config():
 @pytest.fixture
 def empty_price_data():
     """Empty price DataFrame for edge case testing."""
-    return pd.DataFrame(
-        columns=["date", "open", "high", "low", "close", "volume"]
-    )
+    return pd.DataFrame(columns=["date", "open", "high", "low", "close", "volume"])
 
 
 @pytest.fixture
 def single_row_price_data():
     """Single row price data for edge case testing."""
-    return pd.DataFrame({
-        "date": [datetime.now()],
-        "open": [100.0],
-        "high": [102.0],
-        "low": [99.0],
-        "close": [101.0],
-        "volume": [5000000],
-    })
+    return pd.DataFrame(
+        {
+            "date": [datetime.now()],
+            "open": [100.0],
+            "high": [102.0],
+            "low": [99.0],
+            "close": [101.0],
+            "volume": [5000000],
+        }
+    )
 
 
 @pytest.fixture
@@ -345,8 +353,10 @@ def nan_price_data(sample_dates):
     prices = np.random.normal(100, 10, n)
     prices[10:15] = np.nan  # Insert NaN values
 
-    return pd.DataFrame({
-        "date": sample_dates,
-        "close": prices,
-        "volume": np.random.randint(1000000, 10000000, n),
-    })
+    return pd.DataFrame(
+        {
+            "date": sample_dates,
+            "close": prices,
+            "volume": np.random.randint(1000000, 10000000, n),
+        }
+    )

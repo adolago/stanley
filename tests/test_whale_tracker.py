@@ -22,8 +22,7 @@ except ImportError:
 
 # Skip all tests if module not yet implemented
 pytestmark = pytest.mark.skipif(
-    WhaleTracker is None,
-    reason="WhaleTracker module not yet implemented"
+    WhaleTracker is None, reason="WhaleTracker module not yet implemented"
 )
 
 
@@ -35,91 +34,115 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture
 def sample_whale_holdings():
     """Sample whale holdings data."""
-    return pd.DataFrame({
-        "manager_name": [
-            "Berkshire Hathaway",
-            "Renaissance Technologies",
-            "Bridgewater Associates",
-            "Two Sigma",
-            "Citadel Advisors",
-        ],
-        "manager_cik": [
-            "0001067983",
-            "0001037389",
-            "0001350694",
-            "0001450144",
-            "0001423053",
-        ],
-        "aum": [
-            700_000_000_000,  # $700B
-            130_000_000_000,  # $130B
-            150_000_000_000,  # $150B
-            60_000_000_000,   # $60B
-            50_000_000_000,   # $50B
-        ],
-        "shares_held": [100_000_000, 50_000_000, 30_000_000, 25_000_000, 20_000_000],
-        "value_held": [
-            15_000_000_000,
-            7_500_000_000,
-            4_500_000_000,
-            3_750_000_000,
-            3_000_000_000,
-        ],
-        "ownership_percentage": [0.08, 0.04, 0.024, 0.02, 0.016],
-        "quarter_change": [5_000_000, -2_000_000, 3_000_000, 0, 1_000_000],
-        "is_new_position": [False, False, False, False, False],
-    })
+    return pd.DataFrame(
+        {
+            "manager_name": [
+                "Berkshire Hathaway",
+                "Renaissance Technologies",
+                "Bridgewater Associates",
+                "Two Sigma",
+                "Citadel Advisors",
+            ],
+            "manager_cik": [
+                "0001067983",
+                "0001037389",
+                "0001350694",
+                "0001450144",
+                "0001423053",
+            ],
+            "aum": [
+                700_000_000_000,  # $700B
+                130_000_000_000,  # $130B
+                150_000_000_000,  # $150B
+                60_000_000_000,  # $60B
+                50_000_000_000,  # $50B
+            ],
+            "shares_held": [
+                100_000_000,
+                50_000_000,
+                30_000_000,
+                25_000_000,
+                20_000_000,
+            ],
+            "value_held": [
+                15_000_000_000,
+                7_500_000_000,
+                4_500_000_000,
+                3_750_000_000,
+                3_000_000_000,
+            ],
+            "ownership_percentage": [0.08, 0.04, 0.024, 0.02, 0.016],
+            "quarter_change": [5_000_000, -2_000_000, 3_000_000, 0, 1_000_000],
+            "is_new_position": [False, False, False, False, False],
+        }
+    )
 
 
 @pytest.fixture
 def sample_whale_movements():
     """Sample whale movement history."""
     dates = pd.date_range(end=datetime.now(), periods=4, freq="QE")
-    return pd.DataFrame({
-        "date": dates,
-        "total_whale_shares": [200_000_000, 210_000_000, 205_000_000, 225_000_000],
-        "net_whale_change": [0, 10_000_000, -5_000_000, 20_000_000],
-        "whales_buying": [3, 4, 2, 5],
-        "whales_selling": [2, 1, 3, 1],
-        "whale_count": [10, 11, 10, 12],
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "total_whale_shares": [200_000_000, 210_000_000, 205_000_000, 225_000_000],
+            "net_whale_change": [0, 10_000_000, -5_000_000, 20_000_000],
+            "whales_buying": [3, 4, 2, 5],
+            "whales_selling": [2, 1, 3, 1],
+            "whale_count": [10, 11, 10, 12],
+        }
+    )
 
 
 @pytest.fixture
 def empty_whale_data():
     """Empty whale holdings DataFrame."""
-    return pd.DataFrame(columns=[
-        "manager_name", "manager_cik", "aum", "shares_held",
-        "value_held", "ownership_percentage", "quarter_change", "is_new_position"
-    ])
+    return pd.DataFrame(
+        columns=[
+            "manager_name",
+            "manager_cik",
+            "aum",
+            "shares_held",
+            "value_held",
+            "ownership_percentage",
+            "quarter_change",
+            "is_new_position",
+        ]
+    )
 
 
 @pytest.fixture
 def single_whale_data():
     """Single whale holder."""
-    return pd.DataFrame({
-        "manager_name": ["Berkshire Hathaway"],
-        "manager_cik": ["0001067983"],
-        "aum": [700_000_000_000],
-        "shares_held": [100_000_000],
-        "value_held": [15_000_000_000],
-        "ownership_percentage": [0.08],
-        "quarter_change": [5_000_000],
-        "is_new_position": [False],
-    })
+    return pd.DataFrame(
+        {
+            "manager_name": ["Berkshire Hathaway"],
+            "manager_cik": ["0001067983"],
+            "aum": [700_000_000_000],
+            "shares_held": [100_000_000],
+            "value_held": [15_000_000_000],
+            "ownership_percentage": [0.08],
+            "quarter_change": [5_000_000],
+            "is_new_position": [False],
+        }
+    )
 
 
 @pytest.fixture
 def mock_data_manager_for_whales():
     """Mock DataManager for whale tracking."""
     mock = Mock()
-    mock.get_whale_holdings = AsyncMock(return_value=pd.DataFrame({
-        "manager_name": ["Berkshire Hathaway", "Renaissance Technologies"],
-        "shares_held": [100_000_000, 50_000_000],
-        "value_held": [15_000_000_000, 7_500_000_000],
-        "ownership_percentage": [0.08, 0.04],
-        "quarter_change": [5_000_000, -2_000_000],
-    }))
+    mock.get_whale_holdings = AsyncMock(
+        return_value=pd.DataFrame(
+            {
+                "manager_name": ["Berkshire Hathaway", "Renaissance Technologies"],
+                "shares_held": [100_000_000, 50_000_000],
+                "value_held": [15_000_000_000, 7_500_000_000],
+                "ownership_percentage": [0.08, 0.04],
+                "quarter_change": [5_000_000, -2_000_000],
+            }
+        )
+    )
     mock.get_13f_filings = AsyncMock(return_value=pd.DataFrame())
     return mock
 
@@ -387,7 +410,9 @@ class TestWhaleTrackerEdgeCases:
     def test_empty_whale_data(self, empty_whale_data):
         """Test with empty whale data."""
         tracker = WhaleTracker()
-        with patch.object(tracker, '_get_whale_holdings', return_value=empty_whale_data):
+        with patch.object(
+            tracker, "_get_whale_holdings", return_value=empty_whale_data
+        ):
             result = tracker.track_whale_movements("AAPL")
             assert result["whale_count"] == 0
             assert result["total_whale_ownership"] == 0.0
@@ -395,7 +420,9 @@ class TestWhaleTrackerEdgeCases:
     def test_single_whale_holder(self, single_whale_data):
         """Test with single whale holder."""
         tracker = WhaleTracker()
-        with patch.object(tracker, '_get_whale_holdings', return_value=single_whale_data):
+        with patch.object(
+            tracker, "_get_whale_holdings", return_value=single_whale_data
+        ):
             result = tracker.track_whale_movements("AAPL")
             assert result["whale_count"] == 1
 
@@ -424,13 +451,15 @@ class TestWhaleTrackerEdgeCases:
     def test_handle_missing_quarter_change(self):
         """Test handling of missing quarter_change data."""
         tracker = WhaleTracker()
-        incomplete_data = pd.DataFrame({
-            "manager_name": ["Whale A"],
-            "shares_held": [1_000_000],
-            "value_held": [100_000_000],
-            # Missing quarter_change column
-        })
-        with patch.object(tracker, '_get_whale_holdings', return_value=incomplete_data):
+        incomplete_data = pd.DataFrame(
+            {
+                "manager_name": ["Whale A"],
+                "shares_held": [1_000_000],
+                "value_held": [100_000_000],
+                # Missing quarter_change column
+            }
+        )
+        with patch.object(tracker, "_get_whale_holdings", return_value=incomplete_data):
             result = tracker.track_whale_movements("AAPL")
             # Should not crash
             assert isinstance(result, dict)
@@ -438,16 +467,32 @@ class TestWhaleTrackerEdgeCases:
     def test_negative_quarter_change(self, sample_whale_holdings):
         """Test with negative quarter changes (selling)."""
         tracker = WhaleTracker()
-        sample_whale_holdings["quarter_change"] = [-10_000_000, -5_000_000, -3_000_000, -2_000_000, -1_000_000]
-        with patch.object(tracker, '_get_whale_holdings', return_value=sample_whale_holdings):
+        sample_whale_holdings["quarter_change"] = [
+            -10_000_000,
+            -5_000_000,
+            -3_000_000,
+            -2_000_000,
+            -1_000_000,
+        ]
+        with patch.object(
+            tracker, "_get_whale_holdings", return_value=sample_whale_holdings
+        ):
             result = tracker.detect_accumulation("AAPL")
             assert result["pattern"] == "distribution"
 
     def test_all_positive_quarter_change(self, sample_whale_holdings):
         """Test with all positive quarter changes (buying)."""
         tracker = WhaleTracker()
-        sample_whale_holdings["quarter_change"] = [10_000_000, 5_000_000, 3_000_000, 2_000_000, 1_000_000]
-        with patch.object(tracker, '_get_whale_holdings', return_value=sample_whale_holdings):
+        sample_whale_holdings["quarter_change"] = [
+            10_000_000,
+            5_000_000,
+            3_000_000,
+            2_000_000,
+            1_000_000,
+        ]
+        with patch.object(
+            tracker, "_get_whale_holdings", return_value=sample_whale_holdings
+        ):
             result = tracker.detect_accumulation("AAPL")
             assert result["pattern"] == "accumulation"
 

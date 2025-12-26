@@ -41,7 +41,9 @@ class CrossAssetState:
     risk_on_off_score: float  # -1 (risk off) to +1 (risk on)
     correlation_stability: float  # How stable are correlations
     regime_confidence: float
-    asset_momentum: Dict[str, float] = field(default_factory=dict)  # Momentum by asset class
+    asset_momentum: Dict[str, float] = field(
+        default_factory=dict
+    )  # Momentum by asset class
     timestamp: datetime = field(default_factory=datetime.now)
 
 
@@ -494,7 +496,9 @@ class CrossAssetAnalyzer:
                     available_assets.append(asset_name)
 
             except Exception as e:
-                logger.debug(f"Failed to get price data for {asset_name} ({symbol}): {e}")
+                logger.debug(
+                    f"Failed to get price data for {asset_name} ({symbol}): {e}"
+                )
 
         if not price_dict:
             return pd.DataFrame()
@@ -594,7 +598,9 @@ class CrossAssetAnalyzer:
         try:
             # Calculate spread using HYG (high yield) and LQD (investment grade)
             hy_mom = await self._get_asset_momentum("high_yield", lookback_days=60)
-            ig_mom = await self._get_asset_momentum("investment_grade", lookback_days=60)
+            ig_mom = await self._get_asset_momentum(
+                "investment_grade", lookback_days=60
+            )
 
             # When HY underperforms IG, spreads are widening
             spread_indicator = ig_mom - hy_mom
@@ -666,11 +672,7 @@ class CrossAssetAnalyzer:
         risk_strength = abs(risk_score)
 
         # Weighted combination
-        confidence = (
-            corr_strength * 0.3 +
-            corr_stability * 0.4 +
-            risk_strength * 0.3
-        )
+        confidence = corr_strength * 0.3 + corr_stability * 0.4 + risk_strength * 0.3
 
         return float(np.clip(confidence, 0, 1))
 
@@ -702,20 +704,24 @@ class CrossAssetAnalyzer:
             return pd.DataFrame()
 
         # Calculate rolling correlation
-        rolling_corr = returns[cols[0]].rolling(window=correlation_window).corr(
-            returns[cols[1]]
+        rolling_corr = (
+            returns[cols[0]].rolling(window=correlation_window).corr(returns[cols[1]])
         )
 
         # Calculate rolling stability
-        rolling_stability = rolling_corr.rolling(window=20).std().apply(
-            lambda x: 1 - np.clip(x * 2, 0, 1)
+        rolling_stability = (
+            rolling_corr.rolling(window=20)
+            .std()
+            .apply(lambda x: 1 - np.clip(x * 2, 0, 1))
         )
 
         # Build history DataFrame
-        history = pd.DataFrame({
-            "stock_bond_correlation": rolling_corr,
-            "correlation_stability": rolling_stability,
-        })
+        history = pd.DataFrame(
+            {
+                "stock_bond_correlation": rolling_corr,
+                "correlation_stability": rolling_stability,
+            }
+        )
 
         # Classify each point (simplified - uses correlation only)
         def classify_point(row):

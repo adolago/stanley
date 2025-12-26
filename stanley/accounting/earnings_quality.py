@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class QualityRating(Enum):
     """Quality rating categories."""
+
     EXCELLENT = "excellent"
     GOOD = "good"
     FAIR = "fair"
@@ -35,6 +36,7 @@ class QualityRating(Enum):
 @dataclass
 class MScoreResult:
     """Beneish M-Score results."""
+
     m_score: float
     is_likely_manipulator: bool  # M-Score > -1.78
     components: Dict[str, float]  # DSRI, GMI, AQI, SGI, DEPI, SGAI, LVGI, TATA
@@ -44,6 +46,7 @@ class MScoreResult:
 @dataclass
 class FScoreResult:
     """Piotroski F-Score results."""
+
     f_score: int  # 0-9
     signals: Dict[str, bool]  # 9 binary signals
     category: str  # "Strong", "Neutral", "Weak"
@@ -52,6 +55,7 @@ class FScoreResult:
 @dataclass
 class ZScoreResult:
     """Altman Z-Score results."""
+
     z_score: float
     zone: str  # "Safe", "Grey", "Distress"
     components: Dict[str, float]
@@ -60,6 +64,7 @@ class ZScoreResult:
 @dataclass
 class EarningsQualityResult:
     """Comprehensive earnings quality assessment."""
+
     overall_rating: QualityRating
     overall_score: float  # 0-100
     m_score: Optional[MScoreResult]
@@ -165,15 +170,15 @@ class BeneishMScore:
 
             # Calculate M-Score
             m_score = (
-                -4.84 +
-                0.920 * dsri +
-                0.528 * gmi +
-                0.404 * aqi +
-                0.892 * sgi +
-                0.115 * depi -
-                0.172 * sgai +
-                4.679 * tata -
-                0.327 * lvgi
+                -4.84
+                + 0.920 * dsri
+                + 0.528 * gmi
+                + 0.404 * aqi
+                + 0.892 * sgi
+                + 0.115 * depi
+                - 0.172 * sgai
+                + 4.679 * tata
+                - 0.327 * lvgi
             )
 
             # Determine risk level
@@ -198,7 +203,7 @@ class BeneishMScore:
                 m_score=m_score,
                 is_likely_manipulator=is_manipulator,
                 components=components,
-                risk_level=risk_level
+                risk_level=risk_level,
             )
 
         except Exception as e:
@@ -207,7 +212,7 @@ class BeneishMScore:
                 m_score=np.nan,
                 is_likely_manipulator=False,
                 components={},
-                risk_level=QualityRating.FAIR
+                risk_level=QualityRating.FAIR,
             )
 
     def _calculate_dsri(self, bs: pd.DataFrame, inc: pd.DataFrame) -> float:
@@ -247,8 +252,16 @@ class BeneishMScore:
                 return np.nan
 
             # Gross margin = (Revenue - COGS) / Revenue
-            gm_t = (revenue.iloc[0] - cogs.iloc[0]) / revenue.iloc[0] if revenue.iloc[0] != 0 else np.nan
-            gm_t1 = (revenue.iloc[1] - cogs.iloc[1]) / revenue.iloc[1] if revenue.iloc[1] != 0 else np.nan
+            gm_t = (
+                (revenue.iloc[0] - cogs.iloc[0]) / revenue.iloc[0]
+                if revenue.iloc[0] != 0
+                else np.nan
+            )
+            gm_t1 = (
+                (revenue.iloc[1] - cogs.iloc[1]) / revenue.iloc[1]
+                if revenue.iloc[1] != 0
+                else np.nan
+            )
 
             if pd.isna(gm_t) or pd.isna(gm_t1) or gm_t == 0:
                 return np.nan
@@ -271,8 +284,16 @@ class BeneishMScore:
                 return np.nan
 
             # Non-current non-PPE assets ratio
-            nca_t = (1 - (current_assets.iloc[0] + ppe.iloc[0]) / total_assets.iloc[0]) if total_assets.iloc[0] != 0 else np.nan
-            nca_t1 = (1 - (current_assets.iloc[1] + ppe.iloc[1]) / total_assets.iloc[1]) if total_assets.iloc[1] != 0 else np.nan
+            nca_t = (
+                (1 - (current_assets.iloc[0] + ppe.iloc[0]) / total_assets.iloc[0])
+                if total_assets.iloc[0] != 0
+                else np.nan
+            )
+            nca_t1 = (
+                (1 - (current_assets.iloc[1] + ppe.iloc[1]) / total_assets.iloc[1])
+                if total_assets.iloc[1] != 0
+                else np.nan
+            )
 
             if pd.isna(nca_t) or pd.isna(nca_t1) or nca_t1 == 0:
                 return np.nan
@@ -315,8 +336,16 @@ class BeneishMScore:
                 return np.nan
 
             # Depreciation rate = Depreciation / (PPE + Depreciation)
-            depr_rate_t = depreciation.iloc[0] / (ppe.iloc[0] + depreciation.iloc[0]) if (ppe.iloc[0] + depreciation.iloc[0]) != 0 else np.nan
-            depr_rate_t1 = depreciation.iloc[1] / (ppe.iloc[1] + depreciation.iloc[1]) if (ppe.iloc[1] + depreciation.iloc[1]) != 0 else np.nan
+            depr_rate_t = (
+                depreciation.iloc[0] / (ppe.iloc[0] + depreciation.iloc[0])
+                if (ppe.iloc[0] + depreciation.iloc[0]) != 0
+                else np.nan
+            )
+            depr_rate_t1 = (
+                depreciation.iloc[1] / (ppe.iloc[1] + depreciation.iloc[1])
+                if (ppe.iloc[1] + depreciation.iloc[1]) != 0
+                else np.nan
+            )
 
             if pd.isna(depr_rate_t) or pd.isna(depr_rate_t1) or depr_rate_t == 0:
                 return np.nan
@@ -338,8 +367,12 @@ class BeneishMScore:
                 return np.nan
 
             # SGA as % of revenue
-            sga_ratio_t = sga.iloc[0] / revenue.iloc[0] if revenue.iloc[0] != 0 else np.nan
-            sga_ratio_t1 = sga.iloc[1] / revenue.iloc[1] if revenue.iloc[1] != 0 else np.nan
+            sga_ratio_t = (
+                sga.iloc[0] / revenue.iloc[0] if revenue.iloc[0] != 0 else np.nan
+            )
+            sga_ratio_t1 = (
+                sga.iloc[1] / revenue.iloc[1] if revenue.iloc[1] != 0 else np.nan
+            )
 
             if pd.isna(sga_ratio_t) or pd.isna(sga_ratio_t1) or sga_ratio_t1 == 0:
                 return np.nan
@@ -362,8 +395,16 @@ class BeneishMScore:
                 return np.nan
 
             # Leverage = (LTD + CL) / TA
-            lev_t = (ltd.iloc[0] + current_liab.iloc[0]) / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
-            lev_t1 = (ltd.iloc[1] + current_liab.iloc[1]) / total_assets.iloc[1] if total_assets.iloc[1] != 0 else np.nan
+            lev_t = (
+                (ltd.iloc[0] + current_liab.iloc[0]) / total_assets.iloc[0]
+                if total_assets.iloc[0] != 0
+                else np.nan
+            )
+            lev_t1 = (
+                (ltd.iloc[1] + current_liab.iloc[1]) / total_assets.iloc[1]
+                if total_assets.iloc[1] != 0
+                else np.nan
+            )
 
             if pd.isna(lev_t) or pd.isna(lev_t1) or lev_t1 == 0:
                 return np.nan
@@ -395,13 +436,19 @@ class BeneishMScore:
             delta_wc = wc_t - wc_t1
 
             delta_cash = cash.iloc[0] - cash.iloc[1] if len(cash) >= 2 else 0
-            delta_std = short_term_debt.iloc[0] - short_term_debt.iloc[1] if len(short_term_debt) >= 2 else 0
+            delta_std = (
+                short_term_debt.iloc[0] - short_term_debt.iloc[1]
+                if len(short_term_debt) >= 2
+                else 0
+            )
             depr = depreciation.iloc[0] if len(depreciation) >= 1 else 0
 
             # Total accruals
             accruals = delta_wc - delta_cash + delta_std - depr
 
-            tata = accruals / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
+            tata = (
+                accruals / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
+            )
             return tata
 
         except Exception as e:
@@ -518,19 +565,11 @@ class PiotroskiFScore:
             else:
                 category = "Weak"
 
-            return FScoreResult(
-                f_score=score,
-                signals=signals,
-                category=category
-            )
+            return FScoreResult(f_score=score, signals=signals, category=category)
 
         except Exception as e:
             logger.error(f"Failed to calculate F-Score for {ticker}: {e}")
-            return FScoreResult(
-                f_score=0,
-                signals={},
-                category="Unknown"
-            )
+            return FScoreResult(f_score=0, signals={}, category="Unknown")
 
     def _roa_positive(self, bs: pd.DataFrame, inc: pd.DataFrame) -> bool:
         """ROA > 0."""
@@ -541,7 +580,11 @@ class PiotroskiFScore:
             if len(net_income) < 1 or len(total_assets) < 1:
                 return False
 
-            roa = net_income.iloc[0] / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
+            roa = (
+                net_income.iloc[0] / total_assets.iloc[0]
+                if total_assets.iloc[0] != 0
+                else np.nan
+            )
             return roa > 0 if not pd.isna(roa) else False
 
         except Exception:
@@ -569,8 +612,16 @@ class PiotroskiFScore:
             if len(net_income) < 2 or len(total_assets) < 2:
                 return False
 
-            roa_t = net_income.iloc[0] / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
-            roa_t1 = net_income.iloc[1] / total_assets.iloc[1] if total_assets.iloc[1] != 0 else np.nan
+            roa_t = (
+                net_income.iloc[0] / total_assets.iloc[0]
+                if total_assets.iloc[0] != 0
+                else np.nan
+            )
+            roa_t1 = (
+                net_income.iloc[1] / total_assets.iloc[1]
+                if total_assets.iloc[1] != 0
+                else np.nan
+            )
 
             if pd.isna(roa_t) or pd.isna(roa_t1):
                 return False
@@ -589,7 +640,11 @@ class PiotroskiFScore:
             if len(cfo) < 1 or len(net_income) < 1:
                 return False
 
-            return cfo.iloc[0] > net_income.iloc[0] if not pd.isna(cfo.iloc[0]) and not pd.isna(net_income.iloc[0]) else False
+            return (
+                cfo.iloc[0] > net_income.iloc[0]
+                if not pd.isna(cfo.iloc[0]) and not pd.isna(net_income.iloc[0])
+                else False
+            )
 
         except Exception:
             return False
@@ -617,8 +672,16 @@ class PiotroskiFScore:
             if len(current_assets) < 2 or len(current_liab) < 2:
                 return False
 
-            cr_t = current_assets.iloc[0] / current_liab.iloc[0] if current_liab.iloc[0] != 0 else np.nan
-            cr_t1 = current_assets.iloc[1] / current_liab.iloc[1] if current_liab.iloc[1] != 0 else np.nan
+            cr_t = (
+                current_assets.iloc[0] / current_liab.iloc[0]
+                if current_liab.iloc[0] != 0
+                else np.nan
+            )
+            cr_t1 = (
+                current_assets.iloc[1] / current_liab.iloc[1]
+                if current_liab.iloc[1] != 0
+                else np.nan
+            )
 
             if pd.isna(cr_t) or pd.isna(cr_t1):
                 return False
@@ -651,8 +714,16 @@ class PiotroskiFScore:
             if len(revenue) < 2 or len(cogs) < 2:
                 return False
 
-            gm_t = (revenue.iloc[0] - cogs.iloc[0]) / revenue.iloc[0] if revenue.iloc[0] != 0 else np.nan
-            gm_t1 = (revenue.iloc[1] - cogs.iloc[1]) / revenue.iloc[1] if revenue.iloc[1] != 0 else np.nan
+            gm_t = (
+                (revenue.iloc[0] - cogs.iloc[0]) / revenue.iloc[0]
+                if revenue.iloc[0] != 0
+                else np.nan
+            )
+            gm_t1 = (
+                (revenue.iloc[1] - cogs.iloc[1]) / revenue.iloc[1]
+                if revenue.iloc[1] != 0
+                else np.nan
+            )
 
             if pd.isna(gm_t) or pd.isna(gm_t1):
                 return False
@@ -662,7 +733,9 @@ class PiotroskiFScore:
         except Exception:
             return False
 
-    def _delta_asset_turnover_positive(self, bs: pd.DataFrame, inc: pd.DataFrame) -> bool:
+    def _delta_asset_turnover_positive(
+        self, bs: pd.DataFrame, inc: pd.DataFrame
+    ) -> bool:
         """Change in Asset Turnover > 0."""
         try:
             revenue = inc.get("revenue", pd.Series([np.nan] * 2))
@@ -671,8 +744,16 @@ class PiotroskiFScore:
             if len(revenue) < 2 or len(total_assets) < 2:
                 return False
 
-            turnover_t = revenue.iloc[0] / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
-            turnover_t1 = revenue.iloc[1] / total_assets.iloc[1] if total_assets.iloc[1] != 0 else np.nan
+            turnover_t = (
+                revenue.iloc[0] / total_assets.iloc[0]
+                if total_assets.iloc[0] != 0
+                else np.nan
+            )
+            turnover_t1 = (
+                revenue.iloc[1] / total_assets.iloc[1]
+                if total_assets.iloc[1] != 0
+                else np.nan
+            )
 
             if pd.isna(turnover_t) or pd.isna(turnover_t1):
                 return False
@@ -758,21 +839,10 @@ class AltmanZScore:
 
             # Calculate Z-Score
             if manufacturing:
-                z_score = (
-                    1.2 * a +
-                    1.4 * b +
-                    3.3 * c +
-                    0.6 * d +
-                    1.0 * e
-                )
+                z_score = 1.2 * a + 1.4 * b + 3.3 * c + 0.6 * d + 1.0 * e
             else:
                 # Service firm formula
-                z_score = (
-                    6.56 * a +
-                    3.26 * b +
-                    6.72 * c +
-                    1.05 * d
-                )
+                z_score = 6.56 * a + 3.26 * b + 6.72 * c + 1.05 * d
 
             # Determine zone
             if z_score > 2.99:
@@ -782,19 +852,11 @@ class AltmanZScore:
             else:
                 zone = "Distress"
 
-            return ZScoreResult(
-                z_score=z_score,
-                zone=zone,
-                components=components
-            )
+            return ZScoreResult(z_score=z_score, zone=zone, components=components)
 
         except Exception as e:
             logger.error(f"Failed to calculate Z-Score for {ticker}: {e}")
-            return ZScoreResult(
-                z_score=np.nan,
-                zone="Unknown",
-                components={}
-            )
+            return ZScoreResult(z_score=np.nan, zone="Unknown", components={})
 
     def _calculate_a(self, bs: pd.DataFrame) -> float:
         """Working Capital / Total Assets."""
@@ -803,7 +865,11 @@ class AltmanZScore:
             current_liab = bs.get("current_liabilities", pd.Series([np.nan]))
             total_assets = bs.get("total_assets", pd.Series([np.nan]))
 
-            if len(current_assets) < 1 or len(current_liab) < 1 or len(total_assets) < 1:
+            if (
+                len(current_assets) < 1
+                or len(current_liab) < 1
+                or len(total_assets) < 1
+            ):
                 return np.nan
 
             wc = current_assets.iloc[0] - current_liab.iloc[0]
@@ -821,7 +887,11 @@ class AltmanZScore:
             if len(retained_earnings) < 1 or len(total_assets) < 1:
                 return np.nan
 
-            return retained_earnings.iloc[0] / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
+            return (
+                retained_earnings.iloc[0] / total_assets.iloc[0]
+                if total_assets.iloc[0] != 0
+                else np.nan
+            )
 
         except Exception:
             return np.nan
@@ -835,7 +905,11 @@ class AltmanZScore:
             if len(operating_income) < 1 or len(total_assets) < 1:
                 return np.nan
 
-            return operating_income.iloc[0] / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
+            return (
+                operating_income.iloc[0] / total_assets.iloc[0]
+                if total_assets.iloc[0] != 0
+                else np.nan
+            )
 
         except Exception:
             return np.nan
@@ -850,7 +924,11 @@ class AltmanZScore:
             if len(shareholders_equity) < 1 or len(total_liabilities) < 1:
                 return np.nan
 
-            return shareholders_equity.iloc[0] / total_liabilities.iloc[0] if total_liabilities.iloc[0] != 0 else np.nan
+            return (
+                shareholders_equity.iloc[0] / total_liabilities.iloc[0]
+                if total_liabilities.iloc[0] != 0
+                else np.nan
+            )
 
         except Exception:
             return np.nan
@@ -864,7 +942,11 @@ class AltmanZScore:
             if len(revenue) < 1 or len(total_assets) < 1:
                 return np.nan
 
-            return revenue.iloc[0] / total_assets.iloc[0] if total_assets.iloc[0] != 0 else np.nan
+            return (
+                revenue.iloc[0] / total_assets.iloc[0]
+                if total_assets.iloc[0] != 0
+                else np.nan
+            )
 
         except Exception:
             return np.nan
@@ -909,7 +991,12 @@ class AccrualAnalyzer:
             cfo = cf.get("cfo", pd.Series([np.nan])).iloc[0]
             total_assets = bs.get("total_assets", pd.Series([np.nan])).iloc[0]
 
-            if pd.isna(net_income) or pd.isna(cfo) or pd.isna(total_assets) or total_assets == 0:
+            if (
+                pd.isna(net_income)
+                or pd.isna(cfo)
+                or pd.isna(total_assets)
+                or total_assets == 0
+            ):
                 return np.nan
 
             accruals = net_income - cfo
@@ -970,7 +1057,9 @@ class EarningsQualityAnalyzer:
         self.z_score_calc = AltmanZScore(self.fin_stmt)
         self.accrual_calc = AccrualAnalyzer(self.fin_stmt)
 
-    def analyze(self, ticker: str, manufacturing: bool = False) -> EarningsQualityResult:
+    def analyze(
+        self, ticker: str, manufacturing: bool = False
+    ) -> EarningsQualityResult:
         """
         Perform comprehensive earnings quality analysis.
 
@@ -1014,7 +1103,7 @@ class EarningsQualityAnalyzer:
                 accrual_ratio=accrual_ratio,
                 cash_conversion=cash_conversion,
                 earnings_persistence=earnings_persistence,
-                red_flags=red_flags
+                red_flags=red_flags,
             )
 
         except Exception as e:
@@ -1028,7 +1117,7 @@ class EarningsQualityAnalyzer:
                 accrual_ratio=None,
                 cash_conversion=None,
                 earnings_persistence=None,
-                red_flags=["Analysis failed"]
+                red_flags=["Analysis failed"],
             )
 
     def _calculate_earnings_persistence(self, ticker: str) -> float:
@@ -1066,14 +1155,16 @@ class EarningsQualityAnalyzer:
         f_score: FScoreResult,
         z_score: ZScoreResult,
         accrual_ratio: Optional[float],
-        cash_conversion: Optional[float]
+        cash_conversion: Optional[float],
     ) -> List[str]:
         """Identify red flags based on metrics."""
         red_flags = []
 
         # M-Score red flags
         if m_score.is_likely_manipulator:
-            red_flags.append(f"M-Score indicates potential manipulation ({m_score.m_score:.2f})")
+            red_flags.append(
+                f"M-Score indicates potential manipulation ({m_score.m_score:.2f})"
+            )
 
         # F-Score red flags
         if f_score.f_score < 4:
@@ -1101,7 +1192,7 @@ class EarningsQualityAnalyzer:
         f_score: FScoreResult,
         z_score: ZScoreResult,
         accrual_ratio: Optional[float],
-        cash_conversion: Optional[float]
+        cash_conversion: Optional[float],
     ) -> float:
         """
         Calculate overall quality score (0-100).
@@ -1168,9 +1259,7 @@ class EarningsQualityAnalyzer:
         return total_score / total_weight
 
     def _determine_overall_rating(
-        self,
-        overall_score: float,
-        red_flags: List[str]
+        self, overall_score: float, red_flags: List[str]
     ) -> QualityRating:
         """Determine overall quality rating."""
         # Downgrade if critical red flags
@@ -1178,7 +1267,9 @@ class EarningsQualityAnalyzer:
             return QualityRating.CRITICAL
 
         if overall_score >= 80:
-            return QualityRating.EXCELLENT if len(red_flags) == 0 else QualityRating.GOOD
+            return (
+                QualityRating.EXCELLENT if len(red_flags) == 0 else QualityRating.GOOD
+            )
         elif overall_score >= 60:
             return QualityRating.GOOD if len(red_flags) <= 1 else QualityRating.FAIR
         elif overall_score >= 40:

@@ -34,9 +34,9 @@ MAJOR_DARK_POOLS = {
 
 # Dark pool volume thresholds for signals
 VOLUME_THRESHOLDS = {
-    "high": 0.35,      # >35% dark pool = high institutional activity
+    "high": 0.35,  # >35% dark pool = high institutional activity
     "moderate": 0.25,  # 25-35% = moderate activity
-    "low": 0.15,       # 15-25% = low activity
+    "low": 0.15,  # 15-25% = low activity
 }
 
 
@@ -145,9 +145,9 @@ class DarkPoolAnalyzer:
             "accumulation_distribution": {
                 "score": round(accumulation_score, 3),
                 "interpretation": (
-                    "accumulation" if accumulation_score > 0.2
-                    else "distribution" if accumulation_score < -0.2
-                    else "neutral"
+                    "accumulation"
+                    if accumulation_score > 0.2
+                    else "distribution" if accumulation_score < -0.2 else "neutral"
                 ),
             },
             "activity_level": self._classify_activity_level(avg_dp_pct),
@@ -183,14 +183,16 @@ class DarkPoolAnalyzer:
                 venue_volume = int(remaining_volume * np.random.uniform(0.05, 0.25))
                 remaining_volume -= venue_volume
 
-                venue_data.append({
-                    "venue_code": venue_code,
-                    "venue_name": venue_name,
-                    "volume": venue_volume,
-                    "percentage": round(venue_volume / total_volume * 100, 2),
-                    "average_trade_size": np.random.randint(200, 2000),
-                    "trade_count": venue_volume // np.random.randint(300, 800),
-                })
+                venue_data.append(
+                    {
+                        "venue_code": venue_code,
+                        "venue_name": venue_name,
+                        "volume": venue_volume,
+                        "percentage": round(venue_volume / total_volume * 100, 2),
+                        "average_trade_size": np.random.randint(200, 2000),
+                        "trade_count": venue_volume // np.random.randint(300, 800),
+                    }
+                )
 
         df = pd.DataFrame(venue_data)
         return df.sort_values("volume", ascending=False).reset_index(drop=True)
@@ -225,16 +227,18 @@ class DarkPoolAnalyzer:
                 size = np.random.randint(min_size, min_size * 10)
                 price = 150.0 + np.random.uniform(-10, 10)
 
-                block_trades.append({
-                    "timestamp": date,
-                    "symbol": symbol,
-                    "size": size,
-                    "price": round(price, 2),
-                    "notional_value": round(size * price, 2),
-                    "side": np.random.choice(["buy", "sell"], p=[0.55, 0.45]),
-                    "venue": np.random.choice(list(MAJOR_DARK_POOLS.keys())),
-                    "is_print": np.random.random() < 0.7,
-                })
+                block_trades.append(
+                    {
+                        "timestamp": date,
+                        "symbol": symbol,
+                        "size": size,
+                        "price": round(price, 2),
+                        "notional_value": round(size * price, 2),
+                        "side": np.random.choice(["buy", "sell"], p=[0.55, 0.45]),
+                        "venue": np.random.choice(list(MAJOR_DARK_POOLS.keys())),
+                        "is_print": np.random.random() < 0.7,
+                    }
+                )
 
         df = pd.DataFrame(block_trades)
         if not df.empty:
@@ -282,9 +286,7 @@ class DarkPoolAnalyzer:
 
         # Calculate composite sentiment
         sentiment = (
-            0.4 * dp_trend +
-            0.4 * block_imbalance +
-            0.2 * self._detect_accumulation(df)
+            0.4 * dp_trend + 0.4 * block_imbalance + 0.2 * self._detect_accumulation(df)
         )
 
         # Normalize to -1 to 1
@@ -300,9 +302,9 @@ class DarkPoolAnalyzer:
                 "accumulation_score": round(self._detect_accumulation(df), 3),
             },
             "interpretation": (
-                "bullish" if sentiment > 0.2
-                else "bearish" if sentiment < -0.2
-                else "neutral"
+                "bullish"
+                if sentiment > 0.2
+                else "bearish" if sentiment < -0.2 else "neutral"
             ),
         }
 
@@ -321,22 +323,35 @@ class DarkPoolAnalyzer:
         """
         if sector_etfs is None:
             sector_etfs = [
-                "XLK", "XLF", "XLE", "XLV", "XLY",
-                "XLP", "XLI", "XLB", "XLU", "XLRE", "XLC"
+                "XLK",
+                "XLF",
+                "XLE",
+                "XLV",
+                "XLY",
+                "XLP",
+                "XLI",
+                "XLB",
+                "XLU",
+                "XLRE",
+                "XLC",
             ]
 
         sector_data = []
         for etf in sector_etfs:
             analysis = await self.analyze_dark_pool_activity(etf, lookback_days=10)
 
-            sector_data.append({
-                "sector_etf": etf,
-                "dark_pool_percentage": analysis["metrics"]["average_dark_pool_percentage"],
-                "dp_trend": analysis["metrics"]["dark_pool_trend"],
-                "signal": analysis["signal"]["value"],
-                "activity_level": analysis["activity_level"],
-                "institutional_interest": analysis["institutional_interest"],
-            })
+            sector_data.append(
+                {
+                    "sector_etf": etf,
+                    "dark_pool_percentage": analysis["metrics"][
+                        "average_dark_pool_percentage"
+                    ],
+                    "dp_trend": analysis["metrics"]["dark_pool_trend"],
+                    "signal": analysis["signal"]["value"],
+                    "activity_level": analysis["activity_level"],
+                    "institutional_interest": analysis["institutional_interest"],
+                }
+            )
 
         return pd.DataFrame(sector_data).sort_values(
             "dark_pool_percentage", ascending=False
@@ -363,53 +378,63 @@ class DarkPoolAnalyzer:
 
         for symbol in symbols:
             try:
-                analysis = await self.analyze_dark_pool_activity(symbol, lookback_days=5)
+                analysis = await self.analyze_dark_pool_activity(
+                    symbol, lookback_days=5
+                )
 
                 recent_dp = analysis["metrics"]["recent_dark_pool_percentage"] / 100
                 recent_block = analysis["metrics"]["recent_large_block_activity"] / 100
 
                 # Check for elevated dark pool activity
                 if recent_dp >= dp_threshold:
-                    alerts.append({
-                        "symbol": symbol,
-                        "alert_type": "elevated_dark_pool",
-                        "severity": "high" if recent_dp >= 0.45 else "medium",
-                        "message": f"Dark pool activity at {recent_dp*100:.1f}% (threshold: {dp_threshold*100:.0f}%)",
-                        "metrics": {
-                            "dark_pool_percentage": round(recent_dp * 100, 2),
-                            "signal": analysis["signal"]["value"],
-                        },
-                        "timestamp": datetime.utcnow().isoformat(),
-                    })
+                    alerts.append(
+                        {
+                            "symbol": symbol,
+                            "alert_type": "elevated_dark_pool",
+                            "severity": "high" if recent_dp >= 0.45 else "medium",
+                            "message": f"Dark pool activity at {recent_dp*100:.1f}% (threshold: {dp_threshold*100:.0f}%)",
+                            "metrics": {
+                                "dark_pool_percentage": round(recent_dp * 100, 2),
+                                "signal": analysis["signal"]["value"],
+                            },
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
 
                 # Check for elevated block trade activity
                 if recent_block >= block_threshold:
-                    alerts.append({
-                        "symbol": symbol,
-                        "alert_type": "elevated_block_trades",
-                        "severity": "high" if recent_block >= 0.20 else "medium",
-                        "message": f"Block trade activity at {recent_block*100:.1f}% (threshold: {block_threshold*100:.0f}%)",
-                        "metrics": {
-                            "block_activity": round(recent_block * 100, 2),
-                            "accumulation": analysis["accumulation_distribution"]["interpretation"],
-                        },
-                        "timestamp": datetime.utcnow().isoformat(),
-                    })
+                    alerts.append(
+                        {
+                            "symbol": symbol,
+                            "alert_type": "elevated_block_trades",
+                            "severity": "high" if recent_block >= 0.20 else "medium",
+                            "message": f"Block trade activity at {recent_block*100:.1f}% (threshold: {block_threshold*100:.0f}%)",
+                            "metrics": {
+                                "block_activity": round(recent_block * 100, 2),
+                                "accumulation": analysis["accumulation_distribution"][
+                                    "interpretation"
+                                ],
+                            },
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
 
                 # Check for significant trend changes
                 dp_trend = analysis["metrics"]["dark_pool_trend"]
                 if abs(dp_trend) >= 10:  # 10%+ change
-                    alerts.append({
-                        "symbol": symbol,
-                        "alert_type": "trend_change",
-                        "severity": "medium",
-                        "message": f"Dark pool trend {'increasing' if dp_trend > 0 else 'decreasing'} by {abs(dp_trend):.1f}%",
-                        "metrics": {
-                            "trend_change": dp_trend,
-                            "direction": "bullish" if dp_trend > 0 else "bearish",
-                        },
-                        "timestamp": datetime.utcnow().isoformat(),
-                    })
+                    alerts.append(
+                        {
+                            "symbol": symbol,
+                            "alert_type": "trend_change",
+                            "severity": "medium",
+                            "message": f"Dark pool trend {'increasing' if dp_trend > 0 else 'decreasing'} by {abs(dp_trend):.1f}%",
+                            "metrics": {
+                                "trend_change": dp_trend,
+                                "direction": "bullish" if dp_trend > 0 else "bearish",
+                            },
+                            "timestamp": datetime.utcnow().isoformat(),
+                        }
+                    )
 
             except Exception as e:
                 logger.error(f"Error generating alert for {symbol}: {e}")
@@ -443,14 +468,16 @@ class DarkPoolAnalyzer:
 
             block_activity = np.random.uniform(0.05, 0.20)
 
-            data.append({
-                "date": date,
-                "symbol": symbol,
-                "dark_pool_volume": dp_volume,
-                "total_volume": total_volume,
-                "dark_pool_percentage": dp_pct,
-                "large_block_activity": block_activity,
-            })
+            data.append(
+                {
+                    "date": date,
+                    "symbol": symbol,
+                    "dark_pool_volume": dp_volume,
+                    "total_volume": total_volume,
+                    "dark_pool_percentage": dp_pct,
+                    "large_block_activity": block_activity,
+                }
+            )
 
         return pd.DataFrame(data)
 

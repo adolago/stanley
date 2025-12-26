@@ -65,13 +65,15 @@ def analyzer_custom_thresholds(custom_thresholds):
 def sample_dark_pool_data():
     """Generate sample dark pool data DataFrame."""
     dates = pd.date_range(end=datetime.now(), periods=20, freq="D")
-    return pd.DataFrame({
-        "date": dates,
-        "dark_pool_volume": np.random.randint(100000, 1000000, len(dates)),
-        "total_volume": np.random.randint(1000000, 10000000, len(dates)),
-        "dark_pool_percentage": np.random.uniform(0.15, 0.35, len(dates)),
-        "large_block_activity": np.random.uniform(0.05, 0.15, len(dates)),
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "dark_pool_volume": np.random.randint(100000, 1000000, len(dates)),
+            "total_volume": np.random.randint(1000000, 10000000, len(dates)),
+            "dark_pool_percentage": np.random.uniform(0.15, 0.35, len(dates)),
+            "large_block_activity": np.random.uniform(0.05, 0.15, len(dates)),
+        }
+    )
 
 
 @pytest.fixture
@@ -79,12 +81,14 @@ def sample_volume_data():
     """Generate sample volume analysis data."""
     dates = pd.date_range(end=datetime.now(), periods=20, freq="D")
     np.random.seed(42)
-    return pd.DataFrame({
-        "date": dates,
-        "volume": np.random.randint(1000000, 10000000, len(dates)),
-        "price_change": np.random.uniform(-0.05, 0.05, len(dates)),
-        "block_trades": np.random.randint(0, 50, len(dates)),
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "volume": np.random.randint(1000000, 10000000, len(dates)),
+            "price_change": np.random.uniform(-0.05, 0.05, len(dates)),
+            "block_trades": np.random.randint(0, 50, len(dates)),
+        }
+    )
 
 
 @pytest.fixture
@@ -92,12 +96,14 @@ def sample_institutional_flows():
     """Generate sample institutional flow data."""
     dates = pd.date_range(end=datetime.now(), periods=20, freq="D")
     np.random.seed(42)
-    return pd.DataFrame({
-        "date": dates,
-        "institutional_net_flow": np.random.normal(0, 1000000, len(dates)),
-        "buyer_count": np.random.randint(10, 100, len(dates)),
-        "seller_count": np.random.randint(10, 100, len(dates)),
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "institutional_net_flow": np.random.normal(0, 1000000, len(dates)),
+            "buyer_count": np.random.randint(10, 100, len(dates)),
+            "seller_count": np.random.randint(10, 100, len(dates)),
+        }
+    )
 
 
 # =============================================================================
@@ -450,42 +456,54 @@ class TestDarkPoolAlerts:
     def test_detect_dark_pool_surge(self, analyzer):
         """Test detection of dark pool surge."""
         with patch.object(analyzer, "get_dark_pool_activity") as mock_dp:
-            mock_dp.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=10, freq="D"),
-                "dark_pool_percentage": [0.25] * 9 + [0.45],  # Surge on last day
-                "dark_pool_volume": [500000] * 10,
-                "large_block_activity": [0.10] * 10,
-            })
+            mock_dp.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=10, freq="D"),
+                    "dark_pool_percentage": [0.25] * 9 + [0.45],  # Surge on last day
+                    "dark_pool_volume": [500000] * 10,
+                    "large_block_activity": [0.10] * 10,
+                }
+            )
             alerts = analyzer.detect_dark_pool_alerts("AAPL")
-            surge_alerts = [a for a in alerts if a.alert_type == AlertType.DARK_POOL_SURGE]
+            surge_alerts = [
+                a for a in alerts if a.alert_type == AlertType.DARK_POOL_SURGE
+            ]
             assert len(surge_alerts) > 0
 
     def test_detect_dark_pool_decline(self, analyzer):
         """Test detection of dark pool decline."""
         with patch.object(analyzer, "get_dark_pool_activity") as mock_dp:
-            mock_dp.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=10, freq="D"),
-                "dark_pool_percentage": [0.25] * 9 + [0.10],  # Decline on last day
-                "dark_pool_volume": [500000] * 10,
-                "large_block_activity": [0.10] * 10,
-            })
+            mock_dp.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=10, freq="D"),
+                    "dark_pool_percentage": [0.25] * 9 + [0.10],  # Decline on last day
+                    "dark_pool_volume": [500000] * 10,
+                    "large_block_activity": [0.10] * 10,
+                }
+            )
             alerts = analyzer.detect_dark_pool_alerts("AAPL")
-            decline_alerts = [a for a in alerts if a.alert_type == AlertType.DARK_POOL_DECLINE]
+            decline_alerts = [
+                a for a in alerts if a.alert_type == AlertType.DARK_POOL_DECLINE
+            ]
             assert len(decline_alerts) > 0
 
     def test_no_alert_normal_activity(self, analyzer):
         """Test no alerts for normal dark pool activity."""
         with patch.object(analyzer, "get_dark_pool_activity") as mock_dp:
             # Create stable data within normal range
-            mock_dp.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=10, freq="D"),
-                "dark_pool_percentage": [0.25] * 10,  # Consistent normal level
-                "dark_pool_volume": [500000] * 10,
-                "large_block_activity": [0.10] * 10,
-            })
+            mock_dp.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=10, freq="D"),
+                    "dark_pool_percentage": [0.25] * 10,  # Consistent normal level
+                    "dark_pool_volume": [500000] * 10,
+                    "large_block_activity": [0.10] * 10,
+                }
+            )
             alerts = analyzer.detect_dark_pool_alerts("AAPL")
             # Should have no surge/decline alerts (zscore alerts possible but unlikely)
-            critical_alerts = [a for a in alerts if a.severity == AlertSeverity.CRITICAL]
+            critical_alerts = [
+                a for a in alerts if a.severity == AlertSeverity.CRITICAL
+            ]
             assert len(critical_alerts) == 0
 
     def test_dark_pool_alerts_empty_data(self, analyzer):
@@ -557,12 +575,14 @@ class TestBlockTradeDetection:
         """Test that large block trades generate alerts."""
         initial_alert_count = len(analyzer.alert_aggregator.alerts)
         with patch.object(analyzer, "_get_volume_analysis") as mock_vol:
-            mock_vol.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=5, freq="D"),
-                "volume": [10_000_000] * 5,
-                "price_change": [0.02] * 5,
-                "block_trades": [10] * 5,  # Simulate block trades
-            })
+            mock_vol.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=5, freq="D"),
+                    "volume": [10_000_000] * 5,
+                    "price_change": [0.02] * 5,
+                    "block_trades": [10] * 5,  # Simulate block trades
+                }
+            )
             analyzer.detect_block_trades("AAPL", price=150.0)
             # Should have more alerts than before
             assert len(analyzer.alert_aggregator.alerts) >= initial_alert_count
@@ -715,14 +735,18 @@ class TestUnusualVolumeDetection:
         with patch.object(analyzer, "_get_volume_analysis") as mock_vol:
             # Normal volumes with one spike
             normal_volumes = [1_000_000] * 19 + [5_000_000]
-            mock_vol.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=20, freq="D"),
-                "volume": normal_volumes,
-                "price_change": [0.01] * 20,
-                "block_trades": [5] * 20,
-            })
+            mock_vol.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=20, freq="D"),
+                    "volume": normal_volumes,
+                    "price_change": [0.01] * 20,
+                    "block_trades": [5] * 20,
+                }
+            )
             signal = analyzer.detect_unusual_volume("AAPL")
-            assert signal.is_unusual  # Use truthiness instead of 'is True' for numpy bool
+            assert (
+                signal.is_unusual
+            )  # Use truthiness instead of 'is True' for numpy bool
             assert signal.zscore > 2.0
 
     def test_unusual_volume_high_ratio(self, analyzer):
@@ -730,24 +754,29 @@ class TestUnusualVolumeDetection:
         with patch.object(analyzer, "_get_volume_analysis") as mock_vol:
             # 3x volume spike
             normal_volumes = [1_000_000] * 19 + [3_000_000]
-            mock_vol.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=20, freq="D"),
-                "volume": normal_volumes,
-                "price_change": [0.01] * 20,
-                "block_trades": [5] * 20,
-            })
+            mock_vol.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=20, freq="D"),
+                    "volume": normal_volumes,
+                    "price_change": [0.01] * 20,
+                    "block_trades": [5] * 20,
+                }
+            )
             signal = analyzer.detect_unusual_volume("AAPL")
             assert signal.volume_ratio > 2.5
 
     def test_unusual_volume_direction_accumulation(self, analyzer):
         """Test unusual volume with positive price change suggests accumulation."""
         with patch.object(analyzer, "_get_volume_analysis") as mock_vol:
-            mock_vol.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=20, freq="D"),
-                "volume": [1_000_000] * 19 + [5_000_000],
-                "price_change": [0.01] * 19 + [0.05],  # Positive change on volume spike
-                "block_trades": [5] * 20,
-            })
+            mock_vol.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=20, freq="D"),
+                    "volume": [1_000_000] * 19 + [5_000_000],
+                    "price_change": [0.01] * 19
+                    + [0.05],  # Positive change on volume spike
+                    "block_trades": [5] * 20,
+                }
+            )
             signal = analyzer.detect_unusual_volume("AAPL")
             if signal.is_unusual:
                 assert signal.likely_direction == "accumulation"
@@ -755,12 +784,15 @@ class TestUnusualVolumeDetection:
     def test_unusual_volume_direction_distribution(self, analyzer):
         """Test unusual volume with negative price change suggests distribution."""
         with patch.object(analyzer, "_get_volume_analysis") as mock_vol:
-            mock_vol.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=20, freq="D"),
-                "volume": [1_000_000] * 19 + [5_000_000],
-                "price_change": [0.01] * 19 + [-0.05],  # Negative change on volume spike
-                "block_trades": [5] * 20,
-            })
+            mock_vol.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=20, freq="D"),
+                    "volume": [1_000_000] * 19 + [5_000_000],
+                    "price_change": [0.01] * 19
+                    + [-0.05],  # Negative change on volume spike
+                    "block_trades": [5] * 20,
+                }
+            )
             signal = analyzer.detect_unusual_volume("AAPL")
             if signal.is_unusual:
                 assert signal.likely_direction == "distribution"
@@ -787,11 +819,13 @@ class TestUnusualVolumeDetection:
     def test_unusual_volume_insufficient_data(self, analyzer):
         """Test handling of insufficient volume data."""
         with patch.object(analyzer, "_get_volume_analysis") as mock_vol:
-            mock_vol.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=3, freq="D"),
-                "volume": [1_000_000] * 3,
-                "price_change": [0.01] * 3,
-            })
+            mock_vol.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=3, freq="D"),
+                    "volume": [1_000_000] * 3,
+                    "price_change": [0.01] * 3,
+                }
+            )
             signal = analyzer.detect_unusual_volume("AAPL")
             assert signal.is_unusual is False
 
@@ -843,12 +877,14 @@ class TestFlowMomentumIndicators:
             # Create increasing flow pattern
             dates = pd.date_range(end=datetime.now(), periods=25, freq="D")
             flows = np.linspace(-1_000_000, 2_000_000, 25)  # Increasing trend
-            mock_flows.return_value = pd.DataFrame({
-                "date": dates,
-                "institutional_net_flow": flows,
-                "buyer_count": [50] * 25,
-                "seller_count": [30] * 25,
-            })
+            mock_flows.return_value = pd.DataFrame(
+                {
+                    "date": dates,
+                    "institutional_net_flow": flows,
+                    "buyer_count": [50] * 25,
+                    "seller_count": [30] * 25,
+                }
+            )
             indicator = analyzer.calculate_flow_momentum("AAPL")
             # Strong uptrend should have bullish crossover
             assert indicator.ma_crossover_signal >= 0
@@ -876,12 +912,14 @@ class TestFlowMomentumIndicators:
     def test_flow_momentum_insufficient_data(self, analyzer):
         """Test handling of insufficient flow data."""
         with patch.object(analyzer, "_get_institutional_flows") as mock_flows:
-            mock_flows.return_value = pd.DataFrame({
-                "date": pd.date_range(end=datetime.now(), periods=5, freq="D"),
-                "institutional_net_flow": [1_000_000] * 5,
-                "buyer_count": [50] * 5,
-                "seller_count": [30] * 5,
-            })
+            mock_flows.return_value = pd.DataFrame(
+                {
+                    "date": pd.date_range(end=datetime.now(), periods=5, freq="D"),
+                    "institutional_net_flow": [1_000_000] * 5,
+                    "buyer_count": [50] * 5,
+                    "seller_count": [30] * 5,
+                }
+            )
             indicator = analyzer.calculate_flow_momentum("AAPL")
             assert indicator.trend_direction == "neutral"
 

@@ -90,7 +90,9 @@ class ETFFlowSummary:
     redemption_units_1w: int  # Redemption units past week
     flow_momentum: float  # Flow acceleration signal (-1 to 1)
     institutional_flow_pct: float  # Estimated institutional share
-    flow_signal: str  # "strong_inflow", "inflow", "neutral", "outflow", "strong_outflow"
+    flow_signal: (
+        str  # "strong_inflow", "inflow", "neutral", "outflow", "strong_outflow"
+    )
     timestamp: datetime = field(default_factory=datetime.now)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -923,7 +925,9 @@ class ETFAnalyzer:
                     "symbol": symbol,
                     "return": performance.get("return_period", 0),
                     "netFlow": flow_summary.net_flow_1m if flow_summary else 0,
-                    "flowSignal": flow_summary.flow_signal if flow_summary else "neutral",
+                    "flowSignal": (
+                        flow_summary.flow_signal if flow_summary else "neutral"
+                    ),
                 }
             )
 
@@ -1102,10 +1106,14 @@ class ETFAnalyzer:
                 position = await self._get_institutional_position(symbol)
                 positioning_data.append(position)
             except Exception as e:
-                logger.warning(f"Failed to get institutional position for {symbol}: {e}")
+                logger.warning(
+                    f"Failed to get institutional position for {symbol}: {e}"
+                )
 
         # Calculate aggregate metrics
-        total_institutional_value = sum(p["institutionalValue"] for p in positioning_data)
+        total_institutional_value = sum(
+            p["institutionalValue"] for p in positioning_data
+        )
 
         # Sort by institutional value
         positioning_data.sort(key=lambda x: x["institutionalValue"], reverse=True)
@@ -1462,7 +1470,9 @@ class ETFAnalyzer:
                     return {
                         "return_period": round(return_period, 2),
                         "return_1m": round(return_1m, 2),
-                        "momentum_score": round(return_period * 0.7 + momentum_acceleration * 0.3, 2),
+                        "momentum_score": round(
+                            return_period * 0.7 + momentum_acceleration * 0.3, 2
+                        ),
                         "momentum_acceleration": round(momentum_acceleration, 3),
                     }
             except Exception:
@@ -1492,7 +1502,9 @@ class ETFAnalyzer:
             return 0.0
 
         # Normalize flow relative to AUM
-        flow_pct = flow_summary.net_flow_1m / flow_summary.aum if flow_summary.aum > 0 else 0
+        flow_pct = (
+            flow_summary.net_flow_1m / flow_summary.aum if flow_summary.aum > 0 else 0
+        )
 
         # Scale to -1 to 1 (assuming max 10% flow)
         return max(-1, min(1, flow_pct * 10))

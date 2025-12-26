@@ -157,7 +157,9 @@ class OptionsFlowAnalyzer:
         put_volume = recent_data[recent_data["option_type"] == "put"]["volume"].sum()
 
         # Identify unusual contracts (volume > 2x average)
-        unusual_contracts = self._identify_unusual_contracts(options_data, lookback_days)
+        unusual_contracts = self._identify_unusual_contracts(
+            options_data, lookback_days
+        )
 
         # Generate signal
         signal, confidence = self._generate_unusual_activity_signal(
@@ -199,7 +201,9 @@ class OptionsFlowAnalyzer:
             return self._empty_pc_ratio_result(symbol)
 
         # Calculate volume P/C ratio
-        call_volume = options_data[options_data["option_type"] == "call"]["volume"].sum()
+        call_volume = options_data[options_data["option_type"] == "call"][
+            "volume"
+        ].sum()
         put_volume = options_data[options_data["option_type"] == "put"]["volume"].sum()
         volume_pc_ratio = put_volume / call_volume if call_volume > 0 else 0
 
@@ -207,12 +211,16 @@ class OptionsFlowAnalyzer:
         call_oi = options_data[options_data["option_type"] == "call"][
             "open_interest"
         ].sum()
-        put_oi = options_data[options_data["option_type"] == "put"]["open_interest"].sum()
+        put_oi = options_data[options_data["option_type"] == "put"][
+            "open_interest"
+        ].sum()
         oi_pc_ratio = put_oi / call_oi if call_oi > 0 else 0
 
         # Get historical P/C ratios for percentile calculation
         historical_pc = await self._get_historical_pc_ratio(symbol)
-        historical_percentile = self._calculate_percentile(volume_pc_ratio, historical_pc)
+        historical_percentile = self._calculate_percentile(
+            volume_pc_ratio, historical_pc
+        )
 
         # Interpret the ratio
         interpretation, signal = self._interpret_pc_ratio(
@@ -296,7 +304,9 @@ class OptionsFlowAnalyzer:
         Returns:
             LargeTradeResult with large trade analysis
         """
-        logger.info(f"Tracking large trades for {symbol} (min premium: ${min_premium:,})")
+        logger.info(
+            f"Tracking large trades for {symbol} (min premium: ${min_premium:,})"
+        )
 
         # Get options flow data
         options_flow = await self._get_options_flow(symbol)
@@ -366,7 +376,9 @@ class OptionsFlowAnalyzer:
         gamma_by_strike = self._calculate_gamma_by_strike(options_chain, current_price)
 
         # Calculate net gamma
-        call_gamma = options_chain[options_chain["option_type"] == "call"]["gamma"].sum()
+        call_gamma = options_chain[options_chain["option_type"] == "call"][
+            "gamma"
+        ].sum()
         put_gamma = options_chain[options_chain["option_type"] == "put"]["gamma"].sum()
 
         # Net gamma (dealers are typically short calls, long puts)
@@ -454,9 +466,7 @@ class OptionsFlowAnalyzer:
             "large_trades": 0.25,
         }
 
-        sentiment_score = sum(
-            components[k] * weights[k] for k in components
-        )
+        sentiment_score = sum(components[k] * weights[k] for k in components)
 
         # Determine overall sentiment
         if sentiment_score > 0.15:
@@ -468,7 +478,9 @@ class OptionsFlowAnalyzer:
 
         # Calculate confidence based on signal agreement
         agreement_count = sum(
-            1 for v in components.values() if (v > 0) == (sentiment_score > 0) and v != 0
+            1
+            for v in components.values()
+            if (v > 0) == (sentiment_score > 0) and v != 0
         )
         confidence = agreement_count / len(components) if components else 0
 
@@ -512,8 +524,12 @@ class OptionsFlowAnalyzer:
             smart_money_signals["signal_type"].str.contains("bearish", case=False)
         ]
 
-        bullish_premium = bullish_signals["premium"].sum() if not bullish_signals.empty else 0
-        bearish_premium = bearish_signals["premium"].sum() if not bearish_signals.empty else 0
+        bullish_premium = (
+            bullish_signals["premium"].sum() if not bullish_signals.empty else 0
+        )
+        bearish_premium = (
+            bearish_signals["premium"].sum() if not bearish_signals.empty else 0
+        )
 
         if bullish_premium > bearish_premium * 1.5:
             institutional_bias = "bullish"
@@ -544,9 +560,7 @@ class OptionsFlowAnalyzer:
     # Private Helper Methods - Data Fetching
     # ========================================================================
 
-    async def _get_options_data(
-        self, symbol: str, lookback_days: int
-    ) -> pd.DataFrame:
+    async def _get_options_data(self, symbol: str, lookback_days: int) -> pd.DataFrame:
         """Get historical options data."""
         if self.data_manager:
             try:
@@ -600,9 +614,7 @@ class OptionsFlowAnalyzer:
         # Add mock exchange data if not present
         if "exchange" not in options_flow.columns and not options_flow.empty:
             exchanges = ["CBOE", "ISE", "PHLX", "AMEX", "BOX", "MIAX"]
-            options_flow["exchange"] = np.random.choice(
-                exchanges, len(options_flow)
-            )
+            options_flow["exchange"] = np.random.choice(exchanges, len(options_flow))
             options_flow["num_exchanges"] = np.random.randint(1, 5, len(options_flow))
 
         return options_flow
@@ -651,14 +663,18 @@ class OptionsFlowAnalyzer:
         for contract in recent_data["contract_symbol"].unique():
             contract_data = recent_data[recent_data["contract_symbol"] == contract]
             if contract in avg_volume.index:
-                ratio = contract_data["volume"].sum() / (avg_volume[contract] * lookback_days + 1)
+                ratio = contract_data["volume"].sum() / (
+                    avg_volume[contract] * lookback_days + 1
+                )
                 if ratio > 2.0:  # 2x average
-                    unusual.append({
-                        "contract_symbol": contract,
-                        "volume_ratio": ratio,
-                        "volume": contract_data["volume"].sum(),
-                        "avg_volume": avg_volume[contract],
-                    })
+                    unusual.append(
+                        {
+                            "contract_symbol": contract,
+                            "volume_ratio": ratio,
+                            "volume": contract_data["volume"].sum(),
+                            "avg_volume": avg_volume[contract],
+                        }
+                    )
 
         return pd.DataFrame(unusual)
 
@@ -688,14 +704,13 @@ class OptionsFlowAnalyzer:
         """Calculate percentile of value in historical distribution."""
         if not historical:
             return 50.0
-        return float(np.percentile(
-            [1 if v < value else 0 for v in historical],
-            50
-        ) * 100) if historical else 50.0
+        return (
+            float(np.percentile([1 if v < value else 0 for v in historical], 50) * 100)
+            if historical
+            else 50.0
+        )
 
-    def _interpret_pc_ratio(
-        self, pc_ratio: float, percentile: float
-    ) -> tuple:
+    def _interpret_pc_ratio(self, pc_ratio: float, percentile: float) -> tuple:
         """Interpret put/call ratio with contrarian view."""
         # High P/C ratio (extreme fear) is contrarian bullish
         # Low P/C ratio (extreme greed) is contrarian bearish
@@ -721,10 +736,17 @@ class OptionsFlowAnalyzer:
     def _identify_sweeps(self, options_flow: pd.DataFrame) -> pd.DataFrame:
         """Identify sweep orders from options flow."""
         if options_flow.empty:
-            return pd.DataFrame(columns=[
-                "contract_symbol", "sweep_type", "premium", "strike",
-                "expiration", "num_exchanges", "timestamp"
-            ])
+            return pd.DataFrame(
+                columns=[
+                    "contract_symbol",
+                    "sweep_type",
+                    "premium",
+                    "strike",
+                    "expiration",
+                    "num_exchanges",
+                    "timestamp",
+                ]
+            )
 
         # Sweeps are characterized by:
         # 1. Multi-exchange fills (num_exchanges > 1)
@@ -732,15 +754,22 @@ class OptionsFlowAnalyzer:
         # 3. Large premium
 
         sweeps = options_flow[
-            (options_flow.get("num_exchanges", 1) > 1) |
-            (options_flow.get("premium", 0) > 50000)
+            (options_flow.get("num_exchanges", 1) > 1)
+            | (options_flow.get("premium", 0) > 50000)
         ].copy()
 
         if sweeps.empty:
-            return pd.DataFrame(columns=[
-                "contract_symbol", "sweep_type", "premium", "strike",
-                "expiration", "num_exchanges", "timestamp"
-            ])
+            return pd.DataFrame(
+                columns=[
+                    "contract_symbol",
+                    "sweep_type",
+                    "premium",
+                    "strike",
+                    "expiration",
+                    "num_exchanges",
+                    "timestamp",
+                ]
+            )
 
         # Determine sweep type based on option type and trade direction
         def determine_sweep_type(row):
@@ -765,7 +794,9 @@ class OptionsFlowAnalyzer:
     ) -> pd.DataFrame:
         """Calculate gamma exposure by strike price."""
         if options_chain.empty:
-            return pd.DataFrame(columns=["strike", "call_gamma", "put_gamma", "net_gamma"])
+            return pd.DataFrame(
+                columns=["strike", "call_gamma", "put_gamma", "net_gamma"]
+            )
 
         # Group by strike
         gamma_by_strike = []
@@ -782,12 +813,14 @@ class OptionsFlowAnalyzer:
             # Net gamma from dealer perspective (short calls, long puts)
             net_gamma = -call_gamma + put_gamma
 
-            gamma_by_strike.append({
-                "strike": strike,
-                "call_gamma": call_gamma,
-                "put_gamma": put_gamma,
-                "net_gamma": net_gamma,
-            })
+            gamma_by_strike.append(
+                {
+                    "strike": strike,
+                    "call_gamma": call_gamma,
+                    "put_gamma": put_gamma,
+                    "net_gamma": net_gamma,
+                }
+            )
 
         return pd.DataFrame(gamma_by_strike).sort_values("strike")
 
@@ -842,15 +875,19 @@ class OptionsFlowAnalyzer:
 
         return float(max_pain_strike)
 
-    def _identify_smart_money_signals(
-        self, options_flow: pd.DataFrame
-    ) -> pd.DataFrame:
+    def _identify_smart_money_signals(self, options_flow: pd.DataFrame) -> pd.DataFrame:
         """Identify smart money trading patterns."""
         if options_flow.empty:
-            return pd.DataFrame(columns=[
-                "contract_symbol", "signal_type", "premium", "strike",
-                "expiration", "confidence"
-            ])
+            return pd.DataFrame(
+                columns=[
+                    "contract_symbol",
+                    "signal_type",
+                    "premium",
+                    "strike",
+                    "expiration",
+                    "confidence",
+                ]
+            )
 
         signals = []
 
@@ -867,14 +904,16 @@ class OptionsFlowAnalyzer:
                 else:
                     signal_type = "bearish_block"
 
-                signals.append({
-                    "contract_symbol": trade.get("contract_symbol", ""),
-                    "signal_type": signal_type,
-                    "premium": premium,
-                    "strike": trade.get("strike", 0),
-                    "expiration": trade.get("expiration", ""),
-                    "confidence": min(1.0, premium / 500000),
-                })
+                signals.append(
+                    {
+                        "contract_symbol": trade.get("contract_symbol", ""),
+                        "signal_type": signal_type,
+                        "premium": premium,
+                        "strike": trade.get("strike", 0),
+                        "expiration": trade.get("expiration", ""),
+                        "confidence": min(1.0, premium / 500000),
+                    }
+                )
 
             # Far-dated large trades (LEAPS accumulation)
             if premium >= 50000 and dte > 90:
@@ -884,14 +923,16 @@ class OptionsFlowAnalyzer:
                 else:
                     signal_type = "bearish_leaps"
 
-                signals.append({
-                    "contract_symbol": trade.get("contract_symbol", ""),
-                    "signal_type": signal_type,
-                    "premium": premium,
-                    "strike": trade.get("strike", 0),
-                    "expiration": trade.get("expiration", ""),
-                    "confidence": min(1.0, premium / 200000 + dte / 365),
-                })
+                signals.append(
+                    {
+                        "contract_symbol": trade.get("contract_symbol", ""),
+                        "signal_type": signal_type,
+                        "premium": premium,
+                        "strike": trade.get("strike", 0),
+                        "expiration": trade.get("expiration", ""),
+                        "confidence": min(1.0, premium / 200000 + dte / 365),
+                    }
+                )
 
         return pd.DataFrame(signals)
 
@@ -925,18 +966,20 @@ class OptionsFlowAnalyzer:
         for date in dates:
             for strike in strikes:
                 for option_type in ["call", "put"]:
-                    data.append({
-                        "date": date,
-                        "contract_symbol": f"{symbol}{date.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
-                        "option_type": option_type,
-                        "strike": strike,
-                        "expiration": date + timedelta(days=30),
-                        "volume": np.random.randint(100, 5000),
-                        "open_interest": np.random.randint(1000, 50000),
-                        "premium": np.random.uniform(10000, 500000),
-                        "days_to_expiry": 30,
-                        "trade_type": np.random.choice(["buy", "sell"]),
-                    })
+                    data.append(
+                        {
+                            "date": date,
+                            "contract_symbol": f"{symbol}{date.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
+                            "option_type": option_type,
+                            "strike": strike,
+                            "expiration": date + timedelta(days=30),
+                            "volume": np.random.randint(100, 5000),
+                            "open_interest": np.random.randint(1000, 50000),
+                            "premium": np.random.uniform(10000, 500000),
+                            "days_to_expiry": 30,
+                            "trade_type": np.random.choice(["buy", "sell"]),
+                        }
+                    )
 
         return pd.DataFrame(data)
 
@@ -951,16 +994,18 @@ class OptionsFlowAnalyzer:
             for strike in strikes:
                 for option_type in ["call", "put"]:
                     dte = (exp - datetime.now()).days
-                    data.append({
-                        "contract_symbol": f"{symbol}{exp.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
-                        "option_type": option_type,
-                        "strike": strike,
-                        "expiration": exp,
-                        "volume": np.random.randint(100, 5000),
-                        "open_interest": np.random.randint(1000, 50000),
-                        "premium": np.random.uniform(10000, 500000),
-                        "days_to_expiry": dte,
-                    })
+                    data.append(
+                        {
+                            "contract_symbol": f"{symbol}{exp.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
+                            "option_type": option_type,
+                            "strike": strike,
+                            "expiration": exp,
+                            "volume": np.random.randint(100, 5000),
+                            "open_interest": np.random.randint(1000, 50000),
+                            "premium": np.random.uniform(10000, 500000),
+                            "days_to_expiry": dte,
+                        }
+                    )
 
         return pd.DataFrame(data)
 
@@ -975,19 +1020,22 @@ class OptionsFlowAnalyzer:
             option_type = np.random.choice(["call", "put"])
             exp_date = datetime.now() + timedelta(days=np.random.randint(7, 120))
 
-            data.append({
-                "contract_symbol": f"{symbol}{exp_date.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
-                "option_type": option_type,
-                "strike": strike,
-                "expiration": exp_date,
-                "volume": np.random.randint(100, 5000),
-                "open_interest": np.random.randint(1000, 50000),
-                "premium": np.random.uniform(10000, 500000),
-                "days_to_expiry": (exp_date - datetime.now()).days,
-                "trade_type": np.random.choice(["buy", "sell"]),
-                "num_exchanges": np.random.randint(1, 5),
-                "timestamp": datetime.now() - timedelta(hours=np.random.randint(0, 72)),
-            })
+            data.append(
+                {
+                    "contract_symbol": f"{symbol}{exp_date.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
+                    "option_type": option_type,
+                    "strike": strike,
+                    "expiration": exp_date,
+                    "volume": np.random.randint(100, 5000),
+                    "open_interest": np.random.randint(1000, 50000),
+                    "premium": np.random.uniform(10000, 500000),
+                    "days_to_expiry": (exp_date - datetime.now()).days,
+                    "trade_type": np.random.choice(["buy", "sell"]),
+                    "num_exchanges": np.random.randint(1, 5),
+                    "timestamp": datetime.now()
+                    - timedelta(hours=np.random.randint(0, 72)),
+                }
+            )
 
         return pd.DataFrame(data)
 

@@ -24,6 +24,7 @@ try:
         PerformanceStats,
         TrackingPeriod,
     )
+
     HAS_SIGNALS_MODULE = True
 except ImportError:
     HAS_SIGNALS_MODULE = False
@@ -34,8 +35,7 @@ except ImportError:
     TrackingPeriod = None
 
 pytestmark = pytest.mark.skipif(
-    not HAS_SIGNALS_MODULE,
-    reason="stanley.signals module not yet implemented"
+    not HAS_SIGNALS_MODULE, reason="stanley.signals module not yet implemented"
 )
 
 
@@ -436,9 +436,7 @@ class TestHistoryRetrieval:
 
         assert all(record.symbol == "AAPL" for record in history)
 
-    def test_get_signal_history_filtered_by_direction(
-        self, sample_signals_list
-    ):
+    def test_get_signal_history_filtered_by_direction(self, sample_signals_list):
         """Test retrieving history filtered by direction."""
         tracker = PerformanceTracker()
 
@@ -455,9 +453,7 @@ class TestHistoryRetrieval:
 
         assert all(record.direction == "BULLISH" for record in history)
 
-    def test_get_signal_history_filtered_by_date_range(
-        self, sample_signals_list
-    ):
+    def test_get_signal_history_filtered_by_date_range(self, sample_signals_list):
         """Test retrieving history filtered by date range."""
         tracker = PerformanceTracker()
 
@@ -472,9 +468,7 @@ class TestHistoryRetrieval:
 
         start_date = datetime.now() - timedelta(days=7)
         end_date = datetime.now() + timedelta(days=1)
-        history = tracker.get_signal_history(
-            start_date=start_date, end_date=end_date
-        )
+        history = tracker.get_signal_history(start_date=start_date, end_date=end_date)
 
         assert isinstance(history, list)
         for record in history:

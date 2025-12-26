@@ -65,8 +65,17 @@ class TestSectorETFDefinitions:
     def test_sector_etfs_contains_expected_symbols(self):
         """Test that all expected sector ETFs are defined."""
         expected_symbols = [
-            "XLK", "XLF", "XLE", "XLV", "XLY",
-            "XLP", "XLI", "XLB", "XLU", "XLRE", "XLC",
+            "XLK",
+            "XLF",
+            "XLE",
+            "XLV",
+            "XLY",
+            "XLP",
+            "XLI",
+            "XLB",
+            "XLU",
+            "XLRE",
+            "XLC",
         ]
         for symbol in expected_symbols:
             assert symbol in SECTOR_ETFS
@@ -211,9 +220,7 @@ class TestGetSectorCorrelationChanges:
             current = result["correlation_matrix_current"]
             if not current.empty:
                 # Check symmetry
-                np.testing.assert_array_almost_equal(
-                    current.values, current.values.T
-                )
+                np.testing.assert_array_almost_equal(current.values, current.values.T)
 
 
 class TestIdentifyLeadershipChanges:
@@ -359,17 +366,22 @@ class TestFlowMetricsCalculation:
     def test_calculate_flow_metrics_with_data(self, analyzer):
         """Test flow metrics with valid data."""
         dates = pd.date_range(end=datetime.now(), periods=63, freq="D")
-        flow_data = pd.DataFrame({
-            "date": dates,
-            "net_flow": np.random.normal(100000, 50000, len(dates)),
-        })
+        flow_data = pd.DataFrame(
+            {
+                "date": dates,
+                "net_flow": np.random.normal(100000, 50000, len(dates)),
+            }
+        )
 
         result = analyzer._calculate_flow_metrics(flow_data)
 
         assert "net_flow_1m" in result
         assert "flow_momentum" in result
         assert result["flow_signal"] in [
-            "strong_inflow", "mild_inflow", "mild_outflow", "strong_outflow"
+            "strong_inflow",
+            "mild_inflow",
+            "mild_outflow",
+            "strong_outflow",
         ]
 
 
@@ -384,11 +396,13 @@ class TestCorrelationAnalysis:
     def test_average_correlation_valid_matrix(self, analyzer):
         """Test average correlation with valid matrix."""
         # Create a correlation-like matrix
-        data = np.array([
-            [1.0, 0.5, 0.3],
-            [0.5, 1.0, 0.4],
-            [0.3, 0.4, 1.0],
-        ])
+        data = np.array(
+            [
+                [1.0, 0.5, 0.3],
+                [0.5, 1.0, 0.4],
+                [0.3, 0.4, 1.0],
+            ]
+        )
         corr_matrix = pd.DataFrame(data)
 
         result = analyzer._average_correlation(corr_matrix)

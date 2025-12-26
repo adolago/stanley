@@ -96,12 +96,8 @@ impl ThesisNote {
             .and_then(|v| v.as_str())
             .unwrap_or("Medium")
             .to_string();
-        let entry_price = frontmatter
-            .get("entry_price")
-            .and_then(|v| v.as_f64());
-        let target_price = frontmatter
-            .get("target_price")
-            .and_then(|v| v.as_f64());
+        let entry_price = frontmatter.get("entry_price").and_then(|v| v.as_f64());
+        let target_price = frontmatter.get("target_price").and_then(|v| v.as_f64());
         let modified = frontmatter
             .get("modified")
             .and_then(|v| v.as_str())
@@ -186,9 +182,7 @@ impl TradeNote {
             .get("entry_price")
             .and_then(|v| v.as_f64())
             .unwrap_or(0.0);
-        let exit_price = frontmatter
-            .get("exit_price")
-            .and_then(|v| v.as_f64());
+        let exit_price = frontmatter.get("exit_price").and_then(|v| v.as_f64());
         let shares = frontmatter
             .get("shares")
             .and_then(|v| v.as_f64())
@@ -1556,13 +1550,39 @@ impl StanleyApp {
     fn render_api_status_badge(&self) -> impl IntoElement {
         let theme = &self.theme;
 
-        let (status_text, bg, border, text_color): (&str, Hsla, Hsla, Hsla) = match &self.api_connected {
-            LoadingState::NotStarted => ("Connecting...", theme.accent_subtle, theme.accent_muted, theme.accent),
-            LoadingState::Loading => ("Connecting...", theme.accent_subtle, theme.accent_muted, theme.accent),
-            LoadingState::Loaded(true) => ("Live", theme.positive_subtle, theme.positive_muted, theme.positive),
-            LoadingState::Loaded(false) => ("Offline", theme.negative_subtle, theme.negative_muted, theme.negative),
-            LoadingState::Error(_) => ("Demo Mode", hsla(0.12, 0.85, 0.55, 0.15), hsla(0.12, 0.85, 0.55, 0.3), hsla(0.12, 0.85, 0.55, 1.0)),
-        };
+        let (status_text, bg, border, text_color): (&str, Hsla, Hsla, Hsla) =
+            match &self.api_connected {
+                LoadingState::NotStarted => (
+                    "Connecting...",
+                    theme.accent_subtle,
+                    theme.accent_muted,
+                    theme.accent,
+                ),
+                LoadingState::Loading => (
+                    "Connecting...",
+                    theme.accent_subtle,
+                    theme.accent_muted,
+                    theme.accent,
+                ),
+                LoadingState::Loaded(true) => (
+                    "Live",
+                    theme.positive_subtle,
+                    theme.positive_muted,
+                    theme.positive,
+                ),
+                LoadingState::Loaded(false) => (
+                    "Offline",
+                    theme.negative_subtle,
+                    theme.negative_muted,
+                    theme.negative,
+                ),
+                LoadingState::Error(_) => (
+                    "Demo Mode",
+                    hsla(0.12, 0.85, 0.55, 0.15),
+                    hsla(0.12, 0.85, 0.55, 0.3),
+                    hsla(0.12, 0.85, 0.55, 1.0),
+                ),
+            };
 
         div()
             .px(px(8.0))

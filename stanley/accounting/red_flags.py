@@ -107,7 +107,9 @@ class RevenueRedFlagDetector:
                     avg_rev_growth = rev_growth.mean()
 
                     if avg_ar_growth > avg_rev_growth * 1.2:
-                        ratio = avg_ar_growth / avg_rev_growth if avg_rev_growth != 0 else 0
+                        ratio = (
+                            avg_ar_growth / avg_rev_growth if avg_rev_growth != 0 else 0
+                        )
                         flags.append(
                             RedFlag(
                                 category=RedFlagCategory.REVENUE,
@@ -387,10 +389,13 @@ class AccrualRedFlagDetector:
             cf = stmt_data["cash_flow"].data
 
             # Check 1: Total accruals as % of assets
-            if all(
-                col in inc.columns or col in cf.columns
-                for col in ["net_income", "cfo"]
-            ) and "total_assets" in bs.columns:
+            if (
+                all(
+                    col in inc.columns or col in cf.columns
+                    for col in ["net_income", "cfo"]
+                )
+                and "total_assets" in bs.columns
+            ):
                 net_income = inc.get("net_income", pd.Series(dtype=float))
                 cfo = cf.get("cfo", pd.Series(dtype=float))
                 total_assets = bs.get("total_assets", pd.Series(dtype=float))
@@ -512,9 +517,7 @@ class AccrualRedFlagDetector:
 class OffBalanceSheetDetector:
     """Detect off-balance-sheet red flags."""
 
-    def __init__(
-        self, statements: FinancialStatements, footnotes: FootnoteAnalyzer
-    ):
+    def __init__(self, statements: FinancialStatements, footnotes: FootnoteAnalyzer):
         self.statements = statements
         self.footnotes = footnotes
 
@@ -609,7 +612,9 @@ class OffBalanceSheetDetector:
                     )
 
         except Exception as e:
-            logger.error(f"Error detecting off-balance-sheet red flags for {ticker}: {e}")
+            logger.error(
+                f"Error detecting off-balance-sheet red flags for {ticker}: {e}"
+            )
 
         return flags
 
@@ -661,11 +666,14 @@ class CashFlowRedFlagDetector:
                         )
 
             # Check 2: Free cash flow negative while profitable
-            if "cfo" in cf.columns and "capex" in cf.columns and "net_income" in inc.columns:
+            if (
+                "cfo" in cf.columns
+                and "capex" in cf.columns
+                and "net_income" in inc.columns
+            ):
                 min_len = min(len(cf["cfo"]), len(cf["capex"]), len(inc["net_income"]))
-                fcf = (
-                    cf["cfo"].head(min_len).values
-                    - abs(cf["capex"].head(min_len).values)
+                fcf = cf["cfo"].head(min_len).values - abs(
+                    cf["capex"].head(min_len).values
                 )
                 ni = inc["net_income"].head(min_len).values
 
@@ -920,9 +928,7 @@ class RedFlagScorer:
 
         return top_concerns
 
-    def compare_peer_red_flags(
-        self, ticker: str, peers: List[str]
-    ) -> pd.DataFrame:
+    def compare_peer_red_flags(self, ticker: str, peers: List[str]) -> pd.DataFrame:
         """
         Compare red flag scores across peer companies.
 

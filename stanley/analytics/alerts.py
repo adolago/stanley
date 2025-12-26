@@ -14,6 +14,7 @@ import numpy as np
 
 class AlertSeverity(Enum):
     """Alert severity levels."""
+
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
@@ -22,6 +23,7 @@ class AlertSeverity(Enum):
 
 class AlertType(Enum):
     """Types of money flow alerts."""
+
     DARK_POOL_SURGE = "dark_pool_surge"
     DARK_POOL_DECLINE = "dark_pool_decline"
     BLOCK_TRADE = "block_trade"
@@ -36,10 +38,11 @@ class AlertType(Enum):
 
 class BlockTradeSize(Enum):
     """Block trade size classifications."""
-    SMALL = "small"        # 10K-50K shares or $200K-$1M
-    MEDIUM = "medium"      # 50K-100K shares or $1M-$5M
-    LARGE = "large"        # 100K-500K shares or $5M-$25M
-    MEGA = "mega"          # 500K+ shares or $25M+
+
+    SMALL = "small"  # 10K-50K shares or $200K-$1M
+    MEDIUM = "medium"  # 50K-100K shares or $1M-$5M
+    LARGE = "large"  # 100K-500K shares or $5M-$25M
+    MEGA = "mega"  # 500K+ shares or $25M+
 
 
 @dataclass
@@ -349,7 +352,11 @@ class AlertAggregator:
         """Create and register a new alert."""
 
         # Calculate severity based on deviation from threshold
-        change_pct = (current_value - threshold_value) / abs(threshold_value) if threshold_value != 0 else 0
+        change_pct = (
+            (current_value - threshold_value) / abs(threshold_value)
+            if threshold_value != 0
+            else 0
+        )
         severity = self._calculate_severity(alert_type, abs(change_pct))
 
         alert = MoneyFlowAlert(
@@ -369,7 +376,9 @@ class AlertAggregator:
         self.alerts.append(alert)
         return alert
 
-    def _calculate_severity(self, alert_type: AlertType, deviation: float) -> AlertSeverity:
+    def _calculate_severity(
+        self, alert_type: AlertType, deviation: float
+    ) -> AlertSeverity:
         """Calculate alert severity based on type and deviation."""
 
         # Different thresholds for different alert types
@@ -416,10 +425,7 @@ class AlertAggregator:
             AlertSeverity.CRITICAL: 3,
         }
 
-        filtered = [
-            a for a in self.alerts
-            if not a.expired and not a.acknowledged
-        ]
+        filtered = [a for a in self.alerts if not a.expired and not a.acknowledged]
 
         if symbol:
             filtered = [a for a in filtered if a.symbol == symbol]
@@ -429,15 +435,12 @@ class AlertAggregator:
 
         if min_severity:
             min_level = severity_order[min_severity]
-            filtered = [
-                a for a in filtered
-                if severity_order[a.severity] >= min_level
-            ]
+            filtered = [a for a in filtered if severity_order[a.severity] >= min_level]
 
         # Sort by severity (highest first), then timestamp (newest first)
         return sorted(
             filtered,
-            key=lambda a: (-severity_order[a.severity], -a.timestamp.timestamp())
+            key=lambda a: (-severity_order[a.severity], -a.timestamp.timestamp()),
         )
 
     def acknowledge_alert(self, alert_id: str) -> bool:

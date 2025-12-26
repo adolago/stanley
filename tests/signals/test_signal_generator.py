@@ -25,6 +25,7 @@ try:
         SignalStrength,
         CompositeSignal,
     )
+
     # Aliases for backwards compatibility with test file naming
     SignalDirection = SignalType
     ConvictionLevel = SignalStrength
@@ -39,8 +40,7 @@ except ImportError:
     FactorScores = None
 
 pytestmark = pytest.mark.skipif(
-    not HAS_SIGNALS_MODULE,
-    reason="stanley.signals module not yet implemented"
+    not HAS_SIGNALS_MODULE, reason="stanley.signals module not yet implemented"
 )
 
 
@@ -211,9 +211,7 @@ class TestGenerateSignal:
 
         assert 0.0 <= signal.confidence <= 1.0
 
-    def test_generate_bullish_signal(
-        self, mock_data_manager, mock_money_flow_analyzer
-    ):
+    def test_generate_bullish_signal(self, mock_data_manager, mock_money_flow_analyzer):
         """Test generation of bullish signal with strong positive factors."""
         mock_money_flow_analyzer.analyze_equity_flow.return_value = {
             "symbol": "AAPL",
@@ -232,9 +230,7 @@ class TestGenerateSignal:
         assert signal.direction == SignalDirection.BULLISH
         assert signal.strength > 0.5
 
-    def test_generate_bearish_signal(
-        self, mock_data_manager, mock_money_flow_analyzer
-    ):
+    def test_generate_bearish_signal(self, mock_data_manager, mock_money_flow_analyzer):
         """Test generation of bearish signal with strong negative factors."""
         mock_money_flow_analyzer.analyze_equity_flow.return_value = {
             "symbol": "AAPL",
@@ -253,9 +249,7 @@ class TestGenerateSignal:
         assert signal.direction == SignalDirection.BEARISH
         assert signal.strength < -0.5
 
-    def test_generate_neutral_signal(
-        self, mock_data_manager, mock_money_flow_analyzer
-    ):
+    def test_generate_neutral_signal(self, mock_data_manager, mock_money_flow_analyzer):
         """Test generation of neutral signal with mixed factors."""
         mock_money_flow_analyzer.analyze_equity_flow.return_value = {
             "symbol": "AAPL",
@@ -292,9 +286,7 @@ class TestGenerateUniverseSignals:
         assert isinstance(signals, list)
         assert len(signals) == len(universe)
 
-    def test_generate_universe_signals_all_symbols_covered(
-        self, mock_data_manager
-    ):
+    def test_generate_universe_signals_all_symbols_covered(self, mock_data_manager):
         """Test that all symbols in universe get signals."""
         generator = SignalGenerator(data_manager=mock_data_manager)
         universe = ["AAPL", "MSFT", "GOOGL", "AMZN", "META"]
@@ -311,9 +303,7 @@ class TestGenerateUniverseSignals:
         assert isinstance(signals, list)
         assert len(signals) == 0
 
-    def test_generate_universe_signals_sorted_by_strength(
-        self, mock_data_manager
-    ):
+    def test_generate_universe_signals_sorted_by_strength(self, mock_data_manager):
         """Test that signals are sorted by absolute strength."""
         generator = SignalGenerator(data_manager=mock_data_manager)
         universe = ["AAPL", "MSFT", "GOOGL", "AMZN"]
@@ -322,9 +312,7 @@ class TestGenerateUniverseSignals:
         strengths = [abs(s.strength) for s in signals]
         assert strengths == sorted(strengths, reverse=True)
 
-    def test_generate_universe_signals_filtered_by_confidence(
-        self, mock_data_manager
-    ):
+    def test_generate_universe_signals_filtered_by_confidence(self, mock_data_manager):
         """Test that signals can be filtered by minimum confidence."""
         generator = SignalGenerator(data_manager=mock_data_manager)
         universe = ["AAPL", "MSFT", "GOOGL", "AMZN"]
@@ -434,25 +422,19 @@ class TestConvictionIndicators:
     def test_high_conviction_calculation(self, mock_data_manager):
         """Test high conviction when strength and confidence are high."""
         generator = SignalGenerator(data_manager=mock_data_manager)
-        conviction = generator._calculate_conviction(
-            strength=0.85, confidence=0.90
-        )
+        conviction = generator._calculate_conviction(strength=0.85, confidence=0.90)
         assert conviction == ConvictionLevel.HIGH
 
     def test_medium_conviction_calculation(self, mock_data_manager):
         """Test medium conviction for moderate strength and confidence."""
         generator = SignalGenerator(data_manager=mock_data_manager)
-        conviction = generator._calculate_conviction(
-            strength=0.55, confidence=0.65
-        )
+        conviction = generator._calculate_conviction(strength=0.55, confidence=0.65)
         assert conviction == ConvictionLevel.MEDIUM
 
     def test_low_conviction_calculation(self, mock_data_manager):
         """Test low conviction for weak strength or low confidence."""
         generator = SignalGenerator(data_manager=mock_data_manager)
-        conviction = generator._calculate_conviction(
-            strength=0.25, confidence=0.45
-        )
+        conviction = generator._calculate_conviction(strength=0.25, confidence=0.45)
         assert conviction == ConvictionLevel.LOW
 
     def test_conviction_with_negative_strength(self, mock_data_manager):
@@ -460,15 +442,11 @@ class TestConvictionIndicators:
         generator = SignalGenerator(data_manager=mock_data_manager)
 
         # High conviction bearish
-        conviction = generator._calculate_conviction(
-            strength=-0.85, confidence=0.90
-        )
+        conviction = generator._calculate_conviction(strength=-0.85, confidence=0.90)
         assert conviction == ConvictionLevel.HIGH
 
         # Medium conviction bearish
-        conviction = generator._calculate_conviction(
-            strength=-0.55, confidence=0.65
-        )
+        conviction = generator._calculate_conviction(strength=-0.55, confidence=0.65)
         assert conviction == ConvictionLevel.MEDIUM
 
     def test_conviction_returns_valid_level(self, mock_data_manager):
@@ -554,9 +532,7 @@ class TestSignalGeneratorEdgeCases:
 
     def test_empty_data_handling(self, mock_data_manager, empty_price_data):
         """Test handling of empty price data."""
-        mock_data_manager.get_price_history = AsyncMock(
-            return_value=empty_price_data
-        )
+        mock_data_manager.get_price_history = AsyncMock(return_value=empty_price_data)
         generator = SignalGenerator(data_manager=mock_data_manager)
 
         signal = generator.generate_signal("AAPL")
@@ -578,9 +554,7 @@ class TestSignalGeneratorEdgeCases:
 
     def test_nan_data_handling(self, mock_data_manager, nan_price_data):
         """Test handling of NaN values in data."""
-        mock_data_manager.get_price_history = AsyncMock(
-            return_value=nan_price_data
-        )
+        mock_data_manager.get_price_history = AsyncMock(return_value=nan_price_data)
         generator = SignalGenerator(data_manager=mock_data_manager)
 
         signal = generator.generate_signal("AAPL")

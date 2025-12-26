@@ -658,9 +658,7 @@ class CreditSpreadMonitor:
         momentum_score = np.clip(momentum_score, 0, 100)
 
         # Weighted combination
-        stress_index = (
-            0.4 * level_score + 0.3 * percentile_score + 0.3 * momentum_score
-        )
+        stress_index = 0.4 * level_score + 0.3 * percentile_score + 0.3 * momentum_score
 
         return float(np.clip(stress_index, 0, 100))
 
@@ -788,14 +786,20 @@ class CreditSpreadMonitor:
 
         # Boundary distance score (0.5 max when in middle of regime)
         boundary_score = (
-            ig_boundary_distance + hy_boundary_distance
-        ) / 2 if "ig_boundary_distance" in dir() and "hy_boundary_distance" in dir() else 0.3
+            (ig_boundary_distance + hy_boundary_distance) / 2
+            if "ig_boundary_distance" in dir() and "hy_boundary_distance" in dir()
+            else 0.3
+        )
 
         # Momentum confirmation
         overall_regime = self.classify_credit_regime(ig_spread, hy_spread)
         momentum_confirms = False
 
-        if overall_regime in [CreditRegime.WIDENING, CreditRegime.STRESSED, CreditRegime.CRISIS]:
+        if overall_regime in [
+            CreditRegime.WIDENING,
+            CreditRegime.STRESSED,
+            CreditRegime.CRISIS,
+        ]:
             momentum_confirms = spread_momentum > 0
         elif overall_regime == CreditRegime.TIGHT:
             momentum_confirms = spread_momentum < 0
@@ -805,8 +809,10 @@ class CreditSpreadMonitor:
         momentum_score = 0.2 if momentum_confirms else 0.0
 
         # Combine scores
-        confidence = 0.4 * agreement_score + 0.4 * boundary_score + 0.2 * (
-            1 if momentum_confirms else 0
+        confidence = (
+            0.4 * agreement_score
+            + 0.4 * boundary_score
+            + 0.2 * (1 if momentum_confirms else 0)
         )
 
         return float(np.clip(confidence, 0, 1))

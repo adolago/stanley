@@ -196,7 +196,9 @@ class RecessionProbabilityModel:
                 }
 
         # Average confidence across horizons (weighted toward 12m)
-        avg_confidence = (conf_3m * 0.15 + conf_6m * 0.20 + conf_12m * 0.40 + conf_24m * 0.25)
+        avg_confidence = (
+            conf_3m * 0.15 + conf_6m * 0.20 + conf_12m * 0.40 + conf_24m * 0.25
+        )
 
         return RecessionProbability(
             probability_3m=round(prob_3m, 4),
@@ -240,7 +242,9 @@ class RecessionProbabilityModel:
             hy_spread = credit_data.get("hy_spread")
             hy_change = credit_data.get("hy_spread_change_3m", 0)
             if hy_spread is not None:
-                signals["credit_spread"] = self.credit_spread_signal(hy_spread, hy_change)
+                signals["credit_spread"] = self.credit_spread_signal(
+                    hy_spread, hy_change
+                )
 
         # Leading indicators
         lei_data = await self._get_lei_data(country)
@@ -461,7 +465,9 @@ class RecessionProbabilityModel:
         - Normal curve (> 1.5%) = low probability
         """
         # Get coefficients for curve type
-        coefs = self.PROBIT_COEFFICIENTS.get(curve_type, self.PROBIT_COEFFICIENTS["10y3m"])
+        coefs = self.PROBIT_COEFFICIENTS.get(
+            curve_type, self.PROBIT_COEFFICIENTS["10y3m"]
+        )
         beta0 = coefs["beta0"]
         beta1 = coefs["beta1"]
 
@@ -734,7 +740,8 @@ class RecessionProbabilityModel:
         recession_months = sum(
             (end - start).days / 30
             for start, end in nber_recessions
-            if start >= datetime.now().replace(year=datetime.now().year - lookback_years)
+            if start
+            >= datetime.now().replace(year=datetime.now().year - lookback_years)
         )
 
         return HistoricalAccuracy(
@@ -783,7 +790,9 @@ class RecessionProbabilityModel:
         credit_data = await self._get_credit_spread_data(country)
         breakdown["components"]["credit_spreads"] = {
             "hy_oas": credit_data.get("hy_spread") if credit_data else None,
-            "change_3m": credit_data.get("hy_spread_change_3m") if credit_data else None,
+            "change_3m": (
+                credit_data.get("hy_spread_change_3m") if credit_data else None
+            ),
             "signal": signals.get("credit_spread", 0.5),
             "interpretation": self._interpret_credit_spread(
                 credit_data.get("hy_spread") if credit_data else 450

@@ -25,9 +25,9 @@ logger = logging.getLogger(__name__)
 
 # 13F filing deadlines (45 days after quarter end)
 QUARTER_END_DATES = {
-    1: (3, 31),   # Q1 ends March 31
-    2: (6, 30),   # Q2 ends June 30
-    3: (9, 30),   # Q3 ends September 30
+    1: (3, 31),  # Q1 ends March 31
+    2: (6, 30),  # Q2 ends June 30
+    3: (9, 30),  # Q3 ends September 30
     4: (12, 31),  # Q4 ends December 31
 }
 
@@ -458,9 +458,7 @@ class InstitutionalAnalyzer:
     # NEW ADVANCED 13F TRACKING METHODS
     # =========================================================================
 
-    def get_13f_filing_calendar(
-        self, quarters_ahead: int = 4
-    ) -> pd.DataFrame:
+    def get_13f_filing_calendar(self, quarters_ahead: int = 4) -> pd.DataFrame:
         """
         Get upcoming 13F filing deadlines for the next N quarters.
 
@@ -506,13 +504,17 @@ class InstitutionalAnalyzer:
                 status = "upcoming"
                 days_remaining = (filing_deadline - current_date).days
 
-            calendar_entries.append({
-                "quarter": f"Q{quarter} {year}",
-                "quarter_end": quarter_end,
-                "filing_deadline": filing_deadline,
-                "status": status,
-                "days_until_deadline": max(0, (filing_deadline - current_date).days),
-            })
+            calendar_entries.append(
+                {
+                    "quarter": f"Q{quarter} {year}",
+                    "quarter_end": quarter_end,
+                    "filing_deadline": filing_deadline,
+                    "status": status,
+                    "days_until_deadline": max(
+                        0, (filing_deadline - current_date).days
+                    ),
+                }
+            )
 
         return pd.DataFrame(calendar_entries)
 
@@ -537,8 +539,7 @@ class InstitutionalAnalyzer:
             try:
                 # Get filing for this quarter
                 filing = self._get_13f_filing(
-                    manager_cik,
-                    f"Q-{quarter}" if quarter > 0 else "current"
+                    manager_cik, f"Q-{quarter}" if quarter > 0 else "current"
                 )
 
                 if filing.empty:
@@ -548,31 +549,49 @@ class InstitutionalAnalyzer:
                 quarter_return = self._calculate_portfolio_quarter_return(filing)
                 historical_returns.append(quarter_return)
 
-                quarterly_data.append({
-                    "quarters_ago": quarter,
-                    "portfolio_value": filing["value"].sum() if "value" in filing.columns else 0,
-                    "num_positions": len(filing),
-                    "top_holding_weight": filing["weight"].max() if "weight" in filing.columns else 0,
-                    "quarter_return": quarter_return,
-                })
+                quarterly_data.append(
+                    {
+                        "quarters_ago": quarter,
+                        "portfolio_value": (
+                            filing["value"].sum() if "value" in filing.columns else 0
+                        ),
+                        "num_positions": len(filing),
+                        "top_holding_weight": (
+                            filing["weight"].max() if "weight" in filing.columns else 0
+                        ),
+                        "quarter_return": quarter_return,
+                    }
+                )
 
             except Exception as e:
                 logger.warning(f"Error getting filing for quarter -{quarter}: {e}")
                 continue
 
         # Calculate performance metrics
-        returns_array = np.array(historical_returns) if historical_returns else np.array([0])
+        returns_array = (
+            np.array(historical_returns) if historical_returns else np.array([0])
+        )
 
         return {
             "manager_cik": manager_cik,
             "lookback_quarters": lookback_quarters,
-            "total_return": float(np.prod(1 + returns_array) - 1) if len(returns_array) > 0 else 0,
-            "annualized_return": float(np.mean(returns_array) * 4) if len(returns_array) > 0 else 0,
-            "volatility": float(np.std(returns_array) * 2) if len(returns_array) > 1 else 0,  # Semi-annual vol
+            "total_return": (
+                float(np.prod(1 + returns_array) - 1) if len(returns_array) > 0 else 0
+            ),
+            "annualized_return": (
+                float(np.mean(returns_array) * 4) if len(returns_array) > 0 else 0
+            ),
+            "volatility": (
+                float(np.std(returns_array) * 2) if len(returns_array) > 1 else 0
+            ),  # Semi-annual vol
             "sharpe_ratio": self._calculate_sharpe_ratio(returns_array),
             "max_drawdown": self._calculate_max_drawdown(returns_array),
-            "win_rate": float(np.mean(returns_array > 0)) if len(returns_array) > 0 else 0,
-            "quarterly_data": pd.DataFrame(quarterly_data) if quarterly_data else pd.DataFrame(),
+            "win_rate": (
+                float(np.mean(returns_array > 0)) if len(returns_array) > 0 else 0
+            ),
+            "quarterly_data": (
+                pd.DataFrame(quarterly_data) if quarterly_data else pd.DataFrame()
+            ),
             "performance_rank": self._get_manager_performance_rank(manager_cik),
         }
 
@@ -605,21 +624,28 @@ class InstitutionalAnalyzer:
         # Find common holders between pairs
         clustering_results = []
         for i, sym1 in enumerate(symbols):
-            for sym2 in symbols[i + 1:]:
+            for sym2 in symbols[i + 1 :]:
                 common_holders = symbol_holders[sym1] & symbol_holders[sym2]
                 if len(common_holders) >= min_common_holders:
-                    clustering_results.append({
-                        "symbol_1": sym1,
-                        "symbol_2": sym2,
-                        "common_holders_count": len(common_holders),
-                        "common_holders": list(common_holders)[:10],  # Top 10
-                        "holder_overlap_pct": (
-                            len(common_holders) /
-                            min(len(symbol_holders[sym1]), len(symbol_holders[sym2]))
-                            if min(len(symbol_holders[sym1]), len(symbol_holders[sym2])) > 0
-                            else 0
-                        ),
-                    })
+                    clustering_results.append(
+                        {
+                            "symbol_1": sym1,
+                            "symbol_2": sym2,
+                            "common_holders_count": len(common_holders),
+                            "common_holders": list(common_holders)[:10],  # Top 10
+                            "holder_overlap_pct": (
+                                len(common_holders)
+                                / min(
+                                    len(symbol_holders[sym1]), len(symbol_holders[sym2])
+                                )
+                                if min(
+                                    len(symbol_holders[sym1]), len(symbol_holders[sym2])
+                                )
+                                > 0
+                                else 0
+                            ),
+                        }
+                    )
 
         result = pd.DataFrame(clustering_results)
         if not result.empty:
@@ -641,7 +667,9 @@ class InstitutionalAnalyzer:
             DataFrame with conviction picks and their holders
         """
         conviction_positions = []
-        top_managers = self._get_top_performing_managers(minimum_aum=1e9)[:top_n_managers]
+        top_managers = self._get_top_performing_managers(minimum_aum=1e9)[
+            :top_n_managers
+        ]
 
         for manager in top_managers:
             try:
@@ -653,41 +681,56 @@ class InstitutionalAnalyzer:
                 if "weight" in filing.columns:
                     high_conviction = filing[filing["weight"] >= min_weight]
                     for _, row in high_conviction.iterrows():
-                        conviction_positions.append({
-                            "symbol": row.get("symbol", ""),
-                            "manager_name": manager["name"],
-                            "manager_cik": manager["cik"],
-                            "weight": row.get("weight", 0),
-                            "value": row.get("value", 0),
-                            "shares": row.get("shares", 0),
-                            "manager_aum": manager.get("aum", 0),
-                            "manager_performance_score": manager.get("performance_score", 0),
-                        })
+                        conviction_positions.append(
+                            {
+                                "symbol": row.get("symbol", ""),
+                                "manager_name": manager["name"],
+                                "manager_cik": manager["cik"],
+                                "weight": row.get("weight", 0),
+                                "value": row.get("value", 0),
+                                "shares": row.get("shares", 0),
+                                "manager_aum": manager.get("aum", 0),
+                                "manager_performance_score": manager.get(
+                                    "performance_score", 0
+                                ),
+                            }
+                        )
 
             except Exception as e:
-                logger.warning(f"Error getting conviction picks for {manager['cik']}: {e}")
+                logger.warning(
+                    f"Error getting conviction picks for {manager['cik']}: {e}"
+                )
                 continue
 
         result = pd.DataFrame(conviction_positions)
         if not result.empty:
             # Aggregate by symbol
-            aggregated = result.groupby("symbol").agg({
-                "manager_name": lambda x: list(x),
-                "weight": ["mean", "max", "count"],
-                "value": "sum",
-                "manager_performance_score": "mean",
-            }).reset_index()
+            aggregated = (
+                result.groupby("symbol")
+                .agg(
+                    {
+                        "manager_name": lambda x: list(x),
+                        "weight": ["mean", "max", "count"],
+                        "value": "sum",
+                        "manager_performance_score": "mean",
+                    }
+                )
+                .reset_index()
+            )
             aggregated.columns = [
-                "symbol", "holders", "avg_weight", "max_weight",
-                "holder_count", "total_value", "avg_manager_score"
+                "symbol",
+                "holders",
+                "avg_weight",
+                "max_weight",
+                "holder_count",
+                "total_value",
+                "avg_manager_score",
             ]
             result = aggregated.sort_values("holder_count", ascending=False)
 
         return result
 
-    def analyze_portfolio_overlap(
-        self, manager_ciks: List[str]
-    ) -> Dict[str, Any]:
+    def analyze_portfolio_overlap(self, manager_ciks: List[str]) -> Dict[str, Any]:
         """
         Compare portfolios of multiple managers to find overlap and divergence.
 
@@ -728,27 +771,40 @@ class InstitutionalAnalyzer:
         # Find unique positions for each manager
         unique_positions = {}
         for cik in manager_ciks:
-            others = set.union(*[
-                portfolios.get(other_cik, set())
-                for other_cik in manager_ciks if other_cik != cik
-            ]) if len(manager_ciks) > 1 else set()
+            others = (
+                set.union(
+                    *[
+                        portfolios.get(other_cik, set())
+                        for other_cik in manager_ciks
+                        if other_cik != cik
+                    ]
+                )
+                if len(manager_ciks) > 1
+                else set()
+            )
             unique_positions[cik] = list(portfolios.get(cik, set()) - others)
 
         return {
             "manager_ciks": manager_ciks,
             "overlap_matrix": pd.DataFrame(
-                overlap_matrix,
-                index=manager_ciks,
-                columns=manager_ciks
+                overlap_matrix, index=manager_ciks, columns=manager_ciks
             ),
             "common_positions": list(common_to_all),
             "common_positions_count": len(common_to_all),
             "unique_positions": unique_positions,
-            "average_overlap": float(np.mean([
-                overlap_matrix[i][j]
-                for i in range(len(manager_ciks))
-                for j in range(i + 1, len(manager_ciks))
-            ])) if len(manager_ciks) > 1 else 1.0,
+            "average_overlap": (
+                float(
+                    np.mean(
+                        [
+                            overlap_matrix[i][j]
+                            for i in range(len(manager_ciks))
+                            for j in range(i + 1, len(manager_ciks))
+                        ]
+                    )
+                )
+                if len(manager_ciks) > 1
+                else 1.0
+            ),
         }
 
     def get_new_positions_alert(
@@ -777,30 +833,46 @@ class InstitutionalAnalyzer:
                     continue
 
                 # Find new positions
-                current_symbols = set(current["symbol"].tolist()) if "symbol" in current.columns else set()
-                previous_symbols = set(previous["symbol"].tolist()) if not previous.empty and "symbol" in previous.columns else set()
+                current_symbols = (
+                    set(current["symbol"].tolist())
+                    if "symbol" in current.columns
+                    else set()
+                )
+                previous_symbols = (
+                    set(previous["symbol"].tolist())
+                    if not previous.empty and "symbol" in previous.columns
+                    else set()
+                )
                 new_symbols = current_symbols - previous_symbols
 
                 for _, row in current.iterrows():
                     if row.get("symbol", "") in new_symbols:
                         value = row.get("value", 0)
                         if value >= min_value:
-                            new_positions.append({
-                                "symbol": row.get("symbol", ""),
-                                "manager_name": manager["name"],
-                                "manager_cik": manager["cik"],
-                                "position_value": value,
-                                "shares": row.get("shares", 0),
-                                "weight": row.get("weight", 0),
-                                "manager_performance_score": manager.get("performance_score", 0),
-                                "alert_type": "new_position",
-                                "significance": self._calculate_significance_score(
-                                    value, row.get("weight", 0), manager.get("performance_score", 0)
-                                ),
-                            })
+                            new_positions.append(
+                                {
+                                    "symbol": row.get("symbol", ""),
+                                    "manager_name": manager["name"],
+                                    "manager_cik": manager["cik"],
+                                    "position_value": value,
+                                    "shares": row.get("shares", 0),
+                                    "weight": row.get("weight", 0),
+                                    "manager_performance_score": manager.get(
+                                        "performance_score", 0
+                                    ),
+                                    "alert_type": "new_position",
+                                    "significance": self._calculate_significance_score(
+                                        value,
+                                        row.get("weight", 0),
+                                        manager.get("performance_score", 0),
+                                    ),
+                                }
+                            )
 
             except Exception as e:
-                logger.warning(f"Error checking new positions for {manager['cik']}: {e}")
+                logger.warning(
+                    f"Error checking new positions for {manager['cik']}: {e}"
+                )
                 continue
 
         result = pd.DataFrame(new_positions)
@@ -835,30 +907,46 @@ class InstitutionalAnalyzer:
                     continue
 
                 # Find closed positions
-                current_symbols = set(current["symbol"].tolist()) if not current.empty and "symbol" in current.columns else set()
-                previous_symbols = set(previous["symbol"].tolist()) if "symbol" in previous.columns else set()
+                current_symbols = (
+                    set(current["symbol"].tolist())
+                    if not current.empty and "symbol" in current.columns
+                    else set()
+                )
+                previous_symbols = (
+                    set(previous["symbol"].tolist())
+                    if "symbol" in previous.columns
+                    else set()
+                )
                 closed_symbols = previous_symbols - current_symbols
 
                 for _, row in previous.iterrows():
                     if row.get("symbol", "") in closed_symbols:
                         value = row.get("value", 0)
                         if value >= min_previous_value:
-                            exit_positions.append({
-                                "symbol": row.get("symbol", ""),
-                                "manager_name": manager["name"],
-                                "manager_cik": manager["cik"],
-                                "previous_value": value,
-                                "previous_shares": row.get("shares", 0),
-                                "previous_weight": row.get("weight", 0),
-                                "manager_performance_score": manager.get("performance_score", 0),
-                                "alert_type": "position_exit",
-                                "significance": self._calculate_significance_score(
-                                    value, row.get("weight", 0), manager.get("performance_score", 0)
-                                ),
-                            })
+                            exit_positions.append(
+                                {
+                                    "symbol": row.get("symbol", ""),
+                                    "manager_name": manager["name"],
+                                    "manager_cik": manager["cik"],
+                                    "previous_value": value,
+                                    "previous_shares": row.get("shares", 0),
+                                    "previous_weight": row.get("weight", 0),
+                                    "manager_performance_score": manager.get(
+                                        "performance_score", 0
+                                    ),
+                                    "alert_type": "position_exit",
+                                    "significance": self._calculate_significance_score(
+                                        value,
+                                        row.get("weight", 0),
+                                        manager.get("performance_score", 0),
+                                    ),
+                                }
+                            )
 
             except Exception as e:
-                logger.warning(f"Error checking exit positions for {manager['cik']}: {e}")
+                logger.warning(
+                    f"Error checking exit positions for {manager['cik']}: {e}"
+                )
                 continue
 
         result = pd.DataFrame(exit_positions)
@@ -880,7 +968,9 @@ class InstitutionalAnalyzer:
         # Get top performing managers
         top_managers = self._get_top_performing_managers(minimum_aum=1e9)
         manager_ciks = [m["cik"] for m in top_managers]
-        manager_scores = {m["cik"]: m.get("performance_score", 0.5) for m in top_managers}
+        manager_scores = {
+            m["cik"]: m.get("performance_score", 0.5) for m in top_managers
+        }
 
         buying_activity = []
         selling_activity = []
@@ -904,23 +994,27 @@ class InstitutionalAnalyzer:
                     performance_weight = manager_scores.get(manager["cik"], 0.5)
 
                     if shares_change > 0:
-                        buying_activity.append({
-                            "manager_name": manager["name"],
-                            "manager_cik": manager["cik"],
-                            "shares_added": shares_change,
-                            "value_added": value_change,
-                            "performance_score": performance_weight,
-                        })
+                        buying_activity.append(
+                            {
+                                "manager_name": manager["name"],
+                                "manager_cik": manager["cik"],
+                                "shares_added": shares_change,
+                                "value_added": value_change,
+                                "performance_score": performance_weight,
+                            }
+                        )
                         net_flow += value_change
                         weighted_flow += value_change * performance_weight
                     elif shares_change < 0:
-                        selling_activity.append({
-                            "manager_name": manager["name"],
-                            "manager_cik": manager["cik"],
-                            "shares_sold": abs(shares_change),
-                            "value_sold": abs(value_change),
-                            "performance_score": performance_weight,
-                        })
+                        selling_activity.append(
+                            {
+                                "manager_name": manager["name"],
+                                "manager_cik": manager["cik"],
+                                "shares_sold": abs(shares_change),
+                                "value_sold": abs(value_change),
+                                "performance_score": performance_weight,
+                            }
+                        )
                         net_flow += value_change  # Negative for selling
                         weighted_flow += value_change * performance_weight
 
@@ -947,8 +1041,12 @@ class InstitutionalAnalyzer:
             "signal_strength": signal_strength,
             "buyers_count": len(buying_activity),
             "sellers_count": len(selling_activity),
-            "buying_activity": pd.DataFrame(buying_activity) if buying_activity else pd.DataFrame(),
-            "selling_activity": pd.DataFrame(selling_activity) if selling_activity else pd.DataFrame(),
+            "buying_activity": (
+                pd.DataFrame(buying_activity) if buying_activity else pd.DataFrame()
+            ),
+            "selling_activity": (
+                pd.DataFrame(selling_activity) if selling_activity else pd.DataFrame()
+            ),
             "coordinated_buying": len(buying_activity) >= 3,
             "coordinated_selling": len(selling_activity) >= 3,
         }
@@ -976,26 +1074,32 @@ class InstitutionalAnalyzer:
 
                 # Filter for significant changes
                 significant = changes[
-                    (changes["change_percentage"].abs() >= threshold_pct) &
-                    (changes["change_type"] == "existing")  # Exclude new/closed
+                    (changes["change_percentage"].abs() >= threshold_pct)
+                    & (changes["change_type"] == "existing")  # Exclude new/closed
                 ]
 
                 for _, row in significant.iterrows():
                     change_pct = row.get("change_percentage", 0)
-                    significant_changes.append({
-                        "symbol": row.get("symbol", ""),
-                        "manager_name": manager["name"],
-                        "manager_cik": manager["cik"],
-                        "change_type": "increase" if change_pct > 0 else "decrease",
-                        "change_percentage": change_pct,
-                        "shares_change": row.get("shares_change", 0),
-                        "value_change": row.get("value_change", 0),
-                        "current_value": row.get("value_current", 0),
-                        "manager_performance_score": manager.get("performance_score", 0),
-                    })
+                    significant_changes.append(
+                        {
+                            "symbol": row.get("symbol", ""),
+                            "manager_name": manager["name"],
+                            "manager_cik": manager["cik"],
+                            "change_type": "increase" if change_pct > 0 else "decrease",
+                            "change_percentage": change_pct,
+                            "shares_change": row.get("shares_change", 0),
+                            "value_change": row.get("value_change", 0),
+                            "current_value": row.get("value_current", 0),
+                            "manager_performance_score": manager.get(
+                                "performance_score", 0
+                            ),
+                        }
+                    )
 
             except Exception as e:
-                logger.warning(f"Error checking significant changes for {manager['cik']}: {e}")
+                logger.warning(
+                    f"Error checking significant changes for {manager['cik']}: {e}"
+                )
                 continue
 
         result = pd.DataFrame(significant_changes)
@@ -1029,25 +1133,29 @@ class InstitutionalAnalyzer:
 
                 # Find increases and new positions
                 buying = changes[
-                    (changes["change_percentage"] > 0.05) |
-                    (changes["change_type"] == "new")
+                    (changes["change_percentage"] > 0.05)
+                    | (changes["change_type"] == "new")
                 ]
 
                 for _, row in buying.iterrows():
                     symbol = row.get("symbol", "")
                     if symbol not in symbol_buyers:
                         symbol_buyers[symbol] = []
-                    symbol_buyers[symbol].append({
-                        "manager_name": manager["name"],
-                        "manager_cik": manager["cik"],
-                        "change_type": row.get("change_type", "existing"),
-                        "change_percentage": row.get("change_percentage", 0),
-                        "value_added": row.get("value_change", 0),
-                        "performance_score": manager.get("performance_score", 0),
-                    })
+                    symbol_buyers[symbol].append(
+                        {
+                            "manager_name": manager["name"],
+                            "manager_cik": manager["cik"],
+                            "change_type": row.get("change_type", "existing"),
+                            "change_percentage": row.get("change_percentage", 0),
+                            "value_added": row.get("value_change", 0),
+                            "performance_score": manager.get("performance_score", 0),
+                        }
+                    )
 
             except Exception as e:
-                logger.warning(f"Error checking coordinated buying for {manager['cik']}: {e}")
+                logger.warning(
+                    f"Error checking coordinated buying for {manager['cik']}: {e}"
+                )
                 continue
 
         # Filter for coordinated buying
@@ -1055,15 +1163,19 @@ class InstitutionalAnalyzer:
         for symbol, buyers in symbol_buyers.items():
             if len(buyers) >= min_buyers:
                 total_value = sum(b.get("value_added", 0) for b in buyers)
-                avg_performance = np.mean([b.get("performance_score", 0) for b in buyers])
-                coordinated.append({
-                    "symbol": symbol,
-                    "buyers_count": len(buyers),
-                    "total_value_added": total_value,
-                    "avg_buyer_performance": avg_performance,
-                    "buyers": buyers,
-                    "signal_strength": min(1.0, len(buyers) / 10) * avg_performance,
-                })
+                avg_performance = np.mean(
+                    [b.get("performance_score", 0) for b in buyers]
+                )
+                coordinated.append(
+                    {
+                        "symbol": symbol,
+                        "buyers_count": len(buyers),
+                        "total_value_added": total_value,
+                        "avg_buyer_performance": avg_performance,
+                        "buyers": buyers,
+                        "signal_strength": min(1.0, len(buyers) / 10) * avg_performance,
+                    }
+                )
 
         result = pd.DataFrame(coordinated)
         if not result.empty:
@@ -1071,9 +1183,7 @@ class InstitutionalAnalyzer:
 
         return result
 
-    def get_concentration_risk_alert(
-        self, threshold: float = 0.1
-    ) -> pd.DataFrame:
+    def get_concentration_risk_alert(self, threshold: float = 0.1) -> pd.DataFrame:
         """
         Alert on stocks with high concentration risk (few large holders).
 
@@ -1086,10 +1196,15 @@ class InstitutionalAnalyzer:
         # This would analyze holdings across a universe
         # For now, return empty DataFrame as placeholder
         logger.info(f"Checking concentration risk with threshold {threshold}")
-        return pd.DataFrame(columns=[
-            "symbol", "top_holder_ownership", "top_3_ownership",
-            "hhi_score", "risk_level"
-        ])
+        return pd.DataFrame(
+            columns=[
+                "symbol",
+                "top_holder_ownership",
+                "top_3_ownership",
+                "hhi_score",
+                "risk_level",
+            ]
+        )
 
     # =========================================================================
     # HELPER METHODS FOR NEW FUNCTIONALITY
@@ -1108,14 +1223,13 @@ class InstitutionalAnalyzer:
         result["shares_change"] = np.random.randint(-1000000, 1000000, len(result))
         result["change_percentage"] = result["shares_change"] / result["shares_held"]
         result["change_type"] = np.where(
-            result["shares_change"] > 0, "increase",
-            np.where(result["shares_change"] < 0, "decrease", "unchanged")
+            result["shares_change"] > 0,
+            "increase",
+            np.where(result["shares_change"] < 0, "decrease", "unchanged"),
         )
         return result
 
-    def _get_managers_performance_summary(
-        self, holdings: pd.DataFrame
-    ) -> pd.DataFrame:
+    def _get_managers_performance_summary(self, holdings: pd.DataFrame) -> pd.DataFrame:
         """Get performance summary for managers holding a stock."""
         if holdings.empty or "manager_cik" not in holdings.columns:
             return pd.DataFrame()
@@ -1123,26 +1237,30 @@ class InstitutionalAnalyzer:
         performance_data = []
         for _, row in holdings.iterrows():
             cik = row.get("manager_cik", "")
-            performance_data.append({
-                "manager_name": row.get("manager_name", ""),
-                "manager_cik": cik,
-                "performance_score": np.random.uniform(0.5, 1.0),  # Placeholder
-                "1yr_return": np.random.uniform(-0.2, 0.4),  # Placeholder
-                "sharpe_ratio": np.random.uniform(0.5, 2.0),  # Placeholder
-            })
+            performance_data.append(
+                {
+                    "manager_name": row.get("manager_name", ""),
+                    "manager_cik": cik,
+                    "performance_score": np.random.uniform(0.5, 1.0),  # Placeholder
+                    "1yr_return": np.random.uniform(-0.2, 0.4),  # Placeholder
+                    "sharpe_ratio": np.random.uniform(0.5, 2.0),  # Placeholder
+                }
+            )
 
         return pd.DataFrame(performance_data)
 
-    def _calculate_portfolio_quarter_return(
-        self, filing: pd.DataFrame
-    ) -> float:
+    def _calculate_portfolio_quarter_return(self, filing: pd.DataFrame) -> float:
         """Calculate hypothetical return for a portfolio filing."""
         # Placeholder - would use actual price data
         if filing.empty:
             return 0.0
 
         # Simulate return based on filing weights
-        weights = filing["weight"].values if "weight" in filing.columns else np.ones(len(filing)) / len(filing)
+        weights = (
+            filing["weight"].values
+            if "weight" in filing.columns
+            else np.ones(len(filing)) / len(filing)
+        )
         # Mock quarterly return
         return float(np.random.normal(0.02, 0.08))
 
@@ -1167,7 +1285,13 @@ class InstitutionalAnalyzer:
     def _get_manager_performance_rank(self, manager_cik: str) -> str:
         """Get performance rank for a manager."""
         # Placeholder - would use actual ranking data
-        ranks = ["top_decile", "top_quartile", "above_average", "average", "below_average"]
+        ranks = [
+            "top_decile",
+            "top_quartile",
+            "above_average",
+            "average",
+            "below_average",
+        ]
         return np.random.choice(ranks)
 
     def _calculate_significance_score(

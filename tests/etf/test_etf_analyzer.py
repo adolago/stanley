@@ -258,7 +258,14 @@ class TestETFRegistry:
     def test_smart_beta_factors_defined(self):
         """Test that major factors are covered."""
         factors = {etf.factor for etf in SMART_BETA_ETFS.values() if etf.factor}
-        expected_factors = {"value", "growth", "momentum", "quality", "low_volatility", "size"}
+        expected_factors = {
+            "value",
+            "growth",
+            "momentum",
+            "quality",
+            "low_volatility",
+            "size",
+        }
         assert factors == expected_factors
 
     def test_thematic_etfs_have_themes(self):
@@ -273,7 +280,10 @@ class TestETFRegistry:
             len(SECTOR_ETFS)
             + len(SMART_BETA_ETFS)
             + len(THEMATIC_ETFS)
-            + len(ETF_REGISTRY) - len(SECTOR_ETFS) - len(SMART_BETA_ETFS) - len(THEMATIC_ETFS)
+            + len(ETF_REGISTRY)
+            - len(SECTOR_ETFS)
+            - len(SMART_BETA_ETFS)
+            - len(THEMATIC_ETFS)
         )
         # Registry may have overlapping symbols
         assert len(ETF_REGISTRY) > 0
@@ -317,7 +327,9 @@ class TestETFAnalyzer:
     @pytest.mark.asyncio
     async def test_get_creation_redemption_activity(self, analyzer):
         """Test creation/redemption activity analysis."""
-        result = await analyzer.get_creation_redemption_activity("SPY", lookback_days=30)
+        result = await analyzer.get_creation_redemption_activity(
+            "SPY", lookback_days=30
+        )
 
         assert result["symbol"] == "SPY"
         assert "creationUnits" in result
@@ -526,12 +538,17 @@ class TestFlowTrendInterpretation:
     def test_heavy_redemption(self, analyzer):
         """Test heavy redemption interpretation."""
         interpretation = analyzer._interpret_flow_trend(-0.6, -100)
-        assert "redemption" in interpretation.lower() or "selling" in interpretation.lower()
+        assert (
+            "redemption" in interpretation.lower()
+            or "selling" in interpretation.lower()
+        )
 
     def test_balanced_flows(self, analyzer):
         """Test balanced flow interpretation."""
         interpretation = analyzer._interpret_flow_trend(0.1, 0)
-        assert "balanced" in interpretation.lower() or "no clear" in interpretation.lower()
+        assert (
+            "balanced" in interpretation.lower() or "no clear" in interpretation.lower()
+        )
 
 
 class TestMockDataGeneration:

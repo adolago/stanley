@@ -172,7 +172,9 @@ class TestCommodityRegistry:
         precious = ["GC", "SI", "PL", "PA"]
         for symbol in precious:
             assert symbol in COMMODITY_REGISTRY
-            assert COMMODITY_REGISTRY[symbol].category == CommodityCategory.PRECIOUS_METALS
+            assert (
+                COMMODITY_REGISTRY[symbol].category == CommodityCategory.PRECIOUS_METALS
+            )
 
     def test_base_metals_exist(self):
         """Test that base metals exist."""
@@ -513,7 +515,10 @@ class TestMacroLinkage:
         assert sample_macro_linkage.macro_indicator == "USD Index"
         assert sample_macro_linkage.correlation == -0.65
         assert sample_macro_linkage.lead_lag_days == 0
-        assert sample_macro_linkage.relationship == "Inverse - weak USD supports oil prices"
+        assert (
+            sample_macro_linkage.relationship
+            == "Inverse - weak USD supports oil prices"
+        )
         assert sample_macro_linkage.strength == "strong"
 
     def test_linkage_to_dict(self, sample_macro_linkage):
@@ -824,7 +829,10 @@ class TestCommoditiesAnalyzer:
 
         # Copper should have China PMI linkage
         indicators = [l["macroIndicator"] for l in linkage["linkages"]]
-        assert "China Manufacturing PMI" in indicators or "Global Industrial Production" in indicators
+        assert (
+            "China Manufacturing PMI" in indicators
+            or "Global Industrial Production" in indicators
+        )
 
     @pytest.mark.asyncio
     async def test_analyze_macro_linkage_agriculture(self):
@@ -837,7 +845,9 @@ class TestCommoditiesAnalyzer:
 
         # Agriculture should have USD linkage
         indicators = [l["macroIndicator"] for l in linkage["linkages"]]
-        assert "US Dollar Index" in indicators or "Global Food Price Index" in indicators
+        assert (
+            "US Dollar Index" in indicators or "Global Food Price Index" in indicators
+        )
 
     @pytest.mark.asyncio
     async def test_analyze_macro_linkage_unknown(self):
@@ -865,7 +875,9 @@ class TestCommoditiesAnalyzer:
     async def test_get_category_overview_precious(self):
         """Test get_category_overview for precious metals."""
         analyzer = CommoditiesAnalyzer()
-        overview = await analyzer.get_category_overview(CommodityCategory.PRECIOUS_METALS)
+        overview = await analyzer.get_category_overview(
+            CommodityCategory.PRECIOUS_METALS
+        )
 
         assert overview["category"] == "precious_metals"
         assert overview["count"] > 0
@@ -939,9 +951,7 @@ class TestEdgeCases:
 
         # This should not affect the original registry
         copy = dict(COMMODITY_REGISTRY)
-        copy["NEW"] = Commodity(
-            "NEW", "New Commodity", CommodityCategory.ENERGY, "USD"
-        )
+        copy["NEW"] = Commodity("NEW", "New Commodity", CommodityCategory.ENERGY, "USD")
 
         assert len(COMMODITY_REGISTRY) == original_len
 
@@ -997,9 +1007,7 @@ class TestEdgeCases:
         # Add old cache entry
         old_time = datetime.now() - timedelta(seconds=400)  # Older than TTL
         provider._cache["CL"] = (
-            CommodityPrice(
-                "CL", "Oil", 50.0, 0, 0, 50, 50, 0, 0, old_time
-            ),
+            CommodityPrice("CL", "Oil", 50.0, 0, 0, 50, 50, 0, 0, old_time),
             old_time,
         )
 

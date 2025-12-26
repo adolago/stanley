@@ -53,41 +53,57 @@ def mock_data_manager():
     dm = Mock()
 
     # Stock/ETF data
-    dm.get_stock_data = AsyncMock(return_value=pd.DataFrame({
-        "date": pd.date_range(start="2024-01-01", periods=252),
-        "open": np.random.randn(252).cumsum() + 100,
-        "high": np.random.randn(252).cumsum() + 102,
-        "low": np.random.randn(252).cumsum() + 98,
-        "close": np.random.randn(252).cumsum() + 100,
-        "volume": np.random.randint(1_000_000, 10_000_000, 252),
-        "adj_close": np.random.randn(252).cumsum() + 100,
-    }))
+    dm.get_stock_data = AsyncMock(
+        return_value=pd.DataFrame(
+            {
+                "date": pd.date_range(start="2024-01-01", periods=252),
+                "open": np.random.randn(252).cumsum() + 100,
+                "high": np.random.randn(252).cumsum() + 102,
+                "low": np.random.randn(252).cumsum() + 98,
+                "close": np.random.randn(252).cumsum() + 100,
+                "volume": np.random.randint(1_000_000, 10_000_000, 252),
+                "adj_close": np.random.randn(252).cumsum() + 100,
+            }
+        )
+    )
 
     # Options data for VIX
-    dm.get_options_data = AsyncMock(return_value=pd.DataFrame({
-        "date": pd.date_range(start="2024-01-01", periods=252),
-        "vix": np.random.uniform(10, 40, 252),
-        "vix_3m": np.random.uniform(12, 38, 252),
-        "vvix": np.random.uniform(80, 150, 252),
-    }))
+    dm.get_options_data = AsyncMock(
+        return_value=pd.DataFrame(
+            {
+                "date": pd.date_range(start="2024-01-01", periods=252),
+                "vix": np.random.uniform(10, 40, 252),
+                "vix_3m": np.random.uniform(12, 38, 252),
+                "vvix": np.random.uniform(80, 150, 252),
+            }
+        )
+    )
 
     # Treasury rates
-    dm.get_treasury_rates = AsyncMock(return_value=pd.DataFrame({
-        "date": pd.date_range(start="2024-01-01", periods=252),
-        "3m": np.random.uniform(4.0, 5.5, 252),
-        "2y": np.random.uniform(3.5, 5.0, 252),
-        "5y": np.random.uniform(3.0, 4.5, 252),
-        "10y": np.random.uniform(3.0, 4.5, 252),
-        "30y": np.random.uniform(3.5, 5.0, 252),
-    }))
+    dm.get_treasury_rates = AsyncMock(
+        return_value=pd.DataFrame(
+            {
+                "date": pd.date_range(start="2024-01-01", periods=252),
+                "3m": np.random.uniform(4.0, 5.5, 252),
+                "2y": np.random.uniform(3.5, 5.0, 252),
+                "5y": np.random.uniform(3.0, 4.5, 252),
+                "10y": np.random.uniform(3.0, 4.5, 252),
+                "30y": np.random.uniform(3.5, 5.0, 252),
+            }
+        )
+    )
 
     # Credit spreads
-    dm.get_credit_spreads = AsyncMock(return_value=pd.DataFrame({
-        "date": pd.date_range(start="2024-01-01", periods=252),
-        "ig_spread": np.random.uniform(80, 200, 252),
-        "hy_spread": np.random.uniform(300, 600, 252),
-        "bbb_spread": np.random.uniform(120, 280, 252),
-    }))
+    dm.get_credit_spreads = AsyncMock(
+        return_value=pd.DataFrame(
+            {
+                "date": pd.date_range(start="2024-01-01", periods=252),
+                "ig_spread": np.random.uniform(80, 200, 252),
+                "hy_spread": np.random.uniform(300, 600, 252),
+                "bbb_spread": np.random.uniform(120, 280, 252),
+            }
+        )
+    )
 
     return dm
 
@@ -110,10 +126,12 @@ def mock_dbnomics():
         base = 20000 if country == "USA" else 5000
         trend = np.linspace(base, base * 1.3, periods)
         noise = np.random.normal(0, base * 0.01, periods)
-        return pd.DataFrame({
-            "period": dates,
-            "value": trend + noise,
-        })
+        return pd.DataFrame(
+            {
+                "period": dates,
+                "value": trend + noise,
+            }
+        )
 
     adapter.get_gdp = Mock(side_effect=mock_gdp)
 
@@ -124,10 +142,12 @@ def mock_dbnomics():
         # CPI index growing over time
         base = 100
         values = base * np.exp(np.linspace(0, 0.3, periods))  # ~3% annual inflation
-        return pd.DataFrame({
-            "period": dates,
-            "value": values,
-        })
+        return pd.DataFrame(
+            {
+                "period": dates,
+                "value": values,
+            }
+        )
 
     adapter.get_inflation = Mock(side_effect=mock_inflation)
 
@@ -139,10 +159,12 @@ def mock_dbnomics():
         base = 5.0
         cycle = 1.5 * np.sin(np.linspace(0, 4 * np.pi, periods))
         noise = np.random.normal(0, 0.2, periods)
-        return pd.DataFrame({
-            "period": dates,
-            "value": base + cycle + noise,
-        })
+        return pd.DataFrame(
+            {
+                "period": dates,
+                "value": base + cycle + noise,
+            }
+        )
 
     adapter.get_unemployment = Mock(side_effect=mock_unemployment)
 
@@ -156,10 +178,12 @@ def mock_dbnomics():
             values = np.linspace(0.5, 5.0, periods)
         else:  # long
             values = np.linspace(2.0, 4.5, periods)
-        return pd.DataFrame({
-            "period": dates,
-            "value": values + np.random.normal(0, 0.1, periods),
-        })
+        return pd.DataFrame(
+            {
+                "period": dates,
+                "value": values + np.random.normal(0, 0.1, periods),
+            }
+        )
 
     adapter.get_interest_rates = Mock(side_effect=mock_interest_rates)
 
@@ -167,21 +191,27 @@ def mock_dbnomics():
     def mock_current_account(country):
         periods = 40
         dates = pd.date_range(end=datetime.now(), periods=periods, freq="QE")
-        return pd.DataFrame({
-            "period": dates,
-            "value": np.random.uniform(-3, 1, periods),  # % of GDP
-        })
+        return pd.DataFrame(
+            {
+                "period": dates,
+                "value": np.random.uniform(-3, 1, periods),  # % of GDP
+            }
+        )
 
     adapter.get_current_account = Mock(side_effect=mock_current_account)
 
     # Fetch series (generic)
-    def mock_fetch_series(provider_code, dataset_code, series_code=None, max_results=100):
+    def mock_fetch_series(
+        provider_code, dataset_code, series_code=None, max_results=100
+    ):
         periods = 120
         dates = pd.date_range(end=datetime.now(), periods=periods, freq="ME")
-        return pd.DataFrame({
-            "period": dates,
-            "value": np.random.randn(periods).cumsum() + 100,
-        })
+        return pd.DataFrame(
+            {
+                "period": dates,
+                "value": np.random.randn(periods).cumsum() + 100,
+            }
+        )
 
     adapter.fetch_series = Mock(side_effect=mock_fetch_series)
 
@@ -218,12 +248,14 @@ def vix_data():
         jump = np.random.choice([0, 10, 20], p=[0.98, 0.015, 0.005])
         vix[i] = max(10, vix[i - 1] + reversion + innovation + jump)
 
-    return pd.DataFrame({
-        "date": dates,
-        "close": vix,
-        "vix_3m": vix + np.random.uniform(-2, 5, periods),  # Term structure
-        "vix_6m": vix + np.random.uniform(-1, 7, periods),
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "close": vix,
+            "vix_3m": vix + np.random.uniform(-2, 5, periods),  # Term structure
+            "vix_6m": vix + np.random.uniform(-1, 7, periods),
+        }
+    )
 
 
 @pytest.fixture
@@ -244,13 +276,15 @@ def credit_spread_data():
     hy_spread = hy_base + (ig_spread - ig_base) * 2 + np.random.randn(periods) * 50
     hy_spread = np.clip(hy_spread, 200, 1500)
 
-    return pd.DataFrame({
-        "date": dates,
-        "ig_spread": ig_spread,
-        "hy_spread": hy_spread,
-        "bbb_spread": ig_spread * 1.3 + np.random.randn(periods) * 10,
-        "bb_spread": (ig_spread + hy_spread) / 2,
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "ig_spread": ig_spread,
+            "hy_spread": hy_spread,
+            "bbb_spread": ig_spread * 1.3 + np.random.randn(periods) * 10,
+            "bb_spread": (ig_spread + hy_spread) / 2,
+        }
+    )
 
 
 @pytest.fixture
@@ -268,14 +302,16 @@ def yield_curve_data():
     term_premium = 1.0 + np.random.randn(periods).cumsum() * 0.005
     term_premium = np.clip(term_premium, -1, 3)
 
-    return pd.DataFrame({
-        "date": dates,
-        "3m": short_rate,
-        "2y": short_rate + 0.3 + np.random.randn(periods) * 0.1,
-        "5y": short_rate + 0.6 + np.random.randn(periods) * 0.15,
-        "10y": short_rate + term_premium + np.random.randn(periods) * 0.1,
-        "30y": short_rate + term_premium + 0.5 + np.random.randn(periods) * 0.15,
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "3m": short_rate,
+            "2y": short_rate + 0.3 + np.random.randn(periods) * 0.1,
+            "5y": short_rate + 0.6 + np.random.randn(periods) * 0.15,
+            "10y": short_rate + term_premium + np.random.randn(periods) * 0.1,
+            "30y": short_rate + term_premium + 0.5 + np.random.randn(periods) * 0.15,
+        }
+    )
 
 
 @pytest.fixture
@@ -288,15 +324,21 @@ def business_cycle_data():
     # Business cycle: expansion/contraction pattern
     cycle_phase = np.sin(np.linspace(0, 3 * np.pi, periods))
 
-    return pd.DataFrame({
-        "date": dates,
-        "lei": 100 + cycle_phase * 5 + np.random.randn(periods) * 0.5,  # Leading Economic Index
-        "pmi": 50 + cycle_phase * 8 + np.random.randn(periods) * 2,  # PMI
-        "unemployment": 5 - cycle_phase * 2 + np.random.randn(periods) * 0.3,
-        "gdp_growth": 2 + cycle_phase * 3 + np.random.randn(periods) * 0.5,
-        "inflation": 2.5 + cycle_phase * 1 + np.random.randn(periods) * 0.3,
-        "consumer_confidence": 100 + cycle_phase * 15 + np.random.randn(periods) * 3,
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "lei": 100
+            + cycle_phase * 5
+            + np.random.randn(periods) * 0.5,  # Leading Economic Index
+            "pmi": 50 + cycle_phase * 8 + np.random.randn(periods) * 2,  # PMI
+            "unemployment": 5 - cycle_phase * 2 + np.random.randn(periods) * 0.3,
+            "gdp_growth": 2 + cycle_phase * 3 + np.random.randn(periods) * 0.5,
+            "inflation": 2.5 + cycle_phase * 1 + np.random.randn(periods) * 0.3,
+            "consumer_confidence": 100
+            + cycle_phase * 15
+            + np.random.randn(periods) * 3,
+        }
+    )
 
 
 @pytest.fixture
@@ -316,17 +358,41 @@ def sahm_rule_trigger_data():
     dates = pd.date_range(end=datetime.now(), periods=periods, freq="ME")
 
     # Unemployment rises 0.6pp over 3 months (triggers Sahm Rule)
-    unemployment = np.array([
-        3.5, 3.5, 3.5, 3.6, 3.6, 3.5,  # Stable
-        3.5, 3.6, 3.6, 3.7, 3.7, 3.8,  # Slight increase
-        3.8, 3.9, 4.0, 4.1, 4.2, 4.3,  # Rising (triggers Sahm)
-        4.3, 4.4, 4.5, 4.5, 4.6, 4.6,  # Continued rise
-    ])
+    unemployment = np.array(
+        [
+            3.5,
+            3.5,
+            3.5,
+            3.6,
+            3.6,
+            3.5,  # Stable
+            3.5,
+            3.6,
+            3.6,
+            3.7,
+            3.7,
+            3.8,  # Slight increase
+            3.8,
+            3.9,
+            4.0,
+            4.1,
+            4.2,
+            4.3,  # Rising (triggers Sahm)
+            4.3,
+            4.4,
+            4.5,
+            4.5,
+            4.6,
+            4.6,  # Continued rise
+        ]
+    )
 
-    return pd.DataFrame({
-        "date": dates,
-        "unemployment_rate": unemployment,
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "unemployment_rate": unemployment,
+        }
+    )
 
 
 @pytest.fixture
@@ -338,13 +404,15 @@ def asset_returns_data():
 
     # Correlated asset returns
     n_assets = 5
-    correlation_matrix = np.array([
-        [1.0, 0.6, 0.3, -0.2, 0.1],   # SPY
-        [0.6, 1.0, 0.4, -0.15, 0.2],  # EFA (intl developed)
-        [0.3, 0.4, 1.0, -0.1, 0.3],   # EEM (emerging)
-        [-0.2, -0.15, -0.1, 1.0, 0.4], # TLT (bonds)
-        [0.1, 0.2, 0.3, 0.4, 1.0],    # GLD (gold)
-    ])
+    correlation_matrix = np.array(
+        [
+            [1.0, 0.6, 0.3, -0.2, 0.1],  # SPY
+            [0.6, 1.0, 0.4, -0.15, 0.2],  # EFA (intl developed)
+            [0.3, 0.4, 1.0, -0.1, 0.3],  # EEM (emerging)
+            [-0.2, -0.15, -0.1, 1.0, 0.4],  # TLT (bonds)
+            [0.1, 0.2, 0.3, 0.4, 1.0],  # GLD (gold)
+        ]
+    )
 
     # Cholesky decomposition for correlated returns
     L = np.linalg.cholesky(correlation_matrix)
@@ -357,14 +425,16 @@ def asset_returns_data():
 
     prices = 100 * np.exp(np.cumsum(returns, axis=0))
 
-    return pd.DataFrame({
-        "date": dates,
-        "SPY": prices[:, 0],
-        "EFA": prices[:, 1],
-        "EEM": prices[:, 2],
-        "TLT": prices[:, 3],
-        "GLD": prices[:, 4],
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "SPY": prices[:, 0],
+            "EFA": prices[:, 1],
+            "EEM": prices[:, 2],
+            "TLT": prices[:, 3],
+            "GLD": prices[:, 4],
+        }
+    )
 
 
 # =============================================================================
@@ -449,10 +519,12 @@ def missing_data_dataframe():
     dates = pd.date_range(end=datetime.now(), periods=100, freq="D")
     values = np.random.randn(100)
     values[::3] = np.nan  # Every 3rd value missing
-    return pd.DataFrame({
-        "date": dates,
-        "value": values,
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "value": values,
+        }
+    )
 
 
 @pytest.fixture
@@ -462,7 +534,9 @@ def extreme_values_dataframe():
     values = np.random.randn(100)
     values[50] = 1000  # Extreme outlier
     values[75] = -500  # Extreme negative
-    return pd.DataFrame({
-        "date": dates,
-        "value": values,
-    })
+    return pd.DataFrame(
+        {
+            "date": dates,
+            "value": values,
+        }
+    )

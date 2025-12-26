@@ -210,7 +210,10 @@ class WhaleTracker:
                 else 0
             )
 
-            if consecutive_increases >= min_quarters and pct_increase >= min_increase_pct:
+            if (
+                consecutive_increases >= min_quarters
+                and pct_increase >= min_increase_pct
+            ):
                 accumulating.append(
                     {
                         "manager_cik": manager_cik,
@@ -314,7 +317,10 @@ class WhaleTracker:
                 else 0
             )
 
-            if consecutive_decreases >= min_quarters and pct_decrease >= min_decrease_pct:
+            if (
+                consecutive_decreases >= min_quarters
+                and pct_decrease >= min_decrease_pct
+            ):
                 distributing.append(
                     {
                         "manager_cik": manager_cik,
@@ -407,7 +413,9 @@ class WhaleTracker:
         # Calculate weighted consensus (by position value)
         if "value_change" in movements.columns:
             total_buying = buyers["value_change"].sum() if len(buyers) > 0 else 0
-            total_selling = abs(sellers["value_change"].sum()) if len(sellers) > 0 else 0
+            total_selling = (
+                abs(sellers["value_change"].sum()) if len(sellers) > 0 else 0
+            )
             total_activity = total_buying + total_selling
 
             if total_activity > 0:
@@ -481,7 +489,9 @@ class WhaleTracker:
         for symbol in symbols:
             try:
                 # Check for large movements
-                movements = self.track_whale_movements(symbol, threshold_pct=threshold_pct)
+                movements = self.track_whale_movements(
+                    symbol, threshold_pct=threshold_pct
+                )
 
                 for _, movement in movements.iterrows():
                     change_pct = movement["change_percentage"] * 100
@@ -613,7 +623,9 @@ class WhaleTracker:
 
         # Calculate correlation matrix
         movement_df = pd.DataFrame(
-            movement_matrix, index=manager_names, columns=[f"Q{i}" for i in range(1, n_quarters)]
+            movement_matrix,
+            index=manager_names,
+            columns=[f"Q{i}" for i in range(1, n_quarters)],
         )
 
         correlation_matrix = movement_df.T.corr()
@@ -728,7 +740,10 @@ class WhaleTracker:
 
         # Add variation for different periods
         variation = 0.9 if period == "previous" else 1.0
-        shares = [int(s * variation * (1 + np.random.uniform(-0.1, 0.15))) for s in base_shares]
+        shares = [
+            int(s * variation * (1 + np.random.uniform(-0.1, 0.15)))
+            for s in base_shares
+        ]
 
         price_per_share = 150.0 + np.random.uniform(-20, 20)
         values = [s * price_per_share for s in shares]

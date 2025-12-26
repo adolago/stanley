@@ -154,16 +154,18 @@ class OptionsAnalyzer:
             call_data = options_df[options_df["option_type"] == "call"]
             put_data = options_df[options_df["option_type"] == "put"]
 
-            total_call_volume = int(call_data["volume"].sum()) if not call_data.empty else 0
-            total_put_volume = int(put_data["volume"].sum()) if not put_data.empty else 0
+            total_call_volume = (
+                int(call_data["volume"].sum()) if not call_data.empty else 0
+            )
+            total_put_volume = (
+                int(put_data["volume"].sum()) if not put_data.empty else 0
+            )
             total_call_premium = self._calculate_total_premium(call_data)
             total_put_premium = self._calculate_total_premium(put_data)
 
             # Put/Call ratios
             put_call_ratio = (
-                total_put_volume / total_call_volume
-                if total_call_volume > 0
-                else 0.0
+                total_put_volume / total_call_volume if total_call_volume > 0 else 0.0
             )
             premium_put_call_ratio = (
                 total_put_premium / total_call_premium
@@ -425,9 +427,7 @@ class OptionsAnalyzer:
 
         records = []
         for exp in expirations:
-            days_to_exp = max(
-                1, (datetime.strptime(exp, "%Y-%m-%d") - today).days
-            )
+            days_to_exp = max(1, (datetime.strptime(exp, "%Y-%m-%d") - today).days)
             time_factor = np.sqrt(days_to_exp / 365)
 
             for strike in strikes:
@@ -437,20 +437,33 @@ class OptionsAnalyzer:
                 for opt_type in ["call", "put"]:
                     # Generate realistic Greeks and prices
                     if opt_type == "call":
-                        delta = max(0, min(1, 1.1 - moneyness + np.random.uniform(-0.1, 0.1)))
+                        delta = max(
+                            0, min(1, 1.1 - moneyness + np.random.uniform(-0.1, 0.1))
+                        )
                         itm = strike < base_price
                     else:
-                        delta = max(-1, min(0, moneyness - 1.1 + np.random.uniform(-0.1, 0.1)))
+                        delta = max(
+                            -1, min(0, moneyness - 1.1 + np.random.uniform(-0.1, 0.1))
+                        )
                         itm = strike > base_price
 
                     # Gamma peaks ATM
                     gamma = 0.05 * np.exp(-((moneyness - 1) ** 2) / 0.02) * time_factor
 
                     # IV smile
-                    iv = 0.25 + 0.1 * abs(moneyness - 1) + np.random.uniform(-0.02, 0.02)
+                    iv = (
+                        0.25 + 0.1 * abs(moneyness - 1) + np.random.uniform(-0.02, 0.02)
+                    )
 
                     # Premium calculation (simplified Black-Scholes-ish)
-                    intrinsic = max(0, (base_price - strike) if opt_type == "call" else (strike - base_price))
+                    intrinsic = max(
+                        0,
+                        (
+                            (base_price - strike)
+                            if opt_type == "call"
+                            else (strike - base_price)
+                        ),
+                    )
                     extrinsic = base_price * iv * time_factor * 0.4
                     premium = intrinsic + extrinsic
 
@@ -459,23 +472,25 @@ class OptionsAnalyzer:
                     base_oi = int(1000 * atm_factor + np.random.randint(10, 500))
                     volume = int(base_oi * np.random.uniform(0.1, 3.0))
 
-                    records.append({
-                        "symbol": symbol,
-                        "strike": strike,
-                        "expiration": exp,
-                        "option_type": opt_type,
-                        "last_price": round(premium, 2),
-                        "bid": round(premium * 0.95, 2),
-                        "ask": round(premium * 1.05, 2),
-                        "volume": volume,
-                        "open_interest": base_oi,
-                        "implied_volatility": round(iv, 4),
-                        "delta": round(delta, 4),
-                        "gamma": round(gamma, 6),
-                        "theta": round(-premium * 0.01 / days_to_exp, 4),
-                        "vega": round(premium * 0.1, 4),
-                        "underlying_price": base_price,
-                    })
+                    records.append(
+                        {
+                            "symbol": symbol,
+                            "strike": strike,
+                            "expiration": exp,
+                            "option_type": opt_type,
+                            "last_price": round(premium, 2),
+                            "bid": round(premium * 0.95, 2),
+                            "ask": round(premium * 1.05, 2),
+                            "volume": volume,
+                            "open_interest": base_oi,
+                            "implied_volatility": round(iv, 4),
+                            "delta": round(delta, 4),
+                            "gamma": round(gamma, 6),
+                            "theta": round(-premium * 0.01 / days_to_exp, 4),
+                            "vega": round(premium * 0.1, 4),
+                            "underlying_price": base_price,
+                        }
+                    )
 
         return pd.DataFrame(records)
 
@@ -581,7 +596,11 @@ class OptionsAnalyzer:
         df = options_df.copy()
 
         # Get underlying price
-        underlying = df["underlying_price"].iloc[0] if "underlying_price" in df.columns else 100.0
+        underlying = (
+            df["underlying_price"].iloc[0]
+            if "underlying_price" in df.columns
+            else 100.0
+        )
 
         # Calculate GEX for each option
         # Calls: positive gamma (dealer is long gamma)
@@ -591,7 +610,7 @@ class OptionsAnalyzer:
                 row["gamma"]
                 * row["open_interest"]
                 * 100
-                * (underlying ** 2)
+                * (underlying**2)
                 / 1e9
                 * (1 if row["option_type"] == "call" else -1)
             ),
@@ -672,7 +691,11 @@ class OptionsAnalyzer:
         oi_pc_ratio = put_oi / call_oi if call_oi > 0 else 0
 
         # Strike distribution
-        underlying = options_df["underlying_price"].iloc[0] if "underlying_price" in options_df.columns else 100.0
+        underlying = (
+            options_df["underlying_price"].iloc[0]
+            if "underlying_price" in options_df.columns
+            else 100.0
+        )
 
         itm_calls = calls[calls["strike"] < underlying]
         otm_calls = calls[calls["strike"] >= underlying]
@@ -681,7 +704,9 @@ class OptionsAnalyzer:
 
         # Calculate weighted average strike by volume
         if call_volume > 0:
-            weighted_call_strike = (calls["strike"] * calls["volume"]).sum() / call_volume
+            weighted_call_strike = (
+                calls["strike"] * calls["volume"]
+            ).sum() / call_volume
         else:
             weighted_call_strike = underlying
 
@@ -708,7 +733,11 @@ class OptionsAnalyzer:
             "weighted_call_strike": round(weighted_call_strike, 2),
             "weighted_put_strike": round(weighted_put_strike, 2),
             "underlying_price": round(underlying, 2),
-            "sentiment": "bullish" if pc_ratio < 0.7 else ("bearish" if pc_ratio > 1.3 else "neutral"),
+            "sentiment": (
+                "bullish"
+                if pc_ratio < 0.7
+                else ("bearish" if pc_ratio > 1.3 else "neutral")
+            ),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
@@ -793,7 +822,9 @@ class OptionsAnalyzer:
 
         # Gamma concentration
         total_gamma = exp_df["gamma"].sum() if "gamma" in exp_df.columns else 0
-        max_strike_gamma = exp_df.groupby("strike")["gamma"].sum().max() if total_gamma > 0 else 0
+        max_strike_gamma = (
+            exp_df.groupby("strike")["gamma"].sum().max() if total_gamma > 0 else 0
+        )
         gamma_concentration = max_strike_gamma / total_gamma if total_gamma > 0 else 0
 
         # Days to expiry
@@ -804,7 +835,11 @@ class OptionsAnalyzer:
             days_to_expiry = 0
 
         # Pin risk (high OI at specific strikes near current price)
-        underlying = exp_df["underlying_price"].iloc[0] if "underlying_price" in exp_df.columns else 100
+        underlying = (
+            exp_df["underlying_price"].iloc[0]
+            if "underlying_price" in exp_df.columns
+            else 100
+        )
         near_money = exp_df[abs(exp_df["strike"] - underlying) < underlying * 0.02]
         near_money_oi = near_money["open_interest"].sum()
         total_oi = exp_df["open_interest"].sum()

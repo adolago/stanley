@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class AnomalyType(Enum):
     """Types of detected anomalies."""
+
     STATISTICAL_OUTLIER = "statistical_outlier"
     TREND_BREAK = "trend_break"
     PEER_DEVIATION = "peer_deviation"
@@ -40,6 +41,7 @@ class AnomalyType(Enum):
 @dataclass
 class Anomaly:
     """Individual anomaly detection result."""
+
     anomaly_type: AnomalyType
     metric: str
     period: str
@@ -53,6 +55,7 @@ class Anomaly:
 @dataclass
 class AnomalyReport:
     """Comprehensive anomaly report."""
+
     ticker: str
     anomalies: List[Anomaly]
     anomaly_score: float  # 0-100
@@ -67,7 +70,9 @@ class TimeSeriesAnomalyDetector:
     def __init__(self, edgar_adapter: EdgarAdapter):
         self.edgar_adapter = edgar_adapter
 
-    def detect(self, ticker: str, metrics: List[str], periods: int = 8) -> List[Anomaly]:
+    def detect(
+        self, ticker: str, metrics: List[str], periods: int = 8
+    ) -> List[Anomaly]:
         """
         Detect time series anomalies using multiple statistical methods.
 
@@ -105,21 +110,21 @@ class TimeSeriesAnomalyDetector:
         return anomalies
 
     def _extract_metric_series(
-        self,
-        statements: FinancialStatements,
-        metric: str,
-        periods: int
+        self, statements: FinancialStatements, metric: str, periods: int
     ) -> Optional[pd.Series]:
         """Extract time series for a specific metric."""
         try:
             # Map metric to statement data
             metric_map = {
-                'revenue': ('income_statement', 'Revenues'),
-                'net_income': ('income_statement', 'NetIncomeLoss'),
-                'total_assets': ('balance_sheet', 'Assets'),
-                'total_liabilities': ('balance_sheet', 'Liabilities'),
-                'operating_cash_flow': ('cash_flow', 'NetCashProvidedByUsedInOperatingActivities'),
-                'gross_profit': ('income_statement', 'GrossProfit'),
+                "revenue": ("income_statement", "Revenues"),
+                "net_income": ("income_statement", "NetIncomeLoss"),
+                "total_assets": ("balance_sheet", "Assets"),
+                "total_liabilities": ("balance_sheet", "Liabilities"),
+                "operating_cash_flow": (
+                    "cash_flow",
+                    "NetCashProvidedByUsedInOperatingActivities",
+                ),
+                "gross_profit": ("income_statement", "GrossProfit"),
             }
 
             if metric not in metric_map:
@@ -128,11 +133,11 @@ class TimeSeriesAnomalyDetector:
             statement_type, field_name = metric_map[metric]
 
             # Get statement data
-            if statement_type == 'income_statement':
+            if statement_type == "income_statement":
                 df = statements.income_statement
-            elif statement_type == 'balance_sheet':
+            elif statement_type == "balance_sheet":
                 df = statements.balance_sheet
-            elif statement_type == 'cash_flow':
+            elif statement_type == "cash_flow":
                 df = statements.cash_flow_statement
             else:
                 return None
@@ -152,10 +157,7 @@ class TimeSeriesAnomalyDetector:
             return None
 
     def _z_score_detection(
-        self,
-        ticker: str,
-        metric: str,
-        data: pd.Series
+        self, ticker: str, metric: str, data: pd.Series
     ) -> List[Anomaly]:
         """Detect anomalies using Z-score (>2.5 std = anomaly)."""
         anomalies = []
@@ -171,16 +173,18 @@ class TimeSeriesAnomalyDetector:
 
             for idx, z_score in z_scores.items():
                 if z_score > 2.5:
-                    anomalies.append(Anomaly(
-                        anomaly_type=AnomalyType.STATISTICAL_OUTLIER,
-                        metric=metric,
-                        period=str(idx),
-                        expected_value=float(mean),
-                        actual_value=float(data[idx]),
-                        deviation=float(z_score),
-                        confidence=min(0.99, 0.5 + (z_score - 2.5) * 0.1),
-                        explanation=f"{metric} is {z_score:.2f} std deviations from mean"
-                    ))
+                    anomalies.append(
+                        Anomaly(
+                            anomaly_type=AnomalyType.STATISTICAL_OUTLIER,
+                            metric=metric,
+                            period=str(idx),
+                            expected_value=float(mean),
+                            actual_value=float(data[idx]),
+                            deviation=float(z_score),
+                            confidence=min(0.99, 0.5 + (z_score - 2.5) * 0.1),
+                            explanation=f"{metric} is {z_score:.2f} std deviations from mean",
+                        )
+                    )
 
         except Exception as e:
             logger.error(f"Error in Z-score detection: {e}")
@@ -188,10 +192,7 @@ class TimeSeriesAnomalyDetector:
         return anomalies
 
     def _modified_z_score_detection(
-        self,
-        ticker: str,
-        metric: str,
-        data: pd.Series
+        self, ticker: str, metric: str, data: pd.Series
     ) -> List[Anomaly]:
         """Detect anomalies using modified Z-score (robust to outliers)."""
         anomalies = []
@@ -208,16 +209,20 @@ class TimeSeriesAnomalyDetector:
 
             for idx, m_z_score in modified_z_scores.items():
                 if np.abs(m_z_score) > 3.5:
-                    anomalies.append(Anomaly(
-                        anomaly_type=AnomalyType.STATISTICAL_OUTLIER,
-                        metric=metric,
-                        period=str(idx),
-                        expected_value=float(median),
-                        actual_value=float(data[idx]),
-                        deviation=float(np.abs(m_z_score)),
-                        confidence=min(0.95, 0.5 + (np.abs(m_z_score) - 3.5) * 0.08),
-                        explanation=f"{metric} has modified Z-score of {m_z_score:.2f}"
-                    ))
+                    anomalies.append(
+                        Anomaly(
+                            anomaly_type=AnomalyType.STATISTICAL_OUTLIER,
+                            metric=metric,
+                            period=str(idx),
+                            expected_value=float(median),
+                            actual_value=float(data[idx]),
+                            deviation=float(np.abs(m_z_score)),
+                            confidence=min(
+                                0.95, 0.5 + (np.abs(m_z_score) - 3.5) * 0.08
+                            ),
+                            explanation=f"{metric} has modified Z-score of {m_z_score:.2f}",
+                        )
+                    )
 
         except Exception as e:
             logger.error(f"Error in modified Z-score detection: {e}")
@@ -225,10 +230,7 @@ class TimeSeriesAnomalyDetector:
         return anomalies
 
     def _iqr_detection(
-        self,
-        ticker: str,
-        metric: str,
-        data: pd.Series
+        self, ticker: str, metric: str, data: pd.Series
     ) -> List[Anomaly]:
         """Detect anomalies using IQR method."""
         anomalies = []
@@ -246,16 +248,18 @@ class TimeSeriesAnomalyDetector:
                     expected = (q1 + q3) / 2
                     deviation = abs(value - expected) / iqr if iqr > 0 else 0
 
-                    anomalies.append(Anomaly(
-                        anomaly_type=AnomalyType.STATISTICAL_OUTLIER,
-                        metric=metric,
-                        period=str(idx),
-                        expected_value=float(expected),
-                        actual_value=float(value),
-                        deviation=float(deviation),
-                        confidence=min(0.90, 0.5 + deviation * 0.05),
-                        explanation=f"{metric} outside IQR bounds [{lower_bound:.2f}, {upper_bound:.2f}]"
-                    ))
+                    anomalies.append(
+                        Anomaly(
+                            anomaly_type=AnomalyType.STATISTICAL_OUTLIER,
+                            metric=metric,
+                            period=str(idx),
+                            expected_value=float(expected),
+                            actual_value=float(value),
+                            deviation=float(deviation),
+                            confidence=min(0.90, 0.5 + deviation * 0.05),
+                            explanation=f"{metric} outside IQR bounds [{lower_bound:.2f}, {upper_bound:.2f}]",
+                        )
+                    )
 
         except Exception as e:
             logger.error(f"Error in IQR detection: {e}")
@@ -263,10 +267,7 @@ class TimeSeriesAnomalyDetector:
         return anomalies
 
     def _trend_break_detection(
-        self,
-        ticker: str,
-        metric: str,
-        data: pd.Series
+        self, ticker: str, metric: str, data: pd.Series
     ) -> List[Anomaly]:
         """Detect structural breaks in trends."""
         anomalies = []
@@ -293,16 +294,18 @@ class TimeSeriesAnomalyDetector:
                 deviation = abs(current_value - expected) / std
 
                 if deviation > 2.0:
-                    anomalies.append(Anomaly(
-                        anomaly_type=AnomalyType.TREND_BREAK,
-                        metric=metric,
-                        period=str(idx),
-                        expected_value=float(expected),
-                        actual_value=float(current_value),
-                        deviation=float(deviation),
-                        confidence=min(0.85, 0.4 + deviation * 0.1),
-                        explanation=f"{metric} breaks trend: {deviation:.2f} std from rolling mean"
-                    ))
+                    anomalies.append(
+                        Anomaly(
+                            anomaly_type=AnomalyType.TREND_BREAK,
+                            metric=metric,
+                            period=str(idx),
+                            expected_value=float(expected),
+                            actual_value=float(current_value),
+                            deviation=float(deviation),
+                            confidence=min(0.85, 0.4 + deviation * 0.1),
+                            explanation=f"{metric} breaks trend: {deviation:.2f} std from rolling mean",
+                        )
+                    )
 
         except Exception as e:
             logger.error(f"Error in trend break detection: {e}")
@@ -315,8 +318,15 @@ class BenfordAnalyzer:
 
     # Benford's Law expected first-digit distribution
     BENFORD_DISTRIBUTION = {
-        1: 0.301, 2: 0.176, 3: 0.125, 4: 0.097, 5: 0.079,
-        6: 0.067, 7: 0.058, 8: 0.051, 9: 0.046
+        1: 0.301,
+        2: 0.176,
+        3: 0.125,
+        4: 0.097,
+        5: 0.079,
+        6: 0.067,
+        7: 0.058,
+        8: 0.051,
+        9: 0.046,
     }
 
     def __init__(self, edgar_adapter: EdgarAdapter):
@@ -340,7 +350,9 @@ class BenfordAnalyzer:
             if statements.balance_sheet is not None:
                 all_numbers.extend(self._extract_numbers(statements.balance_sheet))
             if statements.cash_flow_statement is not None:
-                all_numbers.extend(self._extract_numbers(statements.cash_flow_statement))
+                all_numbers.extend(
+                    self._extract_numbers(statements.cash_flow_statement)
+                )
 
             if not all_numbers:
                 return {"conformity": "insufficient_data", "chi_square_p": None}
@@ -357,8 +369,7 @@ class BenfordAnalyzer:
             total = len(first_digits)
 
             observed_dist = {
-                digit: observed_counts.get(digit, 0) / total
-                for digit in range(1, 10)
+                digit: observed_counts.get(digit, 0) / total for digit in range(1, 10)
             }
 
             # Chi-square test
@@ -385,7 +396,7 @@ class BenfordAnalyzer:
                 "max_deviation": max(
                     abs(observed_dist[d] - self.BENFORD_DISTRIBUTION[d])
                     for d in range(1, 10)
-                )
+                ),
             }
 
         except Exception as e:
@@ -407,7 +418,7 @@ class BenfordAnalyzer:
         try:
             # Convert to string and extract first non-zero digit
             num_str = f"{abs(number):.10e}"
-            match = re.search(r'[1-9]', num_str)
+            match = re.search(r"[1-9]", num_str)
 
             if match:
                 return int(match.group())
@@ -448,7 +459,11 @@ class PeerComparisonAnalyzer:
 
             # Compare each metric
             for metric in target_ratios.keys():
-                peer_values = [r[metric] for r in peer_ratios if metric in r and r[metric] is not None]
+                peer_values = [
+                    r[metric]
+                    for r in peer_ratios
+                    if metric in r and r[metric] is not None
+                ]
 
                 if len(peer_values) < 2:
                     continue
@@ -469,16 +484,18 @@ class PeerComparisonAnalyzer:
                 if deviation > 2.0:
                     percentile = stats.percentileofscore(peer_values, target_value)
 
-                    anomalies.append(Anomaly(
-                        anomaly_type=AnomalyType.PEER_DEVIATION,
-                        metric=metric,
-                        period="latest",
-                        expected_value=float(peer_median),
-                        actual_value=float(target_value),
-                        deviation=float(deviation),
-                        confidence=min(0.90, 0.5 + deviation * 0.08),
-                        explanation=f"{metric} is {deviation:.2f} std from peer median ({percentile:.1f}th percentile)"
-                    ))
+                    anomalies.append(
+                        Anomaly(
+                            anomaly_type=AnomalyType.PEER_DEVIATION,
+                            metric=metric,
+                            period="latest",
+                            expected_value=float(peer_median),
+                            actual_value=float(target_value),
+                            deviation=float(deviation),
+                            confidence=min(0.90, 0.5 + deviation * 0.08),
+                            explanation=f"{metric} is {deviation:.2f} std from peer median ({percentile:.1f}th percentile)",
+                        )
+                    )
 
         except Exception as e:
             logger.error(f"Error in peer comparison for {ticker}: {e}")
@@ -494,8 +511,16 @@ class PeerComparisonAnalyzer:
                 return None
 
             # Get latest values
-            income = statements.income_statement.iloc[-1] if not statements.income_statement.empty else None
-            balance = statements.balance_sheet.iloc[-1] if not statements.balance_sheet.empty else None
+            income = (
+                statements.income_statement.iloc[-1]
+                if not statements.income_statement.empty
+                else None
+            )
+            balance = (
+                statements.balance_sheet.iloc[-1]
+                if not statements.balance_sheet.empty
+                else None
+            )
 
             if income is None or balance is None:
                 return None
@@ -503,26 +528,30 @@ class PeerComparisonAnalyzer:
             ratios = {}
 
             # Profitability ratios
-            revenue = income.get('Revenues', 0)
-            net_income = income.get('NetIncomeLoss', 0)
-            gross_profit = income.get('GrossProfit', 0)
+            revenue = income.get("Revenues", 0)
+            net_income = income.get("NetIncomeLoss", 0)
+            gross_profit = income.get("GrossProfit", 0)
 
             if revenue and revenue != 0:
-                ratios['net_margin'] = (net_income / revenue) * 100
-                ratios['gross_margin'] = (gross_profit / revenue) * 100 if gross_profit else None
+                ratios["net_margin"] = (net_income / revenue) * 100
+                ratios["gross_margin"] = (
+                    (gross_profit / revenue) * 100 if gross_profit else None
+                )
 
             # Balance sheet ratios
-            assets = balance.get('Assets', 0)
-            liabilities = balance.get('Liabilities', 0)
+            assets = balance.get("Assets", 0)
+            liabilities = balance.get("Liabilities", 0)
             equity = assets - liabilities if assets and liabilities else None
 
             if equity and equity != 0:
-                ratios['roe'] = (net_income / equity) * 100
-                ratios['debt_to_equity'] = (liabilities / equity) if liabilities else None
+                ratios["roe"] = (net_income / equity) * 100
+                ratios["debt_to_equity"] = (
+                    (liabilities / equity) if liabilities else None
+                )
 
             if assets and assets != 0:
-                ratios['roa'] = (net_income / assets) * 100
-                ratios['asset_turnover'] = (revenue / assets) if revenue else None
+                ratios["roa"] = (net_income / assets) * 100
+                ratios["asset_turnover"] = (revenue / assets) if revenue else None
 
             return ratios
 
@@ -573,16 +602,35 @@ class FootnoteAnomalyDetector:
 
         return anomalies
 
-    def _check_red_flag_keywords(self, footnotes: Dict[FootnoteType, str]) -> List[Anomaly]:
+    def _check_red_flag_keywords(
+        self, footnotes: Dict[FootnoteType, str]
+    ) -> List[Anomaly]:
         """Check for red flag keywords in footnotes."""
         anomalies = []
 
         red_flag_keywords = {
-            'going_concern': ['going concern', 'substantial doubt', 'ability to continue'],
-            'restatement': ['restatement', 'restate', 'restated', 'prior period adjustment'],
-            'litigation': ['material litigation', 'adverse judgment', 'contingent liability'],
-            'related_party': ['related party transaction', 'affiliated entity'],
-            'change_accounting': ['change in accounting', 'accounting policy change', 'adoption of new standard'],
+            "going_concern": [
+                "going concern",
+                "substantial doubt",
+                "ability to continue",
+            ],
+            "restatement": [
+                "restatement",
+                "restate",
+                "restated",
+                "prior period adjustment",
+            ],
+            "litigation": [
+                "material litigation",
+                "adverse judgment",
+                "contingent liability",
+            ],
+            "related_party": ["related party transaction", "affiliated entity"],
+            "change_accounting": [
+                "change in accounting",
+                "accounting policy change",
+                "adoption of new standard",
+            ],
         }
 
         for footnote_type, text in footnotes.items():
@@ -597,23 +645,23 @@ class FootnoteAnomalyDetector:
                         # Count occurrences
                         count = text_lower.count(keyword)
 
-                        anomalies.append(Anomaly(
-                            anomaly_type=AnomalyType.DISCLOSURE_CHANGE,
-                            metric=f"{footnote_type.value}_{flag_type}",
-                            period="latest",
-                            expected_value=0.0,
-                            actual_value=float(count),
-                            deviation=float(count),
-                            confidence=0.75,
-                            explanation=f"Found '{keyword}' {count} time(s) in {footnote_type.value}"
-                        ))
+                        anomalies.append(
+                            Anomaly(
+                                anomaly_type=AnomalyType.DISCLOSURE_CHANGE,
+                                metric=f"{footnote_type.value}_{flag_type}",
+                                period="latest",
+                                expected_value=0.0,
+                                actual_value=float(count),
+                                deviation=float(count),
+                                confidence=0.75,
+                                explanation=f"Found '{keyword}' {count} time(s) in {footnote_type.value}",
+                            )
+                        )
 
         return anomalies
 
     def _check_disclosure_patterns(
-        self,
-        ticker: str,
-        footnotes: Dict[FootnoteType, str]
+        self, ticker: str, footnotes: Dict[FootnoteType, str]
     ) -> List[Anomaly]:
         """Check for unusual disclosure patterns."""
         anomalies = []
@@ -630,20 +678,22 @@ class FootnoteAnomalyDetector:
                 important_types = [
                     FootnoteType.SIGNIFICANT_ACCOUNTING_POLICIES,
                     FootnoteType.REVENUE_RECOGNITION,
-                    FootnoteType.INCOME_TAXES
+                    FootnoteType.INCOME_TAXES,
                 ]
 
                 if footnote_type in important_types and word_count < 100:
-                    anomalies.append(Anomaly(
-                        anomaly_type=AnomalyType.DISCLOSURE_CHANGE,
-                        metric=f"{footnote_type.value}_length",
-                        period="latest",
-                        expected_value=500.0,
-                        actual_value=float(word_count),
-                        deviation=abs(500.0 - word_count) / 100,
-                        confidence=0.60,
-                        explanation=f"{footnote_type.value} is unusually brief ({word_count} words)"
-                    ))
+                    anomalies.append(
+                        Anomaly(
+                            anomaly_type=AnomalyType.DISCLOSURE_CHANGE,
+                            metric=f"{footnote_type.value}_length",
+                            period="latest",
+                            expected_value=500.0,
+                            actual_value=float(word_count),
+                            deviation=abs(500.0 - word_count) / 100,
+                            confidence=0.60,
+                            explanation=f"{footnote_type.value} is unusually brief ({word_count} words)",
+                        )
+                    )
 
         except Exception as e:
             logger.error(f"Error checking disclosure patterns: {e}")
@@ -674,32 +724,32 @@ class DisclosureQualityScorer:
             scores = {}
 
             # 1. Completeness score (0-100)
-            scores['completeness'] = self._score_completeness(footnotes)
+            scores["completeness"] = self._score_completeness(footnotes)
 
             # 2. Detail score (0-100)
-            scores['detail'] = self._score_detail(footnotes)
+            scores["detail"] = self._score_detail(footnotes)
 
             # 3. Specificity score (0-100)
-            scores['specificity'] = self._score_specificity(footnotes)
+            scores["specificity"] = self._score_specificity(footnotes)
 
             # 4. Clarity score (0-100)
-            scores['clarity'] = self._score_clarity(footnotes)
+            scores["clarity"] = self._score_clarity(footnotes)
 
             # Overall score (weighted average)
             overall = (
-                scores['completeness'] * 0.3 +
-                scores['detail'] * 0.3 +
-                scores['specificity'] * 0.2 +
-                scores['clarity'] * 0.2
+                scores["completeness"] * 0.3
+                + scores["detail"] * 0.3
+                + scores["specificity"] * 0.2
+                + scores["clarity"] * 0.2
             )
 
             return {
                 "overall_score": round(overall, 1),
-                "completeness": round(scores['completeness'], 1),
-                "detail": round(scores['detail'], 1),
-                "specificity": round(scores['specificity'], 1),
-                "clarity": round(scores['clarity'], 1),
-                "grade": self._get_grade(overall)
+                "completeness": round(scores["completeness"], 1),
+                "detail": round(scores["detail"], 1),
+                "specificity": round(scores["specificity"], 1),
+                "clarity": round(scores["clarity"], 1),
+                "grade": self._get_grade(overall),
             }
 
         except Exception as e:
@@ -728,17 +778,26 @@ class DisclosureQualityScorer:
 
     def _score_specificity(self, footnotes: Dict[FootnoteType, str]) -> float:
         """Score based on use of specific language vs. hedging."""
-        hedging_words = ['may', 'could', 'might', 'approximately', 'estimate', 'believe']
-        specific_indicators = ['$', '%', 'basis points', 'million', 'billion']
+        hedging_words = [
+            "may",
+            "could",
+            "might",
+            "approximately",
+            "estimate",
+            "believe",
+        ]
+        specific_indicators = ["$", "%", "basis points", "million", "billion"]
 
-        total_text = ' '.join(footnotes.values())
+        total_text = " ".join(footnotes.values())
         words = total_text.lower().split()
 
         if not words:
             return 0
 
         hedging_count = sum(1 for w in words if w in hedging_words)
-        specific_count = sum(1 for indicator in specific_indicators if indicator in total_text.lower())
+        specific_count = sum(
+            1 for indicator in specific_indicators if indicator in total_text.lower()
+        )
 
         # More specific = higher score, excessive hedging = lower score
         hedging_ratio = hedging_count / len(words)
@@ -751,12 +810,12 @@ class DisclosureQualityScorer:
 
     def _score_clarity(self, footnotes: Dict[FootnoteType, str]) -> float:
         """Score based on readability (inverse of complexity)."""
-        total_text = ' '.join(footnotes.values())
+        total_text = " ".join(footnotes.values())
 
         if not total_text:
             return 0
 
-        sentences = total_text.split('.')
+        sentences = total_text.split(".")
         words = total_text.split()
 
         if not sentences or not words:
@@ -824,9 +883,7 @@ class SeasonalAnomalyDetector:
         return anomalies
 
     def _detect_revenue_hockey_stick(
-        self,
-        ticker: str,
-        statements: FinancialStatements
+        self, ticker: str, statements: FinancialStatements
     ) -> List[Anomaly]:
         """Detect Q4 revenue hockey stick pattern."""
         anomalies = []
@@ -834,10 +891,10 @@ class SeasonalAnomalyDetector:
         try:
             df = statements.income_statement
 
-            if 'Revenues' not in df.columns or len(df) < 4:
+            if "Revenues" not in df.columns or len(df) < 4:
                 return anomalies
 
-            revenues = df['Revenues'].tail(4)
+            revenues = df["Revenues"].tail(4)
 
             # Check if Q4 revenue is significantly higher than Q1-Q3 average
             if len(revenues) == 4:
@@ -849,16 +906,18 @@ class SeasonalAnomalyDetector:
 
                     # Flag if Q4 is >30% higher than Q1-Q3 average
                     if q4_ratio > 1.3:
-                        anomalies.append(Anomaly(
-                            anomaly_type=AnomalyType.SEASONAL_ANOMALY,
-                            metric="revenue_hockey_stick",
-                            period="Q4",
-                            expected_value=float(q1_q3_avg),
-                            actual_value=float(q4_revenue),
-                            deviation=float((q4_ratio - 1) * 100),
-                            confidence=min(0.85, 0.5 + (q4_ratio - 1.3) * 0.5),
-                            explanation=f"Q4 revenue {q4_ratio:.1%} of Q1-Q3 average (possible hockey stick)"
-                        ))
+                        anomalies.append(
+                            Anomaly(
+                                anomaly_type=AnomalyType.SEASONAL_ANOMALY,
+                                metric="revenue_hockey_stick",
+                                period="Q4",
+                                expected_value=float(q1_q3_avg),
+                                actual_value=float(q4_revenue),
+                                deviation=float((q4_ratio - 1) * 100),
+                                confidence=min(0.85, 0.5 + (q4_ratio - 1.3) * 0.5),
+                                explanation=f"Q4 revenue {q4_ratio:.1%} of Q1-Q3 average (possible hockey stick)",
+                            )
+                        )
 
         except Exception as e:
             logger.error(f"Error detecting revenue hockey stick: {e}")
@@ -866,9 +925,7 @@ class SeasonalAnomalyDetector:
         return anomalies
 
     def _detect_expense_timing(
-        self,
-        ticker: str,
-        statements: FinancialStatements
+        self, ticker: str, statements: FinancialStatements
     ) -> List[Anomaly]:
         """Detect unusual expense timing (e.g., Q4 expense dumps)."""
         anomalies = []
@@ -876,10 +933,10 @@ class SeasonalAnomalyDetector:
         try:
             df = statements.income_statement
 
-            if 'CostsAndExpenses' not in df.columns or len(df) < 4:
+            if "CostsAndExpenses" not in df.columns or len(df) < 4:
                 return anomalies
 
-            expenses = df['CostsAndExpenses'].tail(4)
+            expenses = df["CostsAndExpenses"].tail(4)
 
             if len(expenses) == 4:
                 q4_expense = expenses.iloc[-1]
@@ -892,16 +949,18 @@ class SeasonalAnomalyDetector:
                     if q4_ratio > 1.4 or q4_ratio < 0.6:
                         direction = "higher" if q4_ratio > 1.4 else "lower"
 
-                        anomalies.append(Anomaly(
-                            anomaly_type=AnomalyType.SEASONAL_ANOMALY,
-                            metric="expense_timing",
-                            period="Q4",
-                            expected_value=float(q1_q3_avg),
-                            actual_value=float(q4_expense),
-                            deviation=float(abs(q4_ratio - 1) * 100),
-                            confidence=min(0.80, 0.5 + abs(q4_ratio - 1) * 0.3),
-                            explanation=f"Q4 expenses {direction} than expected ({q4_ratio:.1%} of Q1-Q3 avg)"
-                        ))
+                        anomalies.append(
+                            Anomaly(
+                                anomaly_type=AnomalyType.SEASONAL_ANOMALY,
+                                metric="expense_timing",
+                                period="Q4",
+                                expected_value=float(q1_q3_avg),
+                                actual_value=float(q4_expense),
+                                deviation=float(abs(q4_ratio - 1) * 100),
+                                confidence=min(0.80, 0.5 + abs(q4_ratio - 1) * 0.3),
+                                explanation=f"Q4 expenses {direction} than expected ({q4_ratio:.1%} of Q1-Q3 avg)",
+                            )
+                        )
 
         except Exception as e:
             logger.error(f"Error detecting expense timing anomalies: {e}")
@@ -921,7 +980,9 @@ class AnomalyAggregator:
         self.disclosure_scorer = DisclosureQualityScorer(edgar_adapter)
         self.seasonal_detector = SeasonalAnomalyDetector(edgar_adapter)
 
-    def aggregate(self, ticker: str, peers: Optional[List[str]] = None) -> AnomalyReport:
+    def aggregate(
+        self, ticker: str, peers: Optional[List[str]] = None
+    ) -> AnomalyReport:
         """
         Combine all anomaly detectors into comprehensive report.
 
@@ -937,7 +998,7 @@ class AnomalyAggregator:
         try:
             # 1. Time series anomalies
             logger.info(f"Detecting time series anomalies for {ticker}")
-            metrics = ['revenue', 'net_income', 'total_assets', 'operating_cash_flow']
+            metrics = ["revenue", "net_income", "total_assets", "operating_cash_flow"]
             ts_anomalies = self.time_series_detector.detect(ticker, metrics)
             all_anomalies.extend(ts_anomalies)
 
@@ -945,17 +1006,19 @@ class AnomalyAggregator:
             logger.info(f"Running Benford analysis for {ticker}")
             benford_result = self.benford_analyzer.analyze(ticker)
 
-            if benford_result.get('conformity') == 'violates':
-                all_anomalies.append(Anomaly(
-                    anomaly_type=AnomalyType.BENFORD_VIOLATION,
-                    metric="first_digit_distribution",
-                    period="all",
-                    expected_value=0.05,
-                    actual_value=float(benford_result.get('chi_square_p', 0)),
-                    deviation=float(benford_result.get('max_deviation', 0)),
-                    confidence=0.80,
-                    explanation=f"Financial data violates Benford's Law (p={benford_result.get('chi_square_p', 0):.4f})"
-                ))
+            if benford_result.get("conformity") == "violates":
+                all_anomalies.append(
+                    Anomaly(
+                        anomaly_type=AnomalyType.BENFORD_VIOLATION,
+                        metric="first_digit_distribution",
+                        period="all",
+                        expected_value=0.05,
+                        actual_value=float(benford_result.get("chi_square_p", 0)),
+                        deviation=float(benford_result.get("max_deviation", 0)),
+                        confidence=0.80,
+                        explanation=f"Financial data violates Benford's Law (p={benford_result.get('chi_square_p', 0):.4f})",
+                    )
+                )
 
             # 3. Peer comparison
             if peers:
@@ -978,23 +1041,31 @@ class AnomalyAggregator:
             disclosure_quality = self.disclosure_scorer.score(ticker)
 
             # Calculate overall anomaly score
-            anomaly_score = self._calculate_anomaly_score(all_anomalies, disclosure_quality)
+            anomaly_score = self._calculate_anomaly_score(
+                all_anomalies, disclosure_quality
+            )
 
             # Assess time series health
             ts_health = self._assess_time_series_health(ts_anomalies)
 
             # Assess peer alignment
             peer_alignment = self._assess_peer_alignment(
-                [a for a in all_anomalies if a.anomaly_type == AnomalyType.PEER_DEVIATION]
+                [
+                    a
+                    for a in all_anomalies
+                    if a.anomaly_type == AnomalyType.PEER_DEVIATION
+                ]
             )
 
             return AnomalyReport(
                 ticker=ticker,
-                anomalies=sorted(all_anomalies, key=lambda x: x.confidence, reverse=True),
+                anomalies=sorted(
+                    all_anomalies, key=lambda x: x.confidence, reverse=True
+                ),
                 anomaly_score=anomaly_score,
                 time_series_health=ts_health,
                 peer_alignment=peer_alignment,
-                disclosure_quality=disclosure_quality.get('grade', 'N/A')
+                disclosure_quality=disclosure_quality.get("grade", "N/A"),
             )
 
         except Exception as e:
@@ -1005,13 +1076,11 @@ class AnomalyAggregator:
                 anomaly_score=0,
                 time_series_health="error",
                 peer_alignment="error",
-                disclosure_quality="N/A"
+                disclosure_quality="N/A",
             )
 
     def _calculate_anomaly_score(
-        self,
-        anomalies: List[Anomaly],
-        disclosure_quality: Dict[str, Any]
+        self, anomalies: List[Anomaly], disclosure_quality: Dict[str, Any]
     ) -> float:
         """Calculate overall anomaly score (0-100, higher = more anomalies)."""
         if not anomalies:
@@ -1022,7 +1091,7 @@ class AnomalyAggregator:
             base_score = min(100, weighted_sum * 2)
 
         # Adjust for disclosure quality (poor disclosure = higher anomaly score)
-        disclosure_score = disclosure_quality.get('overall_score', 70)
+        disclosure_score = disclosure_quality.get("overall_score", 70)
         disclosure_penalty = max(0, (70 - disclosure_score) / 2)
 
         final_score = min(100, base_score + disclosure_penalty)
