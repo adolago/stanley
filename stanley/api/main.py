@@ -21,6 +21,7 @@ from ..accounting import (
     EarningsQualityAnalyzer,
     RedFlagScorer,
     AnomalyAggregator,
+    EdgarAdapter,
 )
 from ..analytics.institutional import InstitutionalAnalyzer
 from ..analytics.money_flow import MoneyFlowAnalyzer
@@ -212,10 +213,11 @@ async def lifespan(app: FastAPI):
 
     # Initialize accounting analyzers
     try:
+        edgar_adapter = EdgarAdapter()
         app_state.accounting_analyzer = AccountingAnalyzer()
         app_state.earnings_quality_analyzer = EarningsQualityAnalyzer()
-        app_state.red_flag_scorer = RedFlagScorer()
-        app_state.anomaly_aggregator = AnomalyAggregator()
+        app_state.red_flag_scorer = RedFlagScorer(edgar_adapter=edgar_adapter)
+        app_state.anomaly_aggregator = AnomalyAggregator(edgar_adapter=edgar_adapter)
         logger.info("Accounting analyzers initialized")
     except Exception as e:
         logger.warning(f"Accounting analyzers initialization failed: {e}")
@@ -3449,26 +3451,35 @@ async def get_earnings_quality(symbol: str, manufacturing: bool = False):
             symbol, manufacturing=manufacturing
         )
 
-        response = EarningsQualityResponse(
-            symbol=symbol,
-            overallQuality=(
-                result.overall_quality.value
-                if hasattr(result.overall_quality, "value")
-                else str(result.overall_quality)
-            ),
-            mScore=result.m_score.m_score,
-            mScoreRisk=result.m_score.manipulation_risk,
-            fScore=result.f_score.f_score,
-            fScoreRating=result.f_score.quality_rating,
-            zScore=result.z_score.z_score,
-            zScoreZone=result.z_score.distress_zone,
-            bankruptcyProbability=result.z_score.bankruptcy_probability,
-            accrualRatio=result.accrual_quality.get("accrual_ratio", 0.0),
-            manipulationFlags=result.m_score.flags,
-            timestamp=get_timestamp(),
+        return create_response(
+            data={
+                "symbol": symbol,
+                "overallRating": (
+                    result.overall_rating.value
+                    if hasattr(result.overall_rating, "value")
+                    else str(result.overall_rating)
+                ),
+                "overallScore": result.overall_score,
+                "mScore": result.m_score.m_score if result.m_score else None,
+                "mScoreRisk": (
+                    result.m_score.risk_level.value
+                    if result.m_score and hasattr(result.m_score.risk_level, "value")
+                    else None
+                ),
+                "isLikelyManipulator": (
+                    result.m_score.is_likely_manipulator if result.m_score else False
+                ),
+                "fScore": result.f_score.f_score if result.f_score else None,
+                "fScoreCategory": (result.f_score.category if result.f_score else None),
+                "zScore": result.z_score.z_score if result.z_score else None,
+                "zScoreZone": result.z_score.zone if result.z_score else None,
+                "accrualRatio": result.accrual_ratio,
+                "cashConversion": result.cash_conversion,
+                "earningsPersistence": result.earnings_persistence,
+                "redFlags": result.red_flags,
+                "timestamp": get_timestamp(),
+            }
         )
-
-        return create_response(data=response.model_dump())
 
     except HTTPException:
         raise
@@ -3500,18 +3511,16 @@ async def get_beneish_m_score(symbol: str):
                 status_code=503, detail="Earnings quality analyzer not initialized"
             )
 
-        result = app_state.earnings_quality_analyzer.beneish_calculator.calculate(
-            symbol
-        )
+        result = app_state.earnings_quality_analyzer.m_score_calc.calculate(symbol)
 
         return create_response(
             data={
                 "symbol": symbol,
                 "mScore": result.m_score,
-                "manipulationRisk": result.manipulation_risk,
+                "isLikelyManipulator": result.is_likely_manipulator,
                 "components": result.components,
-                "flags": result.flags,
-                "threshold": -2.22,
+                "riskLevel": result.risk_level.value,
+                "threshold": -1.78,
                 "timestamp": get_timestamp(),
             }
         )
@@ -3547,18 +3556,14 @@ async def get_piotroski_f_score(symbol: str):
                 status_code=503, detail="Earnings quality analyzer not initialized"
             )
 
-        result = app_state.earnings_quality_analyzer.piotroski_calculator.calculate(
-            symbol
-        )
+        result = app_state.earnings_quality_analyzer.f_score_calc.calculate(symbol)
 
         return create_response(
             data={
                 "symbol": symbol,
                 "fScore": result.f_score,
-                "qualityRating": result.quality_rating,
+                "category": result.category,
                 "signals": result.signals,
-                "positiveSignals": result.positive_signals,
-                "negativeSignals": result.negative_signals,
                 "timestamp": get_timestamp(),
             }
         )
@@ -3594,7 +3599,7 @@ async def get_altman_z_score(symbol: str, manufacturing: bool = False):
                 status_code=503, detail="Earnings quality analyzer not initialized"
             )
 
-        result = app_state.earnings_quality_analyzer.altman_calculator.calculate(
+        result = app_state.earnings_quality_analyzer.z_score_calc.calculate(
             symbol, manufacturing=manufacturing
         )
 
@@ -3602,8 +3607,7 @@ async def get_altman_z_score(symbol: str, manufacturing: bool = False):
             data={
                 "symbol": symbol,
                 "zScore": result.z_score,
-                "distressZone": result.distress_zone,
-                "bankruptcyProbability": result.bankruptcy_probability,
+                "zone": result.zone,
                 "components": result.components,
                 "formulaType": "manufacturing" if manufacturing else "service",
                 "timestamp": get_timestamp(),
@@ -3799,16 +3803,30 @@ async def get_accrual_analysis(symbol: str):
                 status_code=503, detail="Earnings quality analyzer not initialized"
             )
 
-        result = app_state.earnings_quality_analyzer.accrual_analyzer.analyze(symbol)
+        accrual_ratio = (
+            app_state.earnings_quality_analyzer.accrual_calc.calculate_accrual_ratio(
+                symbol
+            )
+        )
+        cash_conversion = (
+            app_state.earnings_quality_analyzer.accrual_calc.calculate_cash_conversion(
+                symbol
+            )
+        )
+
+        # Flag high accruals (>10%) as lower quality
+        quality_flag = (
+            abs(accrual_ratio) > 0.10 if not np.isnan(accrual_ratio) else False
+        )
 
         return create_response(
             data={
                 "symbol": symbol,
-                "sloanRatio": result.get("sloan_ratio"),
-                "accrualRatio": result.get("accrual_ratio"),
-                "workingCapitalAccruals": result.get("wc_accruals"),
-                "qualityFlag": result.get("quality_flag", False),
-                "richardson": result.get("richardson_decomposition", {}),
+                "accrualRatio": accrual_ratio if not np.isnan(accrual_ratio) else None,
+                "cashConversion": (
+                    cash_conversion if not np.isnan(cash_conversion) else None
+                ),
+                "qualityFlag": quality_flag,
                 "timestamp": get_timestamp(),
             }
         )
@@ -3851,26 +3869,44 @@ async def get_comprehensive_accounting_quality(
                     symbol, manufacturing=manufacturing
                 )
                 report["earningsQuality"] = {
-                    "overallQuality": (
-                        eq_result.overall_quality.value
-                        if hasattr(eq_result.overall_quality, "value")
-                        else str(eq_result.overall_quality)
+                    "overallRating": (
+                        eq_result.overall_rating.value
+                        if hasattr(eq_result.overall_rating, "value")
+                        else str(eq_result.overall_rating)
                     ),
+                    "overallScore": eq_result.overall_score,
                     "mScore": {
-                        "score": eq_result.m_score.m_score,
-                        "risk": eq_result.m_score.manipulation_risk,
-                        "flags": eq_result.m_score.flags,
+                        "score": (
+                            eq_result.m_score.m_score if eq_result.m_score else None
+                        ),
+                        "riskLevel": (
+                            eq_result.m_score.risk_level.value
+                            if eq_result.m_score
+                            else None
+                        ),
+                        "isLikelyManipulator": (
+                            eq_result.m_score.is_likely_manipulator
+                            if eq_result.m_score
+                            else False
+                        ),
                     },
                     "fScore": {
-                        "score": eq_result.f_score.f_score,
-                        "rating": eq_result.f_score.quality_rating,
+                        "score": (
+                            eq_result.f_score.f_score if eq_result.f_score else None
+                        ),
+                        "category": (
+                            eq_result.f_score.category if eq_result.f_score else None
+                        ),
                     },
                     "zScore": {
-                        "score": eq_result.z_score.z_score,
-                        "zone": eq_result.z_score.distress_zone,
-                        "bankruptcyProbability": eq_result.z_score.bankruptcy_probability,
+                        "score": (
+                            eq_result.z_score.z_score if eq_result.z_score else None
+                        ),
+                        "zone": eq_result.z_score.zone if eq_result.z_score else None,
                     },
-                    "accruals": eq_result.accrual_quality,
+                    "accrualRatio": eq_result.accrual_ratio,
+                    "cashConversion": eq_result.cash_conversion,
+                    "redFlags": eq_result.red_flags,
                 }
             except Exception as e:
                 logger.warning(f"Earnings quality analysis failed: {e}")
