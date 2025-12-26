@@ -42,24 +42,26 @@ def pytest_collection_modifyitems(config, items):
         # Check for nautilus-related tests
         if "nautilus" in item.nodeid.lower():
             if not HAS_NAUTILUS:
-                item.add_marker(pytest.mark.skip(
-                    reason="nautilus_trader not installed"
-                ))
+                item.add_marker(
+                    pytest.mark.skip(reason="nautilus_trader not installed")
+                )
 
         # Check for end-to-end tests (which require both nautilus and openbb)
         if "end_to_end" in item.nodeid.lower():
             if not HAS_NAUTILUS:
-                item.add_marker(pytest.mark.skip(
-                    reason="nautilus_trader not installed (required for end-to-end tests)"
-                ))
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason="nautilus_trader not installed (required for e2e tests)"
+                    )
+                )
             elif not HAS_OPENBB:
-                item.add_marker(pytest.mark.skip(
-                    reason="openbb not installed (required for end-to-end tests)"
-                ))
+                item.add_marker(
+                    pytest.mark.skip(
+                        reason="openbb not installed (required for end-to-end tests)"
+                    )
+                )
 
         # Check for openbb-related tests
         if "openbb" in item.nodeid.lower() and "mock" not in item.nodeid.lower():
             if not HAS_OPENBB:
-                item.add_marker(pytest.mark.skip(
-                    reason="openbb not installed"
-                ))
+                item.add_marker(pytest.mark.skip(reason="openbb not installed"))
