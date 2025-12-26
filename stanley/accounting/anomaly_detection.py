@@ -12,8 +12,8 @@ Statistical and pattern-based anomaly detection:
 import logging
 import re
 from collections import Counter
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 from enum import Enum
 
 import numpy as np
@@ -425,7 +425,7 @@ class BenfordAnalyzer:
 
             return None
 
-        except:
+        except Exception:
             return None
 
 

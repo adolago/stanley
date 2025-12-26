@@ -217,7 +217,6 @@ class MoneyFlowActor(Actor):
             event: The event to process
         """
         # Handle custom events or order events if needed
-        pass
 
     def _analyze_equity_flow(self, symbol: str, latest_bar: Bar) -> None:
         """

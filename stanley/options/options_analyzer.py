@@ -8,7 +8,7 @@ No crystal balls, no tea leaves - just real options flow data.
 
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, Optional, TypedDict
 
 import numpy as np
 import pandas as pd

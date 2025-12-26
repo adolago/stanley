@@ -3070,9 +3070,11 @@ async def get_block_trades(
     response_model=ApiResponse,
     tags=["Money Flow"],
 )
-async def get_sector_rotation(sectors: Optional[str] = None, lookback_days: int = 21):
+async def get_money_flow_sector_rotation(
+    sectors: Optional[str] = None, lookback_days: int = 21
+):
     """
-    Detect sector rotation patterns.
+    Detect sector rotation patterns based on money flow.
 
     Analyzes relative strength and momentum across sectors to identify
     rotation patterns used by institutional investors.

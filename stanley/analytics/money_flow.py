@@ -15,7 +15,7 @@ Enhanced with:
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, List, Optional, Any
 
 import numpy as np
 import pandas as pd

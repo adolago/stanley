@@ -10,8 +10,8 @@ Detects accounting red flags and manipulation patterns:
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import List, Optional
 from enum import Enum
 
 import numpy as np

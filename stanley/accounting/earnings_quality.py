@@ -10,15 +10,14 @@ Comprehensive earnings quality metrics including:
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 from enum import Enum
 
 import numpy as np
 import pandas as pd
 
 from .financial_statements import FinancialStatements
-from .edgar_adapter import EdgarAdapter
 
 logger = logging.getLogger(__name__)
 

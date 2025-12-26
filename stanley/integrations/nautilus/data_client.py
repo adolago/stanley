@@ -830,11 +830,9 @@ class StanleyDataClient:
 
     def subscribe_quote_ticks(self, instrument_id) -> None:
         """Subscribe to quote ticks."""
-        pass
 
     def subscribe_trade_ticks(self, instrument_id) -> None:
         """Subscribe to trade ticks."""
-        pass
 
     def request_bars(self, bar_type, start, end) -> None:
         """Request historical bars."""

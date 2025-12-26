@@ -12,7 +12,7 @@ Monitors credit market conditions through:
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np

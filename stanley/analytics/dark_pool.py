@@ -10,8 +10,8 @@ without revealing their intentions to the broader market.
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple
+from datetime import datetime
+from typing import Dict, List, Optional, Any
 
 import numpy as np
 import pandas as pd

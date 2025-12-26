@@ -15,25 +15,17 @@ import pandas as pd
 class DataProviderError(Exception):
     """Base exception for data provider errors."""
 
-    pass
-
 
 class RateLimitError(DataProviderError):
     """Raised when rate limit is exceeded."""
-
-    pass
 
 
 class DataNotFoundError(DataProviderError):
     """Raised when requested data is not found."""
 
-    pass
-
 
 class AuthenticationError(DataProviderError):
     """Raised when authentication fails."""
-
-    pass
 
 
 class DataProvider(ABC):
@@ -47,7 +39,6 @@ class DataProvider(ABC):
     @abstractmethod
     def name(self) -> str:
         """Return the provider name."""
-        pass
 
     @abstractmethod
     async def initialize(self) -> None:
@@ -57,14 +48,12 @@ class DataProvider(ABC):
         This should be called before any data fetching operations.
         May include authentication, connection setup, etc.
         """
-        pass
 
     @abstractmethod
     async def close(self) -> None:
         """
         Close the data provider and cleanup resources.
         """
-        pass
 
     @abstractmethod
     async def health_check(self) -> bool:
@@ -74,7 +63,6 @@ class DataProvider(ABC):
         Returns:
             True if healthy, False otherwise.
         """
-        pass
 
     @abstractmethod
     async def get_stock_data(
@@ -92,7 +80,6 @@ class DataProvider(ABC):
         Returns:
             DataFrame with columns: date, open, high, low, close, volume
         """
-        pass
 
     @abstractmethod
     async def get_institutional_holdings(self, symbol: str, **kwargs) -> pd.DataFrame:
@@ -106,7 +93,6 @@ class DataProvider(ABC):
         Returns:
             DataFrame with institutional holding details
         """
-        pass
 
     @abstractmethod
     async def get_options_chain(self, symbol: str, **kwargs) -> pd.DataFrame:
@@ -120,7 +106,6 @@ class DataProvider(ABC):
         Returns:
             DataFrame with options chain data
         """
-        pass
 
     @abstractmethod
     async def get_fundamentals(self, symbol: str, **kwargs) -> Dict[str, Any]:
@@ -134,7 +119,6 @@ class DataProvider(ABC):
         Returns:
             Dictionary with fundamental metrics
         """
-        pass
 
     @abstractmethod
     async def get_insider_transactions(self, symbol: str, **kwargs) -> pd.DataFrame:
@@ -148,7 +132,6 @@ class DataProvider(ABC):
         Returns:
             DataFrame with insider transaction details
         """
-        pass
 
     @abstractmethod
     async def get_etf_holdings(self, symbol: str, **kwargs) -> pd.DataFrame:
@@ -162,7 +145,6 @@ class DataProvider(ABC):
         Returns:
             DataFrame with ETF holdings
         """
-        pass
 
     @abstractmethod
     async def get_economic_indicator(
@@ -180,7 +162,6 @@ class DataProvider(ABC):
         Returns:
             DataFrame with indicator values over time
         """
-        pass
 
 
 class CachingMixin:

@@ -9,10 +9,9 @@ Probabilistic recession forecasting using:
 - Financial conditions indices
 """
 
-from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, Optional, Tuple
 from datetime import datetime
-import pandas as pd
 import numpy as np
 from scipy import stats
 import logging

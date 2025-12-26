@@ -9,7 +9,7 @@ No technical indicators, just real money movement and sector dynamics.
 import logging
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd

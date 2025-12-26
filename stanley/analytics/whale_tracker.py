@@ -7,8 +7,8 @@ changes from major institutional investors.
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, TypedDict
+from datetime import datetime
+from typing import Dict, List, TypedDict
 
 import numpy as np
 import pandas as pd

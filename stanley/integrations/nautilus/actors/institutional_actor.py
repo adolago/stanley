@@ -242,7 +242,6 @@ class InstitutionalActor(Actor):
             event: The event to process
         """
         # Handle custom events if needed
-        pass
 
     def _analyze_institutional_holdings(self, symbol: str, latest_bar: Bar) -> None:
         """
