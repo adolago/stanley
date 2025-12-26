@@ -23,35 +23,41 @@ from stanley.accounting.financial_statements import FinancialStatements, Stateme
 @pytest.fixture
 def mock_statements():
     """Create mock financial statements for testing."""
-    balance_sheet = pd.DataFrame({
-        "accounts_receivable": [100, 120],
-        "total_assets": [1000, 1100],
-        "current_assets": [500, 550],
-        "ppe_net": [300, 320],
-        "total_liabilities": [400, 450],
-        "current_liabilities": [150, 160],
-        "shareholders_equity": [600, 650],
-        "retained_earnings": [400, 450],
-        "long_term_debt": [200, 220],
-        "short_term_debt": [50, 60],
-        "common_stock": [100, 100],
-        "cash_and_equivalents": [150, 170],
-    })
+    balance_sheet = pd.DataFrame(
+        {
+            "accounts_receivable": [100, 120],
+            "total_assets": [1000, 1100],
+            "current_assets": [500, 550],
+            "ppe_net": [300, 320],
+            "total_liabilities": [400, 450],
+            "current_liabilities": [150, 160],
+            "shareholders_equity": [600, 650],
+            "retained_earnings": [400, 450],
+            "long_term_debt": [200, 220],
+            "short_term_debt": [50, 60],
+            "common_stock": [100, 100],
+            "cash_and_equivalents": [150, 170],
+        }
+    )
 
-    income_statement = pd.DataFrame({
-        "revenue": [1000, 1100],
-        "cost_of_revenue": [600, 660],
-        "gross_profit": [400, 440],
-        "sga_expense": [200, 220],
-        "operating_income": [170, 190],
-        "net_income": [100, 120],
-    })
+    income_statement = pd.DataFrame(
+        {
+            "revenue": [1000, 1100],
+            "cost_of_revenue": [600, 660],
+            "gross_profit": [400, 440],
+            "sga_expense": [200, 220],
+            "operating_income": [170, 190],
+            "net_income": [100, 120],
+        }
+    )
 
-    cash_flow = pd.DataFrame({
-        "cfo": [120, 140],
-        "depreciation": [30, 35],
-        "capex": [-50, -55],
-    })
+    cash_flow = pd.DataFrame(
+        {
+            "cfo": [120, 140],
+            "depreciation": [30, 35],
+            "capex": [-50, -55],
+        }
+    )
 
     return {
         "balance_sheet": StatementData(
@@ -146,7 +152,9 @@ class TestBeneishMScore:
         assert calculator.fin_stmt == mock_fin_stmt
 
     @patch.object(FinancialStatements, "get_all_statements")
-    def test_calculate_returns_mscore_result(self, mock_get_statements, mock_statements):
+    def test_calculate_returns_mscore_result(
+        self, mock_get_statements, mock_statements
+    ):
         """Test calculate returns MScoreResult."""
         mock_get_statements.return_value = mock_statements
 
@@ -182,7 +190,9 @@ class TestPiotroskiFScore:
         assert calculator.fin_stmt is not None
 
     @patch.object(FinancialStatements, "get_all_statements")
-    def test_calculate_returns_fscore_result(self, mock_get_statements, mock_statements):
+    def test_calculate_returns_fscore_result(
+        self, mock_get_statements, mock_statements
+    ):
         """Test calculate returns FScoreResult."""
         mock_get_statements.return_value = mock_statements
 
@@ -227,7 +237,9 @@ class TestAltmanZScore:
         assert calculator.fin_stmt is not None
 
     @patch.object(FinancialStatements, "get_all_statements")
-    def test_calculate_returns_zscore_result(self, mock_get_statements, mock_statements):
+    def test_calculate_returns_zscore_result(
+        self, mock_get_statements, mock_statements
+    ):
         """Test calculate returns ZScoreResult."""
         mock_get_statements.return_value = mock_statements
 
@@ -250,7 +262,9 @@ class TestAltmanZScore:
         assert result.zone in ["Safe", "Grey", "Distress", "Unknown"]
 
     @patch.object(FinancialStatements, "get_all_statements")
-    def test_calculate_manufacturing_formula(self, mock_get_statements, mock_statements):
+    def test_calculate_manufacturing_formula(
+        self, mock_get_statements, mock_statements
+    ):
         """Test calculate with manufacturing formula."""
         mock_get_statements.return_value = mock_statements
 

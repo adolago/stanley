@@ -41,19 +41,21 @@ def sample_options_flow_data():
         option_type = np.random.choice(["call", "put"])
         exp_date = datetime.now() + timedelta(days=np.random.randint(7, 120))
 
-        data.append({
-            "contract_symbol": f"AAPL{exp_date.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
-            "option_type": option_type,
-            "strike": strike,
-            "expiration": exp_date,
-            "volume": np.random.randint(100, 5000),
-            "open_interest": np.random.randint(1000, 50000),
-            "premium": np.random.uniform(10000, 500000),
-            "days_to_expiry": (exp_date - datetime.now()).days,
-            "trade_type": np.random.choice(["buy", "sell"]),
-            "num_exchanges": np.random.randint(1, 5),
-            "timestamp": datetime.now() - timedelta(hours=np.random.randint(0, 72)),
-        })
+        data.append(
+            {
+                "contract_symbol": f"AAPL{exp_date.strftime('%y%m%d')}{option_type[0].upper()}{int(strike*1000):08d}",
+                "option_type": option_type,
+                "strike": strike,
+                "expiration": exp_date,
+                "volume": np.random.randint(100, 5000),
+                "open_interest": np.random.randint(1000, 50000),
+                "premium": np.random.uniform(10000, 500000),
+                "days_to_expiry": (exp_date - datetime.now()).days,
+                "trade_type": np.random.choice(["buy", "sell"]),
+                "num_exchanges": np.random.randint(1, 5),
+                "timestamp": datetime.now() - timedelta(hours=np.random.randint(0, 72)),
+            }
+        )
 
     return pd.DataFrame(data)
 
@@ -192,7 +194,13 @@ class TestPutCallRatio:
         """Test that signal is one of valid values."""
         analyzer = OptionsFlowAnalyzer()
         result = await analyzer.analyze_put_call_ratio("AAPL")
-        valid_signals = ["bullish", "bearish", "neutral", "moderately_bullish", "moderately_bearish"]
+        valid_signals = [
+            "bullish",
+            "bearish",
+            "neutral",
+            "moderately_bullish",
+            "moderately_bearish",
+        ]
         assert result["signal"] in valid_signals
 
 

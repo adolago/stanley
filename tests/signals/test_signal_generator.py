@@ -6,7 +6,13 @@ import pytest
 from datetime import datetime
 from unittest.mock import Mock, AsyncMock
 
-from stanley.signals import SignalGenerator, Signal, SignalType, SignalStrength, CompositeSignal
+from stanley.signals import (
+    SignalGenerator,
+    Signal,
+    SignalType,
+    SignalStrength,
+    CompositeSignal,
+)
 
 
 class TestSignalGeneratorInit:

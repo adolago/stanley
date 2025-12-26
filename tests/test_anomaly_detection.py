@@ -139,7 +139,9 @@ class TestTimeSeriesAnomalyDetector:
         mock_adapter = Mock()
         detector = TimeSeriesAnomalyDetector(edgar_adapter=mock_adapter)
 
-        with patch.object(detector, "_extract_metric_series", return_value=pd.Series([1, 2])):
+        with patch.object(
+            detector, "_extract_metric_series", return_value=pd.Series([1, 2])
+        ):
             result = detector.detect("AAPL", metrics=["revenue"])
 
         assert isinstance(result, list)
@@ -172,7 +174,9 @@ class TestBenfordAnalyzer:
         mock_adapter = Mock()
         analyzer = BenfordAnalyzer(edgar_adapter=mock_adapter)
 
-        with patch("stanley.accounting.anomaly_detection.FinancialStatements") as mock_fs:
+        with patch(
+            "stanley.accounting.anomaly_detection.FinancialStatements"
+        ) as mock_fs:
             mock_fs.return_value.income_statement = None
             mock_fs.return_value.balance_sheet = None
             mock_fs.return_value.cash_flow_statement = None
@@ -226,7 +230,9 @@ class TestFootnoteAnomalyDetector:
         mock_adapter = Mock()
         detector = FootnoteAnomalyDetector(edgar_adapter=mock_adapter)
 
-        with patch.object(detector.footnote_analyzer, "get_all_footnotes", return_value={}):
+        with patch.object(
+            detector.footnote_analyzer, "get_all_footnotes", return_value={}
+        ):
             result = detector.detect("AAPL")
 
         assert isinstance(result, list)
@@ -247,7 +253,9 @@ class TestDisclosureQualityScorer:
         mock_adapter = Mock()
         scorer = DisclosureQualityScorer(edgar_adapter=mock_adapter)
 
-        with patch.object(scorer.footnote_analyzer, "get_all_footnotes", return_value={}):
+        with patch.object(
+            scorer.footnote_analyzer, "get_all_footnotes", return_value={}
+        ):
             result = scorer.score("AAPL")
 
         assert isinstance(result, dict)
@@ -304,7 +312,9 @@ class TestSeasonalAnomalyDetector:
         mock_adapter = Mock()
         detector = SeasonalAnomalyDetector(edgar_adapter=mock_adapter)
 
-        with patch("stanley.accounting.anomaly_detection.FinancialStatements") as mock_fs:
+        with patch(
+            "stanley.accounting.anomaly_detection.FinancialStatements"
+        ) as mock_fs:
             mock_fs.return_value.income_statement = None
             result = detector.detect("AAPL")
 
@@ -333,10 +343,22 @@ class TestAnomalyAggregator:
         aggregator = AnomalyAggregator(edgar_adapter=mock_adapter)
 
         with patch.object(aggregator.time_series_detector, "detect", return_value=[]):
-            with patch.object(aggregator.benford_analyzer, "analyze", return_value={"conformity": "conforms"}):
-                with patch.object(aggregator.footnote_detector, "detect", return_value=[]):
-                    with patch.object(aggregator.seasonal_detector, "detect", return_value=[]):
-                        with patch.object(aggregator.disclosure_scorer, "score", return_value={"overall_score": 80, "grade": "B"}):
+            with patch.object(
+                aggregator.benford_analyzer,
+                "analyze",
+                return_value={"conformity": "conforms"},
+            ):
+                with patch.object(
+                    aggregator.footnote_detector, "detect", return_value=[]
+                ):
+                    with patch.object(
+                        aggregator.seasonal_detector, "detect", return_value=[]
+                    ):
+                        with patch.object(
+                            aggregator.disclosure_scorer,
+                            "score",
+                            return_value={"overall_score": 80, "grade": "B"},
+                        ):
                             result = aggregator.aggregate("AAPL")
 
         assert isinstance(result, AnomalyReport)
