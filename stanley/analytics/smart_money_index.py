@@ -521,7 +521,8 @@ class SmartMoneyIndex:
         df = pd.DataFrame(signals)
 
         # Sort by signal strength (strongest signals first)
-        df = df.sort_values("signal_strength", ascending=False)
+        if not df.empty:
+            df = df.sort_values("signal_strength", ascending=False)
 
         return df
 
