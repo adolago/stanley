@@ -11,6 +11,7 @@ import pytest
 # Check if nautilus_trader is available
 try:
     import nautilus_trader
+
     HAS_NAUTILUS = True
 except ImportError:
     HAS_NAUTILUS = False
@@ -19,6 +20,7 @@ except ImportError:
 # Check if openbb is available
 try:
     import openbb
+
     HAS_OPENBB = True
 except ImportError:
     HAS_OPENBB = False
@@ -26,14 +28,10 @@ except ImportError:
 
 # Skip decorators for optional dependencies
 requires_nautilus = pytest.mark.skipif(
-    not HAS_NAUTILUS,
-    reason="nautilus_trader not installed"
+    not HAS_NAUTILUS, reason="nautilus_trader not installed"
 )
 
-requires_openbb = pytest.mark.skipif(
-    not HAS_OPENBB,
-    reason="openbb not installed"
-)
+requires_openbb = pytest.mark.skipif(not HAS_OPENBB, reason="openbb not installed")
 
 
 def pytest_collection_modifyitems(config, items):
