@@ -208,7 +208,8 @@ class EdgarAdapter:
             return pd.DataFrame()
 
         try:
-            bs = financials.balance_sheet
+            # edgartools returns methods that need to be called
+            bs = financials.balance_sheet()
             if hasattr(bs, "to_dataframe"):
                 return bs.to_dataframe()
             return pd.DataFrame(bs) if bs else pd.DataFrame()
@@ -236,7 +237,8 @@ class EdgarAdapter:
             return pd.DataFrame()
 
         try:
-            inc = financials.income_statement
+            # edgartools returns methods that need to be called
+            inc = financials.income_statement()
             if hasattr(inc, "to_dataframe"):
                 return inc.to_dataframe()
             return pd.DataFrame(inc) if inc else pd.DataFrame()
@@ -264,7 +266,8 @@ class EdgarAdapter:
             return pd.DataFrame()
 
         try:
-            cf = financials.cash_flow_statement
+            # edgartools uses 'cashflow_statement' (no underscore) as a method
+            cf = financials.cashflow_statement()
             if hasattr(cf, "to_dataframe"):
                 return cf.to_dataframe()
             return pd.DataFrame(cf) if cf else pd.DataFrame()

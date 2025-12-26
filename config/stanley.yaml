@@ -11,6 +11,8 @@ openbb:
 sec:
   enabled: true
   base_url: "https://www.sec.gov"
+  # Identity for SEC EDGAR API (required - use your email)
+  identity: "stanley-research@example.com"
   user_agent: "Stanley Investment Research contact@stanley.com"
   rate_limit: 10  # requests per second
   

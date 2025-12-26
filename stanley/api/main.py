@@ -6,6 +6,7 @@ Provides endpoints for the stanley-ui (Tauri/React) application.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -22,6 +23,7 @@ from ..accounting import (
     RedFlagScorer,
     AnomalyAggregator,
     EdgarAdapter,
+    FinancialStatements,
 )
 from ..analytics.institutional import InstitutionalAnalyzer
 from ..analytics.money_flow import MoneyFlowAnalyzer
@@ -213,12 +215,27 @@ async def lifespan(app: FastAPI):
 
     # Initialize accounting analyzers
     try:
-        edgar_adapter = EdgarAdapter()
-        app_state.accounting_analyzer = AccountingAnalyzer()
-        app_state.earnings_quality_analyzer = EarningsQualityAnalyzer()
+        # SEC requires identification for API access
+        # Can be set via SEC_IDENTITY env var or defaults to config value
+        sec_identity = os.environ.get(
+            "SEC_IDENTITY", "stanley-research@example.com"
+        )
+
+        # Create EdgarAdapter with identity
+        edgar_adapter = EdgarAdapter(identity=sec_identity)
+        edgar_adapter.initialize()
+
+        # Create FinancialStatements with the same adapter
+        financial_statements = FinancialStatements(edgar_adapter=edgar_adapter)
+
+        # Initialize all accounting analyzers with proper identity/statements
+        app_state.accounting_analyzer = AccountingAnalyzer(edgar_identity=sec_identity)
+        app_state.earnings_quality_analyzer = EarningsQualityAnalyzer(
+            financial_statements=financial_statements
+        )
         app_state.red_flag_scorer = RedFlagScorer(edgar_adapter=edgar_adapter)
         app_state.anomaly_aggregator = AnomalyAggregator(edgar_adapter=edgar_adapter)
-        logger.info("Accounting analyzers initialized")
+        logger.info(f"Accounting analyzers initialized with SEC identity: {sec_identity}")
     except Exception as e:
         logger.warning(f"Accounting analyzers initialization failed: {e}")
 
@@ -292,13 +309,33 @@ def get_timestamp() -> str:
     return datetime.utcnow().isoformat() + "Z"
 
 
+def _convert_numpy_types(obj: Any) -> Any:
+    """Convert numpy types to native Python types for JSON serialization."""
+    if isinstance(obj, dict):
+        return {k: _convert_numpy_types(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_numpy_types(v) for v in obj]
+    elif isinstance(obj, np.bool_):
+        return bool(obj)
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj) if not np.isnan(obj) else None
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    return obj
+
+
 def create_response(
     data: Any = None, error: Optional[str] = None, success: bool = True
 ) -> ApiResponse:
     """Create a standardized API response."""
+    # Convert numpy types to native Python types
+    converted_data = _convert_numpy_types(data) if data is not None else None
+
     return ApiResponse(
         success=success and error is None,
-        data=data,
+        data=converted_data,
         error=error,
         timestamp=get_timestamp(),
     )
