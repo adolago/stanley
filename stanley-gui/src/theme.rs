@@ -36,6 +36,7 @@ pub struct Theme {
     pub accent: Hsla,
     pub accent_hover: Hsla,
     pub accent_subtle: Hsla,
+    pub accent_muted: Hsla,
     pub accent_glow: Hsla,
 
     // Semantic colors with better saturation
@@ -94,6 +95,7 @@ impl Theme {
             accent: hsla(210.0 / 360.0, 0.92, 0.58, 1.0),
             accent_hover: hsla(210.0 / 360.0, 0.95, 0.65, 1.0),
             accent_subtle: hsla(210.0 / 360.0, 0.80, 0.55, 0.18),
+            accent_muted: hsla(210.0 / 360.0, 0.60, 0.50, 0.40),
             accent_glow: hsla(210.0 / 360.0, 0.90, 0.60, 0.08),
 
             // Positive - Refined green (growth/profit)
@@ -150,6 +152,7 @@ impl Theme {
             accent: hsla(210.0 / 360.0, 0.90, 0.45, 1.0),
             accent_hover: hsla(210.0 / 360.0, 0.92, 0.50, 1.0),
             accent_subtle: hsla(210.0 / 360.0, 0.85, 0.45, 0.12),
+            accent_muted: hsla(210.0 / 360.0, 0.55, 0.40, 0.35),
             accent_glow: hsla(210.0 / 360.0, 0.80, 0.50, 0.06),
 
             // Positive - Green

@@ -1,8 +1,36 @@
 //! Main application state and rendering for Stanley GUI
 
+use crate::api::{NoteResponse, StanleyClient};
 use crate::theme::Theme;
 use gpui::prelude::FluentBuilder;
 use gpui::*;
+use std::sync::Arc;
+
+/// Loading state for async data
+#[derive(Debug, Clone, Default)]
+pub enum LoadingState<T> {
+    #[default]
+    NotStarted,
+    Loading,
+    Loaded(T),
+    Error(String),
+}
+
+impl<T> LoadingState<T> {
+    pub fn is_loading(&self) -> bool {
+        matches!(self, LoadingState::Loading)
+    }
+
+    #[allow(dead_code)]
+    pub fn is_loaded(&self) -> bool {
+        matches!(self, LoadingState::Loaded(_))
+    }
+
+    #[allow(dead_code)]
+    pub fn is_error(&self) -> bool {
+        matches!(self, LoadingState::Error(_))
+    }
+}
 
 /// Main application state
 pub struct StanleyApp {
@@ -20,9 +48,15 @@ pub struct StanleyApp {
     #[allow(dead_code)]
     notes_search_query: String,
     notes_active_tab: NotesTab,
-    /// Cached notes data (demo data for now)
+    /// Cached notes data with loading states
     theses: Vec<ThesisNote>,
+    theses_loading: LoadingState<()>,
     trades: Vec<TradeNote>,
+    trades_loading: LoadingState<()>,
+    /// API client for backend communication
+    api_client: Arc<StanleyClient>,
+    /// API connection status
+    api_connected: LoadingState<bool>,
 }
 
 /// Notes panel tabs
@@ -44,6 +78,54 @@ pub struct ThesisNote {
     pub entry_price: Option<f64>,
     pub target_price: Option<f64>,
     pub modified: String,
+}
+
+impl ThesisNote {
+    /// Parse a ThesisNote from API NoteResponse
+    pub fn from_note_response(note: &NoteResponse) -> Option<Self> {
+        let frontmatter = &note.frontmatter;
+
+        // Extract fields from frontmatter JSON
+        let symbol = frontmatter.get("symbol")?.as_str()?.to_string();
+        let status_str = frontmatter
+            .get("status")
+            .and_then(|v| v.as_str())
+            .unwrap_or("research");
+        let conviction = frontmatter
+            .get("conviction")
+            .and_then(|v| v.as_str())
+            .unwrap_or("Medium")
+            .to_string();
+        let entry_price = frontmatter
+            .get("entry_price")
+            .and_then(|v| v.as_f64());
+        let target_price = frontmatter
+            .get("target_price")
+            .and_then(|v| v.as_f64());
+        let modified = frontmatter
+            .get("modified")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        let status = match status_str.to_lowercase().as_str() {
+            "active" => ThesisStatus::Active,
+            "watchlist" => ThesisStatus::Watchlist,
+            "closed" => ThesisStatus::Closed,
+            "invalidated" => ThesisStatus::Invalidated,
+            _ => ThesisStatus::Research,
+        };
+
+        Some(ThesisNote {
+            name: note.name.clone(),
+            symbol,
+            status,
+            conviction,
+            entry_price,
+            target_price,
+            modified,
+        })
+    }
 }
 
 /// Thesis status
@@ -83,6 +165,67 @@ pub struct TradeNote {
     pub pnl: Option<f64>,
     pub pnl_percent: Option<f64>,
     pub entry_date: String,
+}
+
+impl TradeNote {
+    /// Parse a TradeNote from API NoteResponse
+    pub fn from_note_response(note: &NoteResponse) -> Option<Self> {
+        let frontmatter = &note.frontmatter;
+
+        // Extract fields from frontmatter JSON
+        let symbol = frontmatter.get("symbol")?.as_str()?.to_string();
+        let direction_str = frontmatter
+            .get("direction")
+            .and_then(|v| v.as_str())
+            .unwrap_or("long");
+        let status_str = frontmatter
+            .get("status")
+            .and_then(|v| v.as_str())
+            .unwrap_or("open");
+        let entry_price = frontmatter
+            .get("entry_price")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
+        let exit_price = frontmatter
+            .get("exit_price")
+            .and_then(|v| v.as_f64());
+        let shares = frontmatter
+            .get("shares")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0);
+        let pnl = frontmatter.get("pnl").and_then(|v| v.as_f64());
+        let pnl_percent = frontmatter.get("pnl_percent").and_then(|v| v.as_f64());
+        let entry_date = frontmatter
+            .get("entry_date")
+            .or_else(|| frontmatter.get("created"))
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+
+        let direction = match direction_str.to_lowercase().as_str() {
+            "short" => TradeDirection::Short,
+            _ => TradeDirection::Long,
+        };
+
+        let status = match status_str.to_lowercase().as_str() {
+            "closed" => TradeStatus::Closed,
+            "partial" => TradeStatus::Partial,
+            _ => TradeStatus::Open,
+        };
+
+        Some(TradeNote {
+            name: note.name.clone(),
+            symbol,
+            direction,
+            status,
+            entry_price,
+            exit_price,
+            shares,
+            pnl,
+            pnl_percent,
+            entry_date,
+        })
+    }
 }
 
 /// Trade direction
@@ -168,8 +311,10 @@ impl TimePeriod {
 }
 
 impl StanleyApp {
-    pub fn new(_cx: &mut Context<Self>) -> Self {
-        Self {
+    pub fn new(cx: &mut Context<Self>) -> Self {
+        let api_client = Arc::new(StanleyClient::new());
+
+        let mut app = Self {
             active_view: ActiveView::Dashboard,
             theme: Theme::dark(),
             selected_symbol: Some("AAPL".to_string()),
@@ -183,83 +328,203 @@ impl StanleyApp {
             selected_period: TimePeriod::default(),
             notes_search_query: String::new(),
             notes_active_tab: NotesTab::default(),
-            theses: vec![
-                ThesisNote {
-                    name: "AAPL Investment Thesis".to_string(),
-                    symbol: "AAPL".to_string(),
-                    status: ThesisStatus::Active,
-                    conviction: "High".to_string(),
-                    entry_price: Some(175.0),
-                    target_price: Some(220.0),
-                    modified: "2024-12-20".to_string(),
-                },
-                ThesisNote {
-                    name: "NVDA Investment Thesis".to_string(),
-                    symbol: "NVDA".to_string(),
-                    status: ThesisStatus::Active,
-                    conviction: "Very High".to_string(),
-                    entry_price: Some(450.0),
-                    target_price: Some(600.0),
-                    modified: "2024-12-18".to_string(),
-                },
-                ThesisNote {
-                    name: "GOOGL Investment Thesis".to_string(),
-                    symbol: "GOOGL".to_string(),
-                    status: ThesisStatus::Research,
-                    conviction: "Medium".to_string(),
-                    entry_price: None,
-                    target_price: Some(180.0),
-                    modified: "2024-12-15".to_string(),
-                },
-                ThesisNote {
-                    name: "META Investment Thesis".to_string(),
-                    symbol: "META".to_string(),
-                    status: ThesisStatus::Watchlist,
-                    conviction: "Medium".to_string(),
-                    entry_price: None,
-                    target_price: Some(650.0),
-                    modified: "2024-12-10".to_string(),
-                },
-            ],
-            trades: vec![
-                TradeNote {
-                    name: "AAPL Long - 2024-12-15".to_string(),
-                    symbol: "AAPL".to_string(),
-                    direction: TradeDirection::Long,
-                    status: TradeStatus::Open,
-                    entry_price: 175.50,
-                    exit_price: None,
-                    shares: 100.0,
-                    pnl: None,
-                    pnl_percent: None,
-                    entry_date: "2024-12-15".to_string(),
-                },
-                TradeNote {
-                    name: "NVDA Long - 2024-11-20".to_string(),
-                    symbol: "NVDA".to_string(),
-                    direction: TradeDirection::Long,
-                    status: TradeStatus::Closed,
-                    entry_price: 450.0,
-                    exit_price: Some(520.0),
-                    shares: 50.0,
-                    pnl: Some(3500.0),
-                    pnl_percent: Some(15.56),
-                    entry_date: "2024-11-20".to_string(),
-                },
-                TradeNote {
-                    name: "TSLA Short - 2024-12-01".to_string(),
-                    symbol: "TSLA".to_string(),
-                    direction: TradeDirection::Short,
-                    status: TradeStatus::Closed,
-                    entry_price: 380.0,
-                    exit_price: Some(350.0),
-                    shares: 25.0,
-                    pnl: Some(750.0),
-                    pnl_percent: Some(7.89),
-                    entry_date: "2024-12-01".to_string(),
-                },
-            ],
-        }
+            theses: Vec::new(),
+            theses_loading: LoadingState::NotStarted,
+            trades: Vec::new(),
+            trades_loading: LoadingState::NotStarted,
+            api_client,
+            api_connected: LoadingState::NotStarted,
+        };
+
+        // Start loading data from API
+        app.check_api_health(cx);
+
+        app
+    }
+
+    /// Check API health and connection status
+    pub fn check_api_health(&mut self, cx: &mut Context<Self>) {
+        self.api_connected = LoadingState::Loading;
+        let client = self.api_client.clone();
+
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client.health_check().await;
+
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        match result {
+                            Ok(health) => {
+                                app.api_connected = LoadingState::Loaded(health.core);
+                                // If connected, load notes data
+                                if health.core {
+                                    app.load_theses(cx);
+                                    app.load_trades(cx);
+                                }
+                            }
+                            Err(e) => {
+                                app.api_connected = LoadingState::Error(format!("{:?}", e));
+                                // Load fallback demo data
+                                app.load_demo_data();
+                            }
+                        }
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Load theses from API
+    pub fn load_theses(&mut self, cx: &mut Context<Self>) {
+        self.theses_loading = LoadingState::Loading;
+        let client = self.api_client.clone();
+
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client.get_theses(None, None).await;
+
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        match result {
+                            Ok(notes) => {
+                                app.theses = notes
+                                    .into_iter()
+                                    .filter_map(|n| ThesisNote::from_note_response(&n))
+                                    .collect();
+                                app.theses_loading = LoadingState::Loaded(());
+                            }
+                            Err(e) => {
+                                app.theses_loading = LoadingState::Error(format!("{:?}", e));
+                            }
+                        }
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Load trades from API
+    pub fn load_trades(&mut self, cx: &mut Context<Self>) {
+        self.trades_loading = LoadingState::Loading;
+        let client = self.api_client.clone();
+
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client.get_trades(None, None).await;
+
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        match result {
+                            Ok(notes) => {
+                                app.trades = notes
+                                    .into_iter()
+                                    .filter_map(|n| TradeNote::from_note_response(&n))
+                                    .collect();
+                                app.trades_loading = LoadingState::Loaded(());
+                            }
+                            Err(e) => {
+                                app.trades_loading = LoadingState::Error(format!("{:?}", e));
+                            }
+                        }
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Load demo/fallback data when API is unavailable
+    fn load_demo_data(&mut self) {
+        self.theses = vec![
+            ThesisNote {
+                name: "AAPL Investment Thesis".to_string(),
+                symbol: "AAPL".to_string(),
+                status: ThesisStatus::Active,
+                conviction: "High".to_string(),
+                entry_price: Some(175.0),
+                target_price: Some(220.0),
+                modified: "2024-12-20".to_string(),
+            },
+            ThesisNote {
+                name: "NVDA Investment Thesis".to_string(),
+                symbol: "NVDA".to_string(),
+                status: ThesisStatus::Active,
+                conviction: "Very High".to_string(),
+                entry_price: Some(450.0),
+                target_price: Some(600.0),
+                modified: "2024-12-18".to_string(),
+            },
+            ThesisNote {
+                name: "GOOGL Investment Thesis".to_string(),
+                symbol: "GOOGL".to_string(),
+                status: ThesisStatus::Research,
+                conviction: "Medium".to_string(),
+                entry_price: None,
+                target_price: Some(180.0),
+                modified: "2024-12-15".to_string(),
+            },
+            ThesisNote {
+                name: "META Investment Thesis".to_string(),
+                symbol: "META".to_string(),
+                status: ThesisStatus::Watchlist,
+                conviction: "Medium".to_string(),
+                entry_price: None,
+                target_price: Some(650.0),
+                modified: "2024-12-10".to_string(),
+            },
+        ];
+        self.theses_loading = LoadingState::Loaded(());
+
+        self.trades = vec![
+            TradeNote {
+                name: "AAPL Long - 2024-12-15".to_string(),
+                symbol: "AAPL".to_string(),
+                direction: TradeDirection::Long,
+                status: TradeStatus::Open,
+                entry_price: 175.50,
+                exit_price: None,
+                shares: 100.0,
+                pnl: None,
+                pnl_percent: None,
+                entry_date: "2024-12-15".to_string(),
+            },
+            TradeNote {
+                name: "NVDA Long - 2024-11-20".to_string(),
+                symbol: "NVDA".to_string(),
+                direction: TradeDirection::Long,
+                status: TradeStatus::Closed,
+                entry_price: 450.0,
+                exit_price: Some(520.0),
+                shares: 50.0,
+                pnl: Some(3500.0),
+                pnl_percent: Some(15.56),
+                entry_date: "2024-11-20".to_string(),
+            },
+            TradeNote {
+                name: "TSLA Short - 2024-12-01".to_string(),
+                symbol: "TSLA".to_string(),
+                direction: TradeDirection::Short,
+                status: TradeStatus::Closed,
+                entry_price: 380.0,
+                exit_price: Some(350.0),
+                shares: 25.0,
+                pnl: Some(750.0),
+                pnl_percent: Some(7.89),
+                entry_date: "2024-12-01".to_string(),
+            },
+        ];
+        self.trades_loading = LoadingState::Loaded(());
+    }
+
+    /// Refresh all data from API
+    #[allow(dead_code)]
+    pub fn refresh_data(&mut self, cx: &mut Context<Self>) {
+        self.check_api_health(cx);
     }
 
     pub fn set_active_view(&mut self, view: ActiveView, cx: &mut Context<Self>) {
@@ -1147,28 +1412,169 @@ impl StanleyApp {
             .child(label.to_string())
     }
 
-    fn render_theses_list(&self, _cx: &mut Context<Self>) -> Div {
+    fn render_theses_list(&self, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
 
-        div()
-            .flex()
-            .flex_col()
-            .gap(px(16.0))
-            .child(
-                div()
-                    .text_size(px(14.0))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(theme.text_muted)
-                    .child(format!("{} Investment Theses", self.theses.len())),
-            )
-            .child(
+        let mut container = div().flex().flex_col().gap(px(16.0));
+
+        // Show loading state
+        if self.theses_loading.is_loading() {
+            return container.child(self.render_loading_state("Loading theses..."));
+        }
+
+        // Show error state
+        if let LoadingState::Error(ref err) = self.theses_loading {
+            return container
+                .child(self.render_error_state(err, "theses"))
+                .child(self.render_retry_button("Retry", cx));
+        }
+
+        // Header with count and API status
+        container = container.child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(12.0))
+                .child(
+                    div()
+                        .text_size(px(14.0))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(theme.text_muted)
+                        .child(format!("{} Investment Theses", self.theses.len())),
+                )
+                .child(self.render_api_status_badge()),
+        );
+
+        // Theses list
+        if self.theses.is_empty() {
+            container = container.child(self.render_empty_state("No theses found"));
+        } else {
+            container = container.child(
                 div().flex().flex_col().gap(px(12.0)).children(
                     self.theses
                         .iter()
                         .map(|thesis| self.render_thesis_card(thesis))
                         .collect::<Vec<_>>(),
                 ),
+            );
+        }
+
+        container
+    }
+
+    fn render_loading_state(&self, message: &str) -> impl IntoElement {
+        let theme = &self.theme;
+
+        div()
+            .p(px(40.0))
+            .flex()
+            .flex_col()
+            .items_center()
+            .justify_center()
+            .gap(px(12.0))
+            .child(
+                div()
+                    .text_size(px(14.0))
+                    .text_color(theme.text_muted)
+                    .child(message.to_string()),
             )
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .text_color(theme.text_dimmed)
+                    .child("Connecting to API..."),
+            )
+    }
+
+    fn render_error_state(&self, error: &str, context: &str) -> impl IntoElement {
+        let theme = &self.theme;
+
+        div()
+            .p(px(20.0))
+            .rounded(px(8.0))
+            .bg(theme.negative_subtle)
+            .border_1()
+            .border_color(theme.negative_muted)
+            .flex()
+            .flex_col()
+            .gap(px(8.0))
+            .child(
+                div()
+                    .text_size(px(14.0))
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .text_color(theme.negative)
+                    .child(format!("Failed to load {}", context)),
+            )
+            .child(
+                div()
+                    .text_size(px(12.0))
+                    .text_color(theme.text_muted)
+                    .child(error.to_string()),
+            )
+    }
+
+    fn render_empty_state(&self, message: &str) -> impl IntoElement {
+        let theme = &self.theme;
+
+        div()
+            .p(px(40.0))
+            .flex()
+            .flex_col()
+            .items_center()
+            .justify_center()
+            .gap(px(8.0))
+            .child(
+                div()
+                    .text_size(px(14.0))
+                    .text_color(theme.text_muted)
+                    .child(message.to_string()),
+            )
+    }
+
+    fn render_retry_button(&self, label: &str, cx: &mut Context<Self>) -> impl IntoElement {
+        let theme = &self.theme;
+
+        div()
+            .id("retry-button")
+            .px(px(16.0))
+            .py(px(8.0))
+            .rounded(px(6.0))
+            .bg(theme.accent_subtle)
+            .border_1()
+            .border_color(theme.accent_muted)
+            .text_size(px(13.0))
+            .font_weight(FontWeight::MEDIUM)
+            .text_color(theme.accent)
+            .cursor_pointer()
+            .hover(|s| s.bg(theme.accent.opacity(0.2)))
+            .on_click(cx.listener(|this, _event, _window, cx| {
+                this.check_api_health(cx);
+            }))
+            .child(label.to_string())
+    }
+
+    fn render_api_status_badge(&self) -> impl IntoElement {
+        let theme = &self.theme;
+
+        let (status_text, bg, border, text_color): (&str, Hsla, Hsla, Hsla) = match &self.api_connected {
+            LoadingState::NotStarted => ("Connecting...", theme.accent_subtle, theme.accent_muted, theme.accent),
+            LoadingState::Loading => ("Connecting...", theme.accent_subtle, theme.accent_muted, theme.accent),
+            LoadingState::Loaded(true) => ("Live", theme.positive_subtle, theme.positive_muted, theme.positive),
+            LoadingState::Loaded(false) => ("Offline", theme.negative_subtle, theme.negative_muted, theme.negative),
+            LoadingState::Error(_) => ("Demo Mode", hsla(0.12, 0.85, 0.55, 0.15), hsla(0.12, 0.85, 0.55, 0.3), hsla(0.12, 0.85, 0.55, 1.0)),
+        };
+
+        div()
+            .px(px(8.0))
+            .py(px(3.0))
+            .rounded(px(4.0))
+            .bg(bg)
+            .border_1()
+            .border_color(border)
+            .text_size(px(10.0))
+            .font_weight(FontWeight::SEMIBOLD)
+            .text_color(text_color)
+            .child(status_text.to_string())
     }
 
     fn render_thesis_card(&self, thesis: &ThesisNote) -> impl IntoElement {
@@ -1337,28 +1743,54 @@ impl StanleyApp {
             )
     }
 
-    fn render_trades_list(&self, _cx: &mut Context<Self>) -> Div {
+    fn render_trades_list(&self, cx: &mut Context<Self>) -> Div {
         let theme = &self.theme;
 
-        div()
-            .flex()
-            .flex_col()
-            .gap(px(16.0))
-            .child(
-                div()
-                    .text_size(px(14.0))
-                    .font_weight(FontWeight::SEMIBOLD)
-                    .text_color(theme.text_muted)
-                    .child(format!("{} Trade Journal Entries", self.trades.len())),
-            )
-            .child(
+        let mut container = div().flex().flex_col().gap(px(16.0));
+
+        // Show loading state
+        if self.trades_loading.is_loading() {
+            return container.child(self.render_loading_state("Loading trades..."));
+        }
+
+        // Show error state
+        if let LoadingState::Error(ref err) = self.trades_loading {
+            return container
+                .child(self.render_error_state(err, "trades"))
+                .child(self.render_retry_button("Retry", cx));
+        }
+
+        // Header with count and API status
+        container = container.child(
+            div()
+                .flex()
+                .items_center()
+                .gap(px(12.0))
+                .child(
+                    div()
+                        .text_size(px(14.0))
+                        .font_weight(FontWeight::SEMIBOLD)
+                        .text_color(theme.text_muted)
+                        .child(format!("{} Trade Journal Entries", self.trades.len())),
+                )
+                .child(self.render_api_status_badge()),
+        );
+
+        // Trades list
+        if self.trades.is_empty() {
+            container = container.child(self.render_empty_state("No trades found"));
+        } else {
+            container = container.child(
                 div().flex().flex_col().gap(px(12.0)).children(
                     self.trades
                         .iter()
                         .map(|trade| self.render_trade_card(trade))
                         .collect::<Vec<_>>(),
                 ),
-            )
+            );
+        }
+
+        container
     }
 
     fn render_trade_card(&self, trade: &TradeNote) -> impl IntoElement {

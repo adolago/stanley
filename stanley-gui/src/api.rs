@@ -6,11 +6,13 @@
 #![allow(dead_code)]
 
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-/// API client for Stanley backend
+/// API client for Stanley backend (async version)
+#[derive(Clone)]
 pub struct StanleyClient {
     base_url: String,
-    client: reqwest::blocking::Client,
+    client: reqwest::Client,
 }
 
 impl StanleyClient {
@@ -23,12 +25,17 @@ impl StanleyClient {
     pub fn with_url(base_url: String) -> Self {
         Self {
             base_url,
-            client: reqwest::blocking::Client::new(),
+            client: reqwest::Client::new(),
         }
     }
 
+    /// Create a new client wrapped in Arc for sharing across async tasks
+    pub fn new_shared() -> Arc<Self> {
+        Arc::new(Self::new())
+    }
+
     /// Get sector money flow analysis
-    pub fn get_sector_money_flow(
+    pub async fn get_sector_money_flow(
         &self,
         sectors: Vec<String>,
     ) -> Result<SectorFlowResponse, ApiError> {
@@ -38,13 +45,17 @@ impl StanleyClient {
             .post(&url)
             .json(&SectorFlowRequest { sectors })
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Get institutional holdings for a symbol
-    pub fn get_institutional_holdings(
+    pub async fn get_institutional_holdings(
         &self,
         symbol: &str,
     ) -> Result<InstitutionalHoldingsResponse, ApiError> {
@@ -53,51 +64,70 @@ impl StanleyClient {
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Get equity money flow analysis
-    pub fn get_equity_flow(&self, symbol: &str) -> Result<EquityFlowResponse, ApiError> {
+    pub async fn get_equity_flow(&self, symbol: &str) -> Result<EquityFlowResponse, ApiError> {
         let url = format!("{}/api/equity-flow/{}", self.base_url, symbol);
         let response = self
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Get dark pool activity
-    pub fn get_dark_pool_activity(&self, symbol: &str) -> Result<DarkPoolResponse, ApiError> {
+    pub async fn get_dark_pool_activity(
+        &self,
+        symbol: &str,
+    ) -> Result<DarkPoolResponse, ApiError> {
         let url = format!("{}/api/dark-pool/{}", self.base_url, symbol);
         let response = self
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Health check
-    pub fn health_check(&self) -> Result<HealthResponse, ApiError> {
+    pub async fn health_check(&self) -> Result<HealthResponse, ApiError> {
         let url = format!("{}/api/health", self.base_url);
         let response = self
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     // Notes API methods
 
     /// Get list of theses
-    pub fn get_theses(
+    pub async fn get_theses(
         &self,
         status: Option<&str>,
         symbol: Option<&str>,
@@ -118,26 +148,37 @@ impl StanleyClient {
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Create a new thesis
-    pub fn create_thesis(&self, request: CreateThesisRequest) -> Result<NoteResponse, ApiError> {
+    pub async fn create_thesis(
+        &self,
+        request: CreateThesisRequest,
+    ) -> Result<NoteResponse, ApiError> {
         let url = format!("{}/api/theses", self.base_url);
         let response = self
             .client
             .post(&url)
             .json(&request)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Get list of trades
-    pub fn get_trades(
+    pub async fn get_trades(
         &self,
         status: Option<&str>,
         symbol: Option<&str>,
@@ -158,26 +199,37 @@ impl StanleyClient {
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Create a new trade
-    pub fn create_trade(&self, request: CreateTradeRequest) -> Result<NoteResponse, ApiError> {
+    pub async fn create_trade(
+        &self,
+        request: CreateTradeRequest,
+    ) -> Result<NoteResponse, ApiError> {
         let url = format!("{}/api/trades", self.base_url);
         let response = self
             .client
             .post(&url)
             .json(&request)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Close a trade
-    pub fn close_trade(
+    pub async fn close_trade(
         &self,
         name: &str,
         request: CloseTradeRequest,
@@ -188,25 +240,33 @@ impl StanleyClient {
             .post(&url)
             .json(&request)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Get trade statistics
-    pub fn get_trade_stats(&self) -> Result<TradeStatsResponse, ApiError> {
+    pub async fn get_trade_stats(&self) -> Result<TradeStatsResponse, ApiError> {
         let url = format!("{}/api/trades/stats", self.base_url);
         let response = self
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Search notes
-    pub fn search_notes(
+    pub async fn search_notes(
         &self,
         query: &str,
         limit: Option<u32>,
@@ -220,27 +280,35 @@ impl StanleyClient {
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Get notes graph
-    pub fn get_notes_graph(&self) -> Result<GraphResponse, ApiError> {
+    pub async fn get_notes_graph(&self) -> Result<GraphResponse, ApiError> {
         let url = format!("{}/api/notes/graph", self.base_url);
         let response = self
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     // Events API methods
 
     /// Get list of events
-    pub fn get_events(
+    pub async fn get_events(
         &self,
         event_type: Option<&str>,
         symbol: Option<&str>,
@@ -265,28 +333,39 @@ impl StanleyClient {
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Create a new event
-    pub fn create_event(&self, request: CreateEventRequest) -> Result<NoteResponse, ApiError> {
+    pub async fn create_event(
+        &self,
+        request: CreateEventRequest,
+    ) -> Result<NoteResponse, ApiError> {
         let url = format!("{}/api/events", self.base_url);
         let response = self
             .client
             .post(&url)
             .json(&request)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     // People API methods
 
     /// Get list of people
-    pub fn get_people(
+    pub async fn get_people(
         &self,
         company: Option<&str>,
         role: Option<&str>,
@@ -307,49 +386,71 @@ impl StanleyClient {
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Create a new person profile
-    pub fn create_person(&self, request: CreatePersonRequest) -> Result<NoteResponse, ApiError> {
+    pub async fn create_person(
+        &self,
+        request: CreatePersonRequest,
+    ) -> Result<NoteResponse, ApiError> {
         let url = format!("{}/api/people", self.base_url);
         let response = self
             .client
             .post(&url)
             .json(&request)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     // Sectors API methods
 
     /// Get list of sectors
-    pub fn get_sectors(&self) -> Result<Vec<NoteResponse>, ApiError> {
+    pub async fn get_sectors(&self) -> Result<Vec<NoteResponse>, ApiError> {
         let url = format!("{}/api/sectors", self.base_url);
         let response = self
             .client
             .get(&url)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 
     /// Create a new sector overview
-    pub fn create_sector(&self, request: CreateSectorRequest) -> Result<NoteResponse, ApiError> {
+    pub async fn create_sector(
+        &self,
+        request: CreateSectorRequest,
+    ) -> Result<NoteResponse, ApiError> {
         let url = format!("{}/api/sectors", self.base_url);
         let response = self
             .client
             .post(&url)
             .json(&request)
             .send()
+            .await
             .map_err(|e| ApiError::Network(e.to_string()))?;
 
-        response.json().map_err(|e| ApiError::Parse(e.to_string()))
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
     }
 }
 
