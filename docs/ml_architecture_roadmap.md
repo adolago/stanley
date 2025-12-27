@@ -1,8 +1,12 @@
 # Stanley ML Architecture and Feature Roadmap
 
+> **Related Documents**: See [System Architecture](./architecture/system_architecture.md) for current platform architecture, [Rust Patterns](./rust_financial_systems_architecture.md) for advanced Rust patterns.
+
 ## Executive Summary
 
 This document outlines the machine learning integration strategy for Stanley, an institutional investment analysis platform. The ML capabilities will enhance Stanley's existing analytics with predictive models, pattern recognition, and automated signal generation.
+
+**Status**: Roadmap document. ML dependencies are not yet added to requirements.txt.
 
 ## Current State Analysis
 

@@ -1,8 +1,12 @@
-# Advanced Rust Reliability & Performance Patterns for Financial Systems
+# Advanced Rust Reliability and Performance Patterns for Financial Systems
+
+> **Related Documents**: See [System Architecture](./architecture/system_architecture.md) for current platform architecture, [ML Architecture](./ml_architecture_roadmap.md) for ML integration plans.
 
 ## Executive Summary
 
 This document presents advanced Rust architectural patterns specifically designed for high-performance, reliable financial systems like Stanley. The recommendations focus on zero-copy data processing, lock-free concurrency, memory-mapped persistence, async I/O with backpressure, distributed systems, Byzantine fault tolerance, exactly-once processing, and hot-path optimizations.
+
+**Status**: Reference document for future Rust GUI enhancements. The current stanley-gui uses GPUI with async reqwest for API communication.
 
 ## 1. Zero-Copy Data Processing Architectures
 

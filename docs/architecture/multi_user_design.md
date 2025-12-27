@@ -1,8 +1,12 @@
 # Stanley Multi-User Architecture Design
 
+> **Related Documents**: See [System Architecture](./system_architecture.md) for current platform architecture, [ML Architecture](../ml_architecture_roadmap.md) for ML integration plans.
+
 ## Executive Summary
 
 This document presents a comprehensive architecture for evolving Stanley from a single-user investment analysis platform to a multi-user, team-capable system with enterprise-grade authentication, authorization, data isolation, and collaboration features.
+
+**Status**: Planning document. The authentication foundation (JWT, API keys, RBAC, rate limiting) described in Section 2-4 has been implemented in `stanley/api/auth/`.
 
 ---
 

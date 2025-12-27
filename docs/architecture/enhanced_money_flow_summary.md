@@ -1,5 +1,7 @@
 # Enhanced Money Flow Analysis Architecture
 
+> **Related Documents**: See [System Architecture](./system_architecture.md) for overall platform architecture, [ML Architecture](../ml_architecture_roadmap.md) for ML integration plans.
+
 ## Executive Summary
 
 This document outlines the architecture for enhancing `stanley/analytics/money_flow.py` to provide Bloomberg-competitive money flow analysis capabilities.
