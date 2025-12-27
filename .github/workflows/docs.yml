@@ -61,7 +61,7 @@ jobs:
           fi
 
       - name: Upload documentation artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: documentation
           path: site/
@@ -123,7 +123,7 @@ jobs:
           pdoc --html --output-dir api-docs stanley --force
 
       - name: Upload API documentation
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: api-reference
           path: api-docs/

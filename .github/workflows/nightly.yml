@@ -85,7 +85,7 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nightly-test-results
           path: |
@@ -125,7 +125,7 @@ jobs:
             || echo "No benchmarks found or benchmarks completed"
 
       - name: Upload benchmark results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: benchmark-results
           path: |
@@ -165,7 +165,7 @@ jobs:
           cat ../outdated-cargo.txt
 
       - name: Upload dependency reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: dependency-reports
           path: |
