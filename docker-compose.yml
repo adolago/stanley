@@ -1,0 +1,177 @@
+# Stanley Docker Compose Configuration
+# Full stack deployment with all services
+#
+# Usage:
+#   Development: docker compose up -d
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   Build only:  docker compose build
+
+version: "3.9"
+
+services:
+  # ===========================================================================
+  # Stanley API - Python FastAPI Backend
+  # ===========================================================================
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+      target: development
+    container_name: stanley-api
+    restart: unless-stopped
+    ports:
+      - "${STANLEY_API_PORT:-8000}:8000"
+    environment:
+      - STANLEY_ENV=${STANLEY_ENV:-development}
+      - STANLEY_CONFIG_PATH=/app/config/stanley.yaml
+      - PYTHONPATH=/app
+      # Database connections
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-stanley}:${POSTGRES_PASSWORD:-stanley_dev}@postgres:5432/${POSTGRES_DB:-stanley}
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379/0
+      # API Keys (passed from host environment or .env file)
+      - OPENBB_API_KEY=${OPENBB_API_KEY:-}
+      - SEC_IDENTITY=${SEC_IDENTITY:-stanley@example.com}
+    volumes:
+      # Mount source code for hot reload in development
+      - ./stanley:/app/stanley:ro
+      # Configuration (read-only in container)
+      - ./config/stanley.yaml:/app/config/stanley.yaml:ro
+      # Persistent data directory
+      - stanley-data:/app/data
+      # Logs
+      - stanley-logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - stanley-network
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  # ===========================================================================
+  # PostgreSQL Database
+  # ===========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: stanley-postgres
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-stanley}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-stanley_dev}
+      - POSTGRES_DB=${POSTGRES_DB:-stanley}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Optional: initialization scripts
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-stanley} -d ${POSTGRES_DB:-stanley}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - stanley-network
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+  # ===========================================================================
+  # Redis Cache
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: stanley-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      ${REDIS_PASSWORD:+--requirepass ${REDIS_PASSWORD}}
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stanley-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  # ===========================================================================
+  # Nginx Reverse Proxy (Production)
+  # ===========================================================================
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: stanley-nginx
+    restart: unless-stopped
+    profiles:
+      - production
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/ssl:/etc/nginx/ssl:ro
+      - nginx-logs:/var/log/nginx
+    depends_on:
+      - api
+    networks:
+      - stanley-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  stanley-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  stanley-data:
+    driver: local
+  stanley-logs:
+    driver: local
+  nginx-logs:
+    driver: local

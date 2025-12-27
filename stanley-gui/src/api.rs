@@ -449,6 +449,210 @@ impl StanleyClient {
             .await
             .map_err(|e| ApiError::Parse(e.to_string()))
     }
+
+    // Portfolio API methods
+
+    /// Get portfolio analytics (VaR, sector exposure, top holdings)
+    pub async fn get_portfolio_analytics(
+        &self,
+        holdings: Vec<PortfolioHolding>,
+        benchmark: Option<&str>,
+    ) -> Result<ApiResponse<PortfolioAnalytics>, ApiError> {
+        let url = format!("{}/api/portfolio-analytics", self.base_url);
+        let request = PortfolioRequest {
+            holdings,
+            benchmark: benchmark.unwrap_or("SPY").to_string(),
+        };
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get portfolio risk metrics
+    pub async fn get_portfolio_risk(
+        &self,
+        holdings: Vec<PortfolioHolding>,
+        confidence_level: Option<f64>,
+        method: Option<&str>,
+    ) -> Result<ApiResponse<ApiRiskMetrics>, ApiError> {
+        let url = format!("{}/api/portfolio/risk", self.base_url);
+        let request = RiskRequest {
+            holdings,
+            confidence_level: confidence_level.unwrap_or(0.95),
+            method: method.unwrap_or("historical").to_string(),
+            lookback_days: 252,
+        };
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get sector exposure for portfolio
+    pub async fn get_sector_exposure(
+        &self,
+        holdings: Vec<PortfolioHolding>,
+    ) -> Result<ApiResponse<SectorExposureResponse>, ApiError> {
+        let url = format!("{}/api/portfolio/sector-exposure", self.base_url);
+        let request = PortfolioRequest {
+            holdings,
+            benchmark: "SPY".to_string(),
+        };
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    // =========================================================================
+    // COMMODITIES ENDPOINTS
+    // =========================================================================
+
+    /// Get commodities market overview
+    pub async fn get_commodities_overview(&self) -> Result<ApiResponse<CommoditiesOverview>, ApiError> {
+        let url = format!("{}/api/commodities", self.base_url);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get commodity detail by symbol
+    pub async fn get_commodity_detail(&self, symbol: &str) -> Result<ApiResponse<CommoditySummary>, ApiError> {
+        let url = format!("{}/api/commodities/{}", self.base_url, symbol);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get macro-commodity linkage analysis
+    pub async fn get_commodity_macro(&self, symbol: &str) -> Result<ApiResponse<MacroAnalysis>, ApiError> {
+        let url = format!("{}/api/commodities/{}/macro", self.base_url, symbol);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get commodity correlation matrix
+    pub async fn get_commodities_correlations(&self) -> Result<ApiResponse<CorrelationMatrix>, ApiError> {
+        let url = format!("{}/api/commodities/correlations", self.base_url);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    // =========================================================================
+    // DASHBOARD DATA ENDPOINTS
+    // =========================================================================
+
+    /// Get money flow analysis for sectors
+    pub async fn get_money_flow(&self) -> Result<ApiResponse<Vec<SectorFlow>>, ApiError> {
+        let url = format!("{}/api/money-flow", self.base_url);
+        let response = self
+            .client
+            .post(&url)
+            .json(&SectorFlowRequest {
+                sectors: vec![
+                    "XLK".to_string(),
+                    "XLF".to_string(),
+                    "XLE".to_string(),
+                    "XLV".to_string(),
+                    "XLI".to_string(),
+                ],
+            })
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get market data for a symbol
+    pub async fn get_market_data(&self, symbol: &str) -> Result<ApiResponse<MarketData>, ApiError> {
+        let url = format!("{}/api/market/{}", self.base_url, symbol);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
+
+    /// Get institutional holders for a symbol
+    pub async fn get_institutional(
+        &self,
+        symbol: &str,
+    ) -> Result<ApiResponse<Vec<InstitutionalHolder>>, ApiError> {
+        let url = format!("{}/api/institutional/{}", self.base_url, symbol);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+        response
+            .json()
+            .await
+            .map_err(|e| ApiError::Parse(e.to_string()))
+    }
 }
 
 impl Default for StanleyClient {
@@ -465,6 +669,16 @@ pub enum ApiError {
     Server(String),
 }
 
+impl std::fmt::Display for ApiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ApiError::Network(msg) => write!(f, "Network error: {}", msg),
+            ApiError::Parse(msg) => write!(f, "Parse error: {}", msg),
+            ApiError::Server(msg) => write!(f, "Server error: {}", msg),
+        }
+    }
+}
+
 // Request/Response types
 
 #[derive(Debug, Serialize)]
@@ -472,12 +686,12 @@ pub struct SectorFlowRequest {
     pub sectors: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct SectorFlowResponse {
     pub sectors: Vec<SectorFlow>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct SectorFlow {
     pub sector: String,
     pub net_flow_1m: f64,
@@ -487,7 +701,7 @@ pub struct SectorFlow {
     pub confidence_score: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct InstitutionalHoldingsResponse {
     pub symbol: String,
     pub institutional_ownership: f64,
@@ -497,14 +711,14 @@ pub struct InstitutionalHoldingsResponse {
     pub concentration_risk: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct InstitutionalHolder {
     pub manager_name: String,
     pub value_held: f64,
     pub ownership_percentage: f64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct EquityFlowResponse {
     pub symbol: String,
     pub money_flow_score: f64,
@@ -513,6 +727,52 @@ pub struct EquityFlowResponse {
     pub short_pressure: f64,
     pub accumulation_distribution: f64,
     pub confidence: f64,
+}
+
+/// Alias for equity flow data used in comparison views
+pub type EquityFlowData = EquityFlowResponse;
+
+/// Market data for a symbol (prices, volume, change)
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct MarketData {
+    pub symbol: String,
+    pub price: f64,
+    pub change: f64,
+    pub change_percent: f64,
+    pub volume: u64,
+    pub avg_volume: u64,
+    pub market_cap: f64,
+    pub pe_ratio: Option<f64>,
+    pub dividend_yield: Option<f64>,
+    pub high_52w: f64,
+    pub low_52w: f64,
+}
+
+/// Valuation data for research analysis
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ValuationData {
+    pub pe_ratio: f64,
+    pub forward_pe: f64,
+    pub peg_ratio: f64,
+    pub price_to_sales: f64,
+    pub pb_ratio: f64,
+    pub ps_ratio: f64,
+    pub ev_ebitda: f64,
+    pub dcf_value: f64,
+}
+
+/// Research data for fundamental analysis
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct ResearchData {
+    pub symbol: String,
+    pub company_name: String,
+    pub sector: String,
+    pub industry: String,
+    pub analyst_rating: Option<String>,
+    pub price_target: Option<f64>,
+    pub eps_estimate: Option<f64>,
+    pub revenue_estimate: Option<f64>,
+    pub valuation: Option<ValuationData>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -674,4 +934,169 @@ pub struct GraphEdge {
 pub struct GraphResponse {
     pub nodes: Vec<GraphNode>,
     pub edges: Vec<GraphEdge>,
+}
+
+// Portfolio API types
+
+/// Portfolio holding for API requests
+#[derive(Debug, Clone, Serialize)]
+pub struct PortfolioHolding {
+    pub symbol: String,
+    pub shares: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub average_cost: Option<f64>,
+}
+
+/// Request for portfolio analytics
+#[derive(Debug, Clone, Serialize)]
+pub struct PortfolioRequest {
+    pub holdings: Vec<PortfolioHolding>,
+    pub benchmark: String,
+}
+
+/// Request for portfolio risk analysis
+#[derive(Debug, Clone, Serialize)]
+pub struct RiskRequest {
+    pub holdings: Vec<PortfolioHolding>,
+    pub confidence_level: f64,
+    pub method: String,
+    pub lookback_days: i32,
+}
+
+/// Portfolio analytics response data
+#[derive(Debug, Clone, Deserialize)]
+pub struct PortfolioAnalytics {
+    pub total_value: f64,
+    pub sector_exposure: std::collections::HashMap<String, f64>,
+    pub top_holdings: Vec<HoldingInfo>,
+}
+
+/// Individual holding info from API
+#[derive(Debug, Clone, Deserialize)]
+pub struct HoldingInfo {
+    pub symbol: String,
+    pub weight: f64,
+    pub value: f64,
+    pub return_pct: Option<f64>,
+}
+
+/// Risk metrics from API
+#[derive(Debug, Clone, Deserialize)]
+pub struct ApiRiskMetrics {
+    pub var_95: f64,
+    pub var_99: f64,
+    pub cvar_95: f64,
+    pub max_drawdown: f64,
+    pub sharpe_ratio: f64,
+    pub sortino_ratio: f64,
+    pub beta: f64,
+}
+
+/// Sector exposure response
+#[derive(Debug, Clone, Deserialize)]
+pub struct SectorExposureResponse {
+    pub portfolio_weights: std::collections::HashMap<String, f64>,
+}
+
+/// Generic API response wrapper
+#[derive(Debug, Clone, Deserialize)]
+pub struct ApiResponse<T> {
+    pub success: bool,
+    pub data: Option<T>,
+    pub error: Option<String>,
+    pub timestamp: String,
+}
+
+// Commodities API types
+
+/// Commodity price data from API
+#[derive(Debug, Deserialize, Clone)]
+pub struct CommodityPrice {
+    pub symbol: String,
+    pub name: String,
+    pub price: f64,
+    pub change: f64,
+    #[serde(rename = "changePercent")]
+    pub change_percent: f64,
+    pub high: f64,
+    pub low: f64,
+    pub volume: i64,
+    #[serde(rename = "openInterest")]
+    pub open_interest: i64,
+    pub timestamp: String,
+}
+
+/// Commodity summary with analytics
+#[derive(Debug, Deserialize, Clone)]
+pub struct CommoditySummary {
+    pub symbol: String,
+    pub name: String,
+    pub category: String,
+    pub price: f64,
+    #[serde(rename = "change1d")]
+    pub change_1d: f64,
+    #[serde(rename = "change1w")]
+    pub change_1w: f64,
+    #[serde(rename = "change1m")]
+    pub change_1m: f64,
+    #[serde(rename = "changeYtd")]
+    pub change_ytd: f64,
+    #[serde(rename = "volatility30d")]
+    pub volatility_30d: f64,
+    pub trend: String,
+    #[serde(rename = "relativeStrength")]
+    pub relative_strength: f64,
+}
+
+/// Category overview data
+#[derive(Debug, Deserialize, Clone)]
+pub struct CategoryOverview {
+    pub category: String,
+    pub count: i32,
+    #[serde(rename = "avgChange")]
+    pub avg_change: f64,
+    pub leader: Option<CommodityPrice>,
+    pub laggard: Option<CommodityPrice>,
+    pub commodities: Vec<CommodityPrice>,
+}
+
+/// Market overview response
+#[derive(Debug, Deserialize, Clone)]
+pub struct CommoditiesOverview {
+    pub timestamp: String,
+    pub sentiment: String,
+    #[serde(rename = "avgChange")]
+    pub avg_change: f64,
+    pub categories: std::collections::HashMap<String, CategoryOverview>,
+}
+
+/// Macro linkage data
+#[derive(Debug, Deserialize, Clone)]
+pub struct MacroLinkage {
+    pub commodity: String,
+    #[serde(rename = "macroIndicator")]
+    pub macro_indicator: String,
+    pub correlation: f64,
+    #[serde(rename = "leadLagDays")]
+    pub lead_lag_days: i32,
+    pub relationship: String,
+    pub strength: String,
+}
+
+/// Macro linkage analysis response
+#[derive(Debug, Deserialize, Clone)]
+pub struct MacroAnalysis {
+    pub commodity: String,
+    pub name: String,
+    pub category: String,
+    pub linkages: Vec<MacroLinkage>,
+    #[serde(rename = "primaryDriver")]
+    pub primary_driver: Option<String>,
+}
+
+/// Correlation matrix data
+#[derive(Debug, Deserialize, Clone)]
+pub struct CorrelationMatrix {
+    pub symbols: Vec<String>,
+    pub matrix: Vec<Vec<f64>>,
 }

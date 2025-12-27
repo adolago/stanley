@@ -1,0 +1,96 @@
+# Stanley Docker Compose - Production Overrides
+#
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# This file overrides development settings for production deployment:
+# - Uses production build target
+# - Disables volume mounts for source code
+# - Enables nginx reverse proxy
+# - Sets production environment variables
+# - Configures proper resource limits
+
+version: "3.9"
+
+services:
+  # ===========================================================================
+  # API Production Overrides
+  # ===========================================================================
+  api:
+    build:
+      target: production
+    restart: always
+    environment:
+      - STANLEY_ENV=production
+    volumes:
+      # Remove source code mount - use built container
+      - ./config/stanley.yaml:/app/config/stanley.yaml:ro
+      - stanley-data:/app/data
+      - stanley-logs:/app/logs
+    # Scale for production
+    deploy:
+      mode: replicated
+      replicas: 2
+      resources:
+        limits:
+          cpus: "4.0"
+          memory: 4G
+        reservations:
+          cpus: "1.0"
+          memory: 1G
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
+
+  # ===========================================================================
+  # PostgreSQL Production Overrides
+  # ===========================================================================
+  postgres:
+    restart: always
+    environment:
+      # Use secrets in production
+      - POSTGRES_PASSWORD_FILE=/run/secrets/postgres_password
+    secrets:
+      - postgres_password
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  # ===========================================================================
+  # Redis Production Overrides
+  # ===========================================================================
+  redis:
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 1G
+
+  # ===========================================================================
+  # Nginx - Enabled in Production
+  # ===========================================================================
+  nginx:
+    profiles: []  # Remove profile restriction to enable in production
+    restart: always
+
+# =============================================================================
+# Secrets (for production deployment)
+# =============================================================================
+secrets:
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  openbb_api_key:
+    file: ./secrets/openbb_api_key.txt

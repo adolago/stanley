@@ -1,6 +1,14 @@
 //! Main application state and rendering for Stanley GUI
 
-use crate::api::{NoteResponse, StanleyClient};
+use crate::api::{
+    EquityFlowResponse, InstitutionalHolder, MarketData, NoteResponse, PortfolioHolding,
+    SectorFlow, StanleyClient,
+};
+use crate::commodities::{render_commodities, CommoditiesState};
+use crate::portfolio::{
+    render_portfolio_content, Holding, LoadState as PortfolioLoadState, RiskMetrics,
+    SectorAllocation,
+};
 use crate::theme::Theme;
 use gpui::prelude::FluentBuilder;
 use gpui::*;
@@ -32,6 +40,35 @@ impl<T> LoadingState<T> {
     }
 }
 
+/// Loading state for async data (standard naming used by commodity views)
+#[derive(Debug, Clone, Default)]
+pub enum LoadState<T> {
+    #[default]
+    NotLoaded,
+    Loading,
+    Loaded(T),
+    Error(String),
+}
+
+impl<T> LoadState<T> {
+    pub fn is_loading(&self) -> bool {
+        matches!(self, LoadState::Loading)
+    }
+}
+
+/// Format a number with K/M/B suffix for readability
+pub fn format_number(n: f64) -> String {
+    if n >= 1_000_000_000.0 {
+        format!("{:.1}B", n / 1_000_000_000.0)
+    } else if n >= 1_000_000.0 {
+        format!("{:.1}M", n / 1_000_000.0)
+    } else if n >= 1_000.0 {
+        format!("{:.1}K", n / 1_000.0)
+    } else {
+        format!("{:.0}", n)
+    }
+}
+
 /// Main application state
 pub struct StanleyApp {
     /// Current active view/tab
@@ -53,6 +90,21 @@ pub struct StanleyApp {
     theses_loading: LoadingState<()>,
     trades: Vec<TradeNote>,
     trades_loading: LoadingState<()>,
+    /// Commodities view state
+    commodities_state: CommoditiesState,
+    /// Portfolio view state
+    portfolio_holdings: PortfolioLoadState<Vec<Holding>>,
+    portfolio_risk: PortfolioLoadState<RiskMetrics>,
+    portfolio_sectors: PortfolioLoadState<Vec<SectorAllocation>>,
+    portfolio_total_value: f64,
+    /// Dashboard data - market data for selected symbol
+    market_data: LoadingState<MarketData>,
+    /// Dashboard data - sector money flow
+    sector_flow: LoadingState<Vec<SectorFlow>>,
+    /// Dashboard data - equity flow metrics
+    equity_flow: LoadingState<EquityFlowResponse>,
+    /// Dashboard data - institutional holders
+    institutional: LoadingState<Vec<InstitutionalHolder>>,
     /// API client for backend communication
     api_client: Arc<StanleyClient>,
     /// API connection status
@@ -268,6 +320,7 @@ pub enum ActiveView {
     Options,
     Portfolio,
     Research,
+    Commodities,
     Notes,
 }
 
@@ -326,6 +379,15 @@ impl StanleyApp {
             theses_loading: LoadingState::NotStarted,
             trades: Vec::new(),
             trades_loading: LoadingState::NotStarted,
+            commodities_state: CommoditiesState::default(),
+            portfolio_holdings: PortfolioLoadState::NotLoaded,
+            portfolio_risk: PortfolioLoadState::NotLoaded,
+            portfolio_sectors: PortfolioLoadState::NotLoaded,
+            portfolio_total_value: 0.0,
+            market_data: LoadingState::NotStarted,
+            sector_flow: LoadingState::NotStarted,
+            equity_flow: LoadingState::NotStarted,
+            institutional: LoadingState::NotStarted,
             api_client,
             api_connected: LoadingState::NotStarted,
         };
@@ -350,10 +412,11 @@ impl StanleyApp {
                         match result {
                             Ok(health) => {
                                 app.api_connected = LoadingState::Loaded(health.core);
-                                // If connected, load notes data
+                                // If connected, load data
                                 if health.core {
                                     app.load_theses(cx);
                                     app.load_trades(cx);
+                                    app.load_dashboard_data(cx);
                                 }
                             }
                             Err(e) => {
@@ -430,6 +493,559 @@ impl StanleyApp {
             });
         })
         .detach();
+    }
+
+    /// Load commodities data from API
+    pub fn load_commodities_data(&mut self, cx: &mut Context<Self>) {
+        let client = self.api_client.clone();
+
+        // Load commodities overview
+        self.commodities_state.overview = LoadState::Loading;
+        let client_clone = client.clone();
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client_clone.get_commodities_overview().await;
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        app.commodities_state.overview = match result {
+                            Ok(r) if r.success => {
+                                r.data.map(LoadState::Loaded).unwrap_or(LoadState::Error("No data".into()))
+                            }
+                            Ok(r) => LoadState::Error(r.error.unwrap_or("Unknown error".into())),
+                            Err(e) => LoadState::Error(e.to_string()),
+                        };
+                        cx.notify();
+                    });
+                }
+            });
+        }).detach();
+
+        // Load correlations data
+        self.commodities_state.correlations = LoadState::Loading;
+        let client_clone = client.clone();
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client_clone.get_commodities_correlations().await;
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        app.commodities_state.correlations = match result {
+                            Ok(r) if r.success => {
+                                r.data.map(LoadState::Loaded).unwrap_or(LoadState::Error("No data".into()))
+                            }
+                            Ok(r) => LoadState::Error(r.error.unwrap_or("Unknown error".into())),
+                            Err(e) => LoadState::Error(e.to_string()),
+                        };
+                        cx.notify();
+                    });
+                }
+            });
+        }).detach();
+
+        // If a specific commodity is selected, load its detail and macro analysis
+        if let Some(symbol) = self.commodities_state.selected_commodity.clone() {
+            self.load_commodity_detail(&symbol, cx);
+        }
+    }
+
+    /// Load detail for a specific commodity
+    pub fn load_commodity_detail(&mut self, symbol: &str, cx: &mut Context<Self>) {
+        let client = self.api_client.clone();
+        let symbol_owned = symbol.to_string();
+
+        // Load commodity detail
+        self.commodities_state.detail = LoadState::Loading;
+        let symbol_clone = symbol_owned.clone();
+        let client_clone = client.clone();
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client_clone.get_commodity_detail(&symbol_clone).await;
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        app.commodities_state.detail = match result {
+                            Ok(r) if r.success => {
+                                r.data.map(LoadState::Loaded).unwrap_or(LoadState::Error("No data".into()))
+                            }
+                            Ok(r) => LoadState::Error(r.error.unwrap_or("Unknown error".into())),
+                            Err(e) => LoadState::Error(e.to_string()),
+                        };
+                        cx.notify();
+                    });
+                }
+            });
+        }).detach();
+
+        // Load macro linkage analysis
+        self.commodities_state.macro_analysis = LoadState::Loading;
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client.get_commodity_macro(&symbol_owned).await;
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        app.commodities_state.macro_analysis = match result {
+                            Ok(r) if r.success => {
+                                r.data.map(LoadState::Loaded).unwrap_or(LoadState::Error("No data".into()))
+                            }
+                            Ok(r) => LoadState::Error(r.error.unwrap_or("Unknown error".into())),
+                            Err(e) => LoadState::Error(e.to_string()),
+                        };
+                        cx.notify();
+                    });
+                }
+            });
+        }).detach();
+    }
+
+    // === DASHBOARD DATA LOADING ===
+
+    /// Load all dashboard data from API
+    pub fn load_dashboard_data(&mut self, cx: &mut Context<Self>) {
+        // Load market data for selected symbol
+        if let Some(symbol) = self.selected_symbol.clone() {
+            self.load_market_data(symbol.clone(), cx);
+            self.load_equity_flow(symbol.clone(), cx);
+            self.load_institutional(symbol, cx);
+        }
+        // Load sector flow data
+        self.load_sector_flow(cx);
+    }
+
+    /// Load market data for a symbol
+    fn load_market_data(&mut self, symbol: String, cx: &mut Context<Self>) {
+        self.market_data = LoadingState::Loading;
+        let client = self.api_client.clone();
+
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client.get_market_data(&symbol).await;
+
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        match result {
+                            Ok(response) => {
+                                if response.success {
+                                    if let Some(data) = response.data {
+                                        app.market_data = LoadingState::Loaded(data);
+                                    } else {
+                                        app.market_data =
+                                            LoadingState::Error("No data returned".to_string());
+                                    }
+                                } else {
+                                    app.market_data = LoadingState::Error(
+                                        response.error.unwrap_or("Unknown error".to_string()),
+                                    );
+                                }
+                            }
+                            Err(e) => {
+                                app.market_data = LoadingState::Error(e.to_string());
+                            }
+                        }
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Load sector money flow data
+    fn load_sector_flow(&mut self, cx: &mut Context<Self>) {
+        self.sector_flow = LoadingState::Loading;
+        let client = self.api_client.clone();
+
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client.get_money_flow().await;
+
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        match result {
+                            Ok(response) => {
+                                if response.success {
+                                    if let Some(data) = response.data {
+                                        app.sector_flow = LoadingState::Loaded(data);
+                                    } else {
+                                        app.sector_flow =
+                                            LoadingState::Error("No data returned".to_string());
+                                    }
+                                } else {
+                                    app.sector_flow = LoadingState::Error(
+                                        response.error.unwrap_or("Unknown error".to_string()),
+                                    );
+                                }
+                            }
+                            Err(e) => {
+                                app.sector_flow = LoadingState::Error(e.to_string());
+                            }
+                        }
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Load equity flow data for a symbol
+    fn load_equity_flow(&mut self, symbol: String, cx: &mut Context<Self>) {
+        self.equity_flow = LoadingState::Loading;
+        let client = self.api_client.clone();
+
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client.get_equity_flow(&symbol).await;
+
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        // get_equity_flow returns EquityFlowResponse directly (not wrapped in ApiResponse)
+                        match result {
+                            Ok(data) => {
+                                app.equity_flow = LoadingState::Loaded(data);
+                            }
+                            Err(e) => {
+                                app.equity_flow = LoadingState::Error(e.to_string());
+                            }
+                        }
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Load institutional holders for a symbol
+    fn load_institutional(&mut self, symbol: String, cx: &mut Context<Self>) {
+        self.institutional = LoadingState::Loading;
+        let client = self.api_client.clone();
+
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client.get_institutional(&symbol).await;
+
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app: &mut Self, cx: &mut Context<Self>| {
+                        match result {
+                            Ok(response) => {
+                                if response.success {
+                                    if let Some(data) = response.data {
+                                        app.institutional = LoadingState::Loaded(data);
+                                    } else {
+                                        app.institutional =
+                                            LoadingState::Error("No data returned".to_string());
+                                    }
+                                } else {
+                                    app.institutional = LoadingState::Error(
+                                        response.error.unwrap_or("Unknown error".to_string()),
+                                    );
+                                }
+                            }
+                            Err(e) => {
+                                app.institutional = LoadingState::Error(e.to_string());
+                            }
+                        }
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+    }
+
+    // === PORTFOLIO VIEW ===
+
+    /// Load portfolio data from API
+    fn load_portfolio_data(&mut self, cx: &mut Context<Self>) {
+        self.portfolio_holdings = PortfolioLoadState::Loading;
+        self.portfolio_risk = PortfolioLoadState::Loading;
+        self.portfolio_sectors = PortfolioLoadState::Loading;
+
+        let client = self.api_client.clone();
+
+        // Sample holdings to send to API
+        let holdings = vec![
+            PortfolioHolding {
+                symbol: "AAPL".to_string(),
+                shares: 100.0,
+                average_cost: Some(150.0),
+            },
+            PortfolioHolding {
+                symbol: "MSFT".to_string(),
+                shares: 50.0,
+                average_cost: Some(280.0),
+            },
+            PortfolioHolding {
+                symbol: "GOOGL".to_string(),
+                shares: 25.0,
+                average_cost: Some(120.0),
+            },
+            PortfolioHolding {
+                symbol: "NVDA".to_string(),
+                shares: 30.0,
+                average_cost: Some(450.0),
+            },
+            PortfolioHolding {
+                symbol: "AMZN".to_string(),
+                shares: 40.0,
+                average_cost: Some(130.0),
+            },
+            PortfolioHolding {
+                symbol: "META".to_string(),
+                shares: 35.0,
+                average_cost: Some(290.0),
+            },
+            PortfolioHolding {
+                symbol: "TSLA".to_string(),
+                shares: 20.0,
+                average_cost: Some(200.0),
+            },
+        ];
+
+        let holdings_for_analytics = holdings.clone();
+        let holdings_for_risk = holdings.clone();
+        let holdings_for_sectors = holdings;
+
+        // Load portfolio analytics
+        let client_clone = client.clone();
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client_clone
+                .get_portfolio_analytics(holdings_for_analytics, Some("SPY"))
+                .await;
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app, cx| {
+                        match result {
+                            Ok(r) if r.success => {
+                                if let Some(analytics) = r.data {
+                                    let total_value = analytics.total_value;
+                                    app.portfolio_total_value = total_value;
+                                    let holdings: Vec<Holding> = analytics
+                                        .top_holdings
+                                        .iter()
+                                        .map(|h| {
+                                            let cost_basis = h.value
+                                                / (1.0 + h.return_pct.unwrap_or(0.0) / 100.0);
+                                            let shares_est = h.weight * total_value
+                                                / h.value.max(1.0);
+                                            Holding::new(
+                                                h.symbol.clone(),
+                                                shares_est,
+                                                cost_basis / shares_est.max(1.0),
+                                                h.value / shares_est.max(1.0),
+                                                total_value,
+                                            )
+                                        })
+                                        .collect();
+                                    app.portfolio_holdings =
+                                        PortfolioLoadState::Loaded(holdings);
+                                    let sectors: Vec<SectorAllocation> = analytics
+                                        .sector_exposure
+                                        .iter()
+                                        .map(|(s, w)| SectorAllocation {
+                                            sector: s.clone(),
+                                            weight: *w * 100.0,
+                                            value: total_value * w,
+                                        })
+                                        .collect();
+                                    if !sectors.is_empty() {
+                                        app.portfolio_sectors =
+                                            PortfolioLoadState::Loaded(sectors);
+                                    }
+                                } else {
+                                    app.portfolio_holdings =
+                                        PortfolioLoadState::Error("No data".into());
+                                }
+                            }
+                            Ok(r) => {
+                                app.portfolio_holdings = PortfolioLoadState::Error(
+                                    r.error.unwrap_or("Error".into()),
+                                );
+                            }
+                            Err(_) => {
+                                app.load_portfolio_mock_data();
+                            }
+                        };
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+
+        // Load risk metrics
+        let client_clone = client.clone();
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client_clone
+                .get_portfolio_risk(holdings_for_risk, Some(0.95), Some("historical"))
+                .await;
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app, cx| {
+                        match result {
+                            Ok(r) if r.success => {
+                                if let Some(m) = r.data {
+                                    app.portfolio_risk =
+                                        PortfolioLoadState::Loaded(RiskMetrics {
+                                            var_95: m.var_95,
+                                            var_99: m.var_99,
+                                            cvar_95: m.cvar_95,
+                                            max_drawdown: m.max_drawdown,
+                                            sharpe_ratio: m.sharpe_ratio,
+                                            sortino_ratio: m.sortino_ratio,
+                                            beta: m.beta,
+                                        });
+                                } else {
+                                    app.portfolio_risk =
+                                        PortfolioLoadState::Error("No data".into());
+                                }
+                            }
+                            Ok(r) => {
+                                app.portfolio_risk = PortfolioLoadState::Error(
+                                    r.error.unwrap_or("Error".into()),
+                                );
+                            }
+                            Err(_) => {
+                                // Use mock risk metrics on error
+                                app.portfolio_risk =
+                                    PortfolioLoadState::Loaded(RiskMetrics {
+                                        var_95: -0.0234,
+                                        var_99: -0.0412,
+                                        cvar_95: -0.0356,
+                                        max_drawdown: -0.1245,
+                                        sharpe_ratio: 1.85,
+                                        sortino_ratio: 2.42,
+                                        beta: 1.12,
+                                    });
+                            }
+                        };
+                        cx.notify();
+                    });
+                }
+            });
+        })
+        .detach();
+
+        // Load sector exposure
+        let client_clone = client;
+        cx.spawn(async move |this: WeakEntity<Self>, cx: &mut AsyncApp| {
+            let result = client_clone.get_sector_exposure(holdings_for_sectors).await;
+            let _ = cx.update(|cx| {
+                if let Some(entity) = this.upgrade() {
+                    entity.update(cx, |app, cx| {
+                        // Only update if not already loaded from analytics
+                        if !matches!(app.portfolio_sectors, PortfolioLoadState::Loaded(_)) {
+                            match result {
+                                Ok(r) if r.success => {
+                                    if let Some(e) = r.data {
+                                        let tv = app.portfolio_total_value.max(1.0);
+                                        let sectors: Vec<SectorAllocation> = e
+                                            .portfolio_weights
+                                            .iter()
+                                            .map(|(s, w)| SectorAllocation {
+                                                sector: s.clone(),
+                                                weight: *w * 100.0,
+                                                value: tv * w,
+                                            })
+                                            .collect();
+                                        app.portfolio_sectors =
+                                            PortfolioLoadState::Loaded(sectors);
+                                    } else {
+                                        app.portfolio_sectors =
+                                            PortfolioLoadState::Error("No data".into());
+                                    }
+                                }
+                                Ok(r) => {
+                                    app.portfolio_sectors = PortfolioLoadState::Error(
+                                        r.error.unwrap_or("Error".into()),
+                                    );
+                                }
+                                Err(_) => {
+                                    // Use mock sectors on error
+                                    let tv = app.portfolio_total_value.max(100000.0);
+                                    app.portfolio_sectors =
+                                        PortfolioLoadState::Loaded(vec![
+                                            SectorAllocation {
+                                                sector: "Technology".to_string(),
+                                                weight: 65.4,
+                                                value: tv * 0.654,
+                                            },
+                                            SectorAllocation {
+                                                sector: "Consumer".to_string(),
+                                                weight: 18.2,
+                                                value: tv * 0.182,
+                                            },
+                                            SectorAllocation {
+                                                sector: "Automotive".to_string(),
+                                                weight: 8.8,
+                                                value: tv * 0.088,
+                                            },
+                                            SectorAllocation {
+                                                sector: "Other".to_string(),
+                                                weight: 7.6,
+                                                value: tv * 0.076,
+                                            },
+                                        ]);
+                                }
+                            };
+                            cx.notify();
+                        }
+                    });
+                }
+            });
+        })
+        .detach();
+    }
+
+    /// Load mock portfolio data when API is unavailable
+    fn load_portfolio_mock_data(&mut self) {
+        let mock = vec![
+            ("AAPL", 100.0, 150.0, 178.50),
+            ("MSFT", 50.0, 280.0, 378.90),
+            ("GOOGL", 25.0, 120.0, 175.30),
+            ("NVDA", 30.0, 450.0, 875.20),
+            ("AMZN", 40.0, 130.0, 186.40),
+            ("META", 35.0, 290.0, 505.75),
+            ("TSLA", 20.0, 200.0, 248.60),
+        ];
+        let total_value: f64 = mock.iter().map(|(_, s, _, p)| s * p).sum();
+        self.portfolio_total_value = total_value;
+        let holdings: Vec<Holding> = mock
+            .into_iter()
+            .map(|(sym, shares, avg, curr)| {
+                Holding::new(sym.to_string(), shares, avg, curr, total_value)
+            })
+            .collect();
+        self.portfolio_holdings = PortfolioLoadState::Loaded(holdings);
+        self.portfolio_risk = PortfolioLoadState::Loaded(RiskMetrics {
+            var_95: -0.0234,
+            var_99: -0.0412,
+            cvar_95: -0.0356,
+            max_drawdown: -0.1245,
+            sharpe_ratio: 1.85,
+            sortino_ratio: 2.42,
+            beta: 1.12,
+        });
+        self.portfolio_sectors = PortfolioLoadState::Loaded(vec![
+            SectorAllocation {
+                sector: "Technology".to_string(),
+                weight: 65.4,
+                value: total_value * 0.654,
+            },
+            SectorAllocation {
+                sector: "Consumer".to_string(),
+                weight: 18.2,
+                value: total_value * 0.182,
+            },
+            SectorAllocation {
+                sector: "Automotive".to_string(),
+                weight: 8.8,
+                value: total_value * 0.088,
+            },
+            SectorAllocation {
+                sector: "Other".to_string(),
+                weight: 7.6,
+                value: total_value * 0.076,
+            },
+        ]);
     }
 
     /// Load demo/fallback data when API is unavailable
@@ -523,6 +1139,15 @@ impl StanleyApp {
 
     pub fn set_active_view(&mut self, view: ActiveView, cx: &mut Context<Self>) {
         self.active_view = view;
+        // Load view-specific data when switching views
+        if matches!(view, ActiveView::Commodities) {
+            self.load_commodities_data(cx);
+        }
+        if view == ActiveView::Portfolio
+            && matches!(self.portfolio_holdings, PortfolioLoadState::NotLoaded)
+        {
+            self.load_portfolio_data(cx);
+        }
         cx.notify();
     }
 
@@ -653,6 +1278,7 @@ impl StanleyApp {
             .child(self.nav_item("Options Flow", ActiveView::Options, cx))
             .child(self.nav_item("Portfolio", ActiveView::Portfolio, cx))
             .child(self.nav_item("Research", ActiveView::Research, cx))
+            .child(self.nav_item("Commodities", ActiveView::Commodities, cx))
             .child(self.nav_item("Notes", ActiveView::Notes, cx))
     }
 
@@ -833,6 +1459,36 @@ impl StanleyApp {
         let theme = &self.theme;
         let symbol = self.selected_symbol.as_deref().unwrap_or("Select Symbol");
 
+        // Extract market data for the header
+        let (price_change_text, is_positive, price_display) = match &self.market_data {
+            LoadingState::Loaded(data) => {
+                let change = data.change;
+                let change_pct = data.change_percent;
+                let is_pos = change >= 0.0;
+                let sign = if is_pos { "+" } else { "" };
+                let price_str = format!(
+                    "{}${:.2} ({}{:.2}%)",
+                    sign,
+                    change.abs(),
+                    sign,
+                    change_pct
+                );
+                let price = format!("${:.2}", data.price);
+                (price_str, is_pos, Some(price))
+            }
+            LoadingState::Loading => ("...".to_string(), true, None),
+            LoadingState::Error(_) | LoadingState::NotStarted => {
+                // Demo data fallback
+                ("+$4.52 (2.41%)".to_string(), true, None)
+            }
+        };
+
+        let (badge_bg, badge_border, badge_text) = if is_positive {
+            (theme.positive_subtle, theme.positive_muted, theme.positive)
+        } else {
+            (theme.negative_subtle, theme.negative_muted, theme.negative)
+        };
+
         div()
             .h(px(72.0))
             .px(px(28.0))
@@ -859,12 +1515,15 @@ impl StanleyApp {
                                     .text_color(theme.text)
                                     .child(symbol.to_string()),
                             )
-                            .child(
-                                div()
-                                    .text_size(px(14.0))
-                                    .text_color(theme.text_dimmed)
-                                    .child("Apple Inc."),
-                            ),
+                            .when_some(price_display, |el, price| {
+                                el.child(
+                                    div()
+                                        .text_size(px(18.0))
+                                        .font_weight(FontWeight::SEMIBOLD)
+                                        .text_color(theme.text)
+                                        .child(price),
+                                )
+                            }),
                     )
                     .child(
                         // Price change badge with improved styling
@@ -872,13 +1531,13 @@ impl StanleyApp {
                             .px(px(12.0))
                             .py(px(6.0))
                             .rounded(px(6.0))
-                            .bg(theme.positive_subtle)
+                            .bg(badge_bg)
                             .border_1()
-                            .border_color(theme.positive_muted)
-                            .text_color(theme.positive)
+                            .border_color(badge_border)
+                            .text_color(badge_text)
                             .text_size(px(13.0))
                             .font_weight(FontWeight::SEMIBOLD)
-                            .child("+$4.52 (2.41%)"),
+                            .child(price_change_text),
                     ),
             )
             .child(
@@ -939,8 +1598,25 @@ impl StanleyApp {
     fn render_content_area(&self, cx: &mut Context<Self>) -> impl IntoElement {
         match self.active_view {
             ActiveView::Notes => self.render_notes_panel(cx),
+            ActiveView::Commodities => self.render_commodities_view(cx),
+            ActiveView::Portfolio => self.render_portfolio_view(),
             _ => self.render_dashboard_content(),
         }
+    }
+
+    fn render_commodities_view(&self, cx: &mut Context<Self>) -> Div {
+        render_commodities(&self.theme, &self.commodities_state, cx)
+    }
+
+    /// Render the portfolio view using data from portfolio state
+    fn render_portfolio_view(&self) -> Div {
+        render_portfolio_content(
+            &self.portfolio_holdings,
+            &self.portfolio_risk,
+            &self.portfolio_sectors,
+            self.portfolio_total_value,
+            &self.theme,
+        )
     }
 
     fn render_dashboard_content(&self) -> Div {
@@ -956,13 +1632,41 @@ impl StanleyApp {
     }
 
     fn render_metrics_row(&self) -> impl IntoElement {
+        // Use equity_flow data if available, otherwise show loading/placeholder
+        let (flow_score, flow_label, inst_sent, inst_label, smart_money, sm_label, short_pressure, sp_label) =
+            match &self.equity_flow {
+                LoadingState::Loaded(data) => {
+                    let flow_score = format!("{:.2}", data.money_flow_score);
+                    let flow_label = if data.money_flow_score > 0.5 { "Bullish" } else { "Bearish" };
+                    let inst_sent = format!("{:.1}%", data.institutional_sentiment * 100.0);
+                    let inst_label = if data.institutional_sentiment > 0.0 { "+QoQ" } else { "-QoQ" };
+                    let smart_money = format!("{:.1}%", data.smart_money_activity * 100.0);
+                    let sm_label = if data.smart_money_activity > 0.3 { "Active" } else { "Quiet" };
+                    let short_pressure = format!("{:.1}%", data.short_pressure * 100.0);
+                    let sp_label = if data.short_pressure < 0.05 { "Low" } else { "Elevated" };
+                    (flow_score, flow_label, inst_sent, inst_label, smart_money, sm_label, short_pressure, sp_label)
+                }
+                LoadingState::Loading => (
+                    "...".to_string(), "Loading",
+                    "...".to_string(), "",
+                    "...".to_string(), "",
+                    "...".to_string(), "",
+                ),
+                LoadingState::Error(_) | LoadingState::NotStarted => (
+                    "0.72".to_string(), "Demo",
+                    "75.4%".to_string(), "+2.1% QoQ",
+                    "34.2%".to_string(), "Above avg",
+                    "3.8%".to_string(), "-0.4%",
+                ),
+            };
+
         div()
             .flex()
             .gap(px(20.0))
-            .child(self.metric_card("Money Flow Score", "0.72", "Bullish", true))
-            .child(self.metric_card("Institutional %", "75.4%", "+2.1% QoQ", true))
-            .child(self.metric_card("Dark Pool %", "34.2%", "Above avg", false))
-            .child(self.metric_card("Short Interest", "3.8%", "-0.4%", true))
+            .child(self.metric_card("Money Flow Score", &flow_score, flow_label, true))
+            .child(self.metric_card("Institutional %", &inst_sent, inst_label, true))
+            .child(self.metric_card("Smart Money", &smart_money, sm_label, false))
+            .child(self.metric_card("Short Pressure", &short_pressure, sp_label, false))
     }
 
     fn metric_card(
@@ -1102,15 +1806,58 @@ impl StanleyApp {
     }
 
     fn render_sector_flow(&self) -> impl IntoElement {
-        div()
-            .flex()
-            .flex_col()
-            .gap(px(14.0))
-            .child(self.sector_row("XLK (Technology)", 0.82, true))
-            .child(self.sector_row("XLF (Financials)", 0.45, true))
-            .child(self.sector_row("XLE (Energy)", -0.23, false))
-            .child(self.sector_row("XLV (Healthcare)", 0.31, true))
-            .child(self.sector_row("XLI (Industrials)", 0.12, true))
+        let theme = &self.theme;
+
+        match &self.sector_flow {
+            LoadingState::Loaded(sectors) => {
+                let mut container = div().flex().flex_col().gap(px(14.0));
+                for sector in sectors.iter().take(5) {
+                    let score = sector.smart_money_sentiment as f32;
+                    let positive = score >= 0.0;
+                    let name = format!("{} (Flow: {:.0}M)", sector.sector, sector.net_flow_1m / 1_000_000.0);
+                    container = container.child(self.sector_row(&name, score, positive));
+                }
+                container
+            }
+            LoadingState::Loading => {
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .h(px(100.0))
+                    .child(
+                        div()
+                            .text_size(px(13.0))
+                            .text_color(theme.text_muted)
+                            .child("Loading sector data..."),
+                    )
+            }
+            LoadingState::Error(msg) => {
+                div()
+                    .flex()
+                    .items_center()
+                    .justify_center()
+                    .h(px(100.0))
+                    .child(
+                        div()
+                            .text_size(px(13.0))
+                            .text_color(theme.negative)
+                            .child(format!("Error: {}", msg)),
+                    )
+            }
+            LoadingState::NotStarted => {
+                // Show demo data when API not started
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(14.0))
+                    .child(self.sector_row("XLK (Technology)", 0.82, true))
+                    .child(self.sector_row("XLF (Financials)", 0.45, true))
+                    .child(self.sector_row("XLE (Energy)", -0.23, false))
+                    .child(self.sector_row("XLV (Healthcare)", 0.31, true))
+                    .child(self.sector_row("XLI (Industrials)", 0.12, true))
+            }
+        }
     }
 
     fn sector_row(&self, name: &str, score: f32, positive: bool) -> impl IntoElement {
@@ -1175,15 +1922,142 @@ impl StanleyApp {
     }
 
     fn render_holders(&self) -> impl IntoElement {
+        let theme = &self.theme;
+
+        match &self.institutional {
+            LoadingState::Loaded(holders) => {
+                let mut container = div().flex().flex_col().gap(px(0.0));
+
+                // Show top 5 holders (or fewer if not available)
+                for holder in holders.iter().take(5) {
+                    let ownership_str = format!("{:.1}%", holder.ownership_percentage);
+                    let value_str = format_number(holder.value_held);
+                    container = container.child(
+                        self.holder_row_with_value(&holder.manager_name, &ownership_str, &value_str),
+                    );
+                }
+
+                // If no holders, show placeholder
+                if holders.is_empty() {
+                    container = container.child(
+                        div()
+                            .py(px(16.0))
+                            .text_size(px(13.0))
+                            .text_color(theme.text_muted)
+                            .child("No institutional holders found"),
+                    );
+                }
+
+                container
+            }
+            LoadingState::Loading => div()
+                .flex()
+                .items_center()
+                .justify_center()
+                .py(px(32.0))
+                .child(
+                    div()
+                        .text_size(px(13.0))
+                        .text_color(theme.text_muted)
+                        .child("Loading holders..."),
+                ),
+            LoadingState::Error(msg) => div()
+                .flex()
+                .items_center()
+                .justify_center()
+                .py(px(32.0))
+                .child(
+                    div()
+                        .text_size(px(13.0))
+                        .text_color(theme.negative)
+                        .child(format!("Error: {}", msg)),
+                ),
+            LoadingState::NotStarted => {
+                // Show demo data when not started
+                div()
+                    .flex()
+                    .flex_col()
+                    .gap(px(0.0))
+                    .child(self.holder_row("Vanguard Group", "8.2%", "+0.3%", true))
+                    .child(self.holder_row("BlackRock", "6.8%", "+0.1%", true))
+                    .child(self.holder_row("State Street", "4.1%", "-0.2%", false))
+                    .child(self.holder_row("Fidelity", "2.9%", "+0.4%", true))
+                    .child(self.holder_row("T. Rowe Price", "1.8%", "+0.1%", true))
+            }
+        }
+    }
+
+    fn holder_row_with_value(
+        &self,
+        name: &str,
+        ownership: &str,
+        value: &str,
+    ) -> impl IntoElement {
+        let theme = &self.theme;
+
         div()
             .flex()
-            .flex_col()
-            .gap(px(0.0))
-            .child(self.holder_row("Vanguard Group", "8.2%", "+0.3%", true))
-            .child(self.holder_row("BlackRock", "6.8%", "+0.1%", true))
-            .child(self.holder_row("State Street", "4.1%", "-0.2%", false))
-            .child(self.holder_row("Fidelity", "2.9%", "+0.4%", true))
-            .child(self.holder_row("T. Rowe Price", "1.8%", "+0.1%", true))
+            .items_center()
+            .justify_between()
+            .py(px(12.0))
+            .px(px(8.0))
+            .border_b_1()
+            .border_color(theme.border_subtle)
+            .cursor_pointer()
+            .rounded(px(4.0))
+            .hover(|s| s.bg(theme.hover_bg).border_color(transparent_black()))
+            .child(
+                div()
+                    .flex()
+                    .items_center()
+                    .gap(px(12.0))
+                    // Holder avatar/icon
+                    .child(
+                        div()
+                            .size(px(32.0))
+                            .rounded(px(6.0))
+                            .bg(theme.accent_subtle)
+                            .flex()
+                            .items_center()
+                            .justify_center()
+                            .text_size(px(12.0))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(theme.accent)
+                            .child(name.chars().next().unwrap_or('?').to_string()),
+                    )
+                    .child(
+                        div()
+                            .text_size(px(13.0))
+                            .font_weight(FontWeight::MEDIUM)
+                            .text_color(theme.text_secondary)
+                            .child(name.to_string()),
+                    ),
+            )
+            .child(
+                div()
+                    .flex()
+                    .gap(px(20.0))
+                    .items_center()
+                    .child(
+                        div()
+                            .text_size(px(14.0))
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(theme.text)
+                            .child(ownership.to_string()),
+                    )
+                    .child(
+                        // Value badge instead of change
+                        div()
+                            .px(px(8.0))
+                            .py(px(4.0))
+                            .rounded(px(4.0))
+                            .bg(theme.accent_subtle)
+                            .text_size(px(11.0))
+                            .font_weight(FontWeight::MEDIUM)
+                            .text_color(theme.accent)
+                            .child(format!("${}", value)),
+                    ),
+            )
     }
 
     fn holder_row(

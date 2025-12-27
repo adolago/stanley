@@ -6,7 +6,10 @@
 
 mod api;
 mod app;
+mod commodities;
+mod comparison;
 mod components;
+mod portfolio;
 mod theme;
 
 use app::StanleyApp;

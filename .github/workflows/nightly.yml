@@ -1,0 +1,217 @@
+name: Nightly Build
+
+on:
+  schedule:
+    # Run nightly at 2:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ============================================
+  # Full Test Suite
+  # ============================================
+  full-tests:
+    name: Full Test Suite
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: stanley
+          POSTGRES_PASSWORD: stanley_test
+          POSTGRES_DB: stanley_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libpq-dev
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e ".[dev]"
+
+      - name: Run full test suite
+        env:
+          REDIS_URL: redis://localhost:6379
+          DATABASE_URL: postgresql://stanley:stanley_test@localhost:5432/stanley_test
+        run: |
+          pytest tests/ -v \
+            --cov=stanley \
+            --cov-report=xml \
+            --cov-report=html \
+            --cov-fail-under=70 \
+            --junitxml=nightly-junit.xml
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          flags: nightly
+          name: nightly-coverage
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-test-results
+          path: |
+            nightly-junit.xml
+            htmlcov/
+          retention-days: 14
+
+  # ============================================
+  # Performance Benchmarks
+  # ============================================
+  benchmarks:
+    name: Performance Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+          pip install pytest-benchmark
+
+      - name: Run benchmarks
+        run: |
+          pytest tests/ -v \
+            --benchmark-only \
+            --benchmark-json=benchmark-results.json \
+            --benchmark-autosave \
+            || echo "No benchmarks found or benchmarks completed"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-results.json
+            .benchmarks/
+          retention-days: 30
+
+  # ============================================
+  # Dependency Freshness Check
+  # ============================================
+  dependency-check:
+    name: Check Outdated Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Check outdated Python packages
+        run: |
+          pip install pip-tools
+          pip list --outdated --format=json > outdated-packages.json
+          cat outdated-packages.json
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Check outdated Rust packages
+        working-directory: stanley-gui
+        run: |
+          cargo install cargo-outdated || true
+          cargo outdated --depth 1 > ../outdated-cargo.txt 2>&1 || true
+          cat ../outdated-cargo.txt
+
+      - name: Upload dependency reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-reports
+          path: |
+            outdated-packages.json
+            outdated-cargo.txt
+          retention-days: 7
+
+  # ============================================
+  # Notify on Failure
+  # ============================================
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [full-tests, benchmarks, dependency-check]
+    if: failure()
+
+    steps:
+      - name: Create failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `Nightly build failed on ${new Date().toISOString().split('T')[0]}`;
+            const body = `
+            ## Nightly Build Failure
+
+            The nightly build has failed. Please investigate.
+
+            **Workflow Run:** [${context.runId}](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId})
+
+            **Date:** ${new Date().toISOString()}
+            `;
+
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'nightly-failure'
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['nightly-failure', 'bug', 'automated']
+              });
+            }
