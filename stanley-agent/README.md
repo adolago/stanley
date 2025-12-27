@@ -160,6 +160,23 @@ stanley-agent/
 ├── src/
 │   ├── agents/
 │   │   └── stanley.ts      # Main agent implementation
+│   ├── context/            # Phase 3: Context bridge system
+│   │   ├── index.ts        # Context bridge exports
+│   │   ├── bridge.ts       # ContextBridge class
+│   │   └── sources.ts      # Context source implementations
+│   ├── memory/             # Phase 3: Memory persistence
+│   │   ├── index.ts        # Memory store exports
+│   │   └── store.ts        # MemoryStore class
+│   ├── sync/               # Phase 3: Real-time sync
+│   │   ├── index.ts        # Sync client exports
+│   │   └── client.ts       # SyncClient for WebSocket
+│   ├── prompts/            # Phase 3: Prompt building
+│   │   ├── index.ts        # Prompt builder exports
+│   │   ├── template.ts     # PromptTemplate class
+│   │   └── builder.ts      # PromptBuilder class
+│   ├── session/            # Phase 3: Session management
+│   │   ├── index.ts        # Session manager exports
+│   │   └── manager.ts      # SessionManager class
 │   ├── mcp/
 │   │   └── tools.ts        # MCP tool definitions
 │   ├── providers/
@@ -168,7 +185,14 @@ stanley-agent/
 │   └── index.ts            # Entry point
 ├── tests/
 │   ├── unit/               # Unit tests
+│   │   ├── context.test.ts # Context bridge tests
+│   │   ├── memory.test.ts  # Memory persistence tests
+│   │   ├── sync.test.ts    # Real-time sync tests
+│   │   ├── prompts.test.ts # Prompt building tests
+│   │   └── session.test.ts # Session management tests
 │   └── integration/        # Integration tests
+│       ├── context-bridge.test.ts    # Full context flow
+│       └── session-lifecycle.test.ts # Session lifecycle
 ├── scripts/
 │   └── e2e-test.sh         # E2E test script
 ├── package.json
@@ -256,6 +280,195 @@ bun run format
 3. Tools execute HTTP requests to Stanley API
 4. Results are fed back to the model
 5. Model generates final response
+
+## Phase 3: Context Bridge System
+
+Phase 3 introduces a comprehensive context management system for maintaining state across conversations and sessions.
+
+### Context Bridge
+
+The Context Bridge gathers context from multiple sources to enrich agent interactions:
+
+```typescript
+import { ContextBridge, createContextBridge } from "stanley-agent/context";
+
+// Create context bridge with registered sources
+const contextBridge = createContextBridge({
+  sources: [
+    { name: "memory", priority: 1 },
+    { name: "session", priority: 2 },
+    { name: "project", priority: 3 },
+  ],
+});
+
+// Gather all context
+const context = await contextBridge.gather();
+
+// Build prompt with context
+const prompt = await contextBridge.buildPrompt(systemPrompt, tools);
+```
+
+### Session Management
+
+Manage conversation sessions with persistence and resumption:
+
+```typescript
+import { SessionManager } from "stanley-agent/session";
+
+// Create session manager with storage
+const sessions = new SessionManager({
+  storagePath: "~/.stanley/sessions.json",
+  maxSessions: 100,
+  sessionTimeout: 86400000, // 24 hours
+});
+
+// Create new session
+const session = sessions.create({
+  title: "Investment Research",
+  tags: ["research", "tech"],
+});
+
+// Add conversation turns
+sessions.addMessage(session.id, {
+  role: "user",
+  content: "Analyze AAPL for me",
+});
+
+// Set session context
+sessions.setContext(session.id, "currentSymbol", "AAPL");
+
+// Save and restore
+await sessions.save();
+await sessions.load();
+
+// Resume previous session
+const resumed = sessions.resume(previousSessionId);
+```
+
+### Memory Persistence
+
+Persist data across sessions with TTL and namespacing:
+
+```typescript
+import { MemoryStore } from "stanley-agent/memory";
+
+// Create memory store
+const memory = new MemoryStore({
+  namespace: "user",
+  persistPath: "~/.stanley/memory.json",
+  autoSave: true,
+});
+
+// Store with TTL
+await memory.set("cache:AAPL", marketData, { ttl: 60000 });
+
+// Retrieve
+const data = await memory.get<MarketData>("cache:AAPL");
+
+// Query by prefix
+const cacheKeys = await memory.keys({ prefix: "cache:" });
+```
+
+### Real-time Sync
+
+WebSocket-based real-time synchronization:
+
+```typescript
+import { SyncClient } from "stanley-agent/sync";
+
+const sync = new SyncClient({
+  url: "ws://localhost:8080/sync",
+  reconnectInterval: 5000,
+  heartbeatInterval: 30000,
+});
+
+// Connect and subscribe to events
+await sync.connect();
+
+sync.on("market:price", (event) => {
+  console.log("Price update:", event.payload);
+});
+
+sync.on("agent:stream", (event) => {
+  console.log("Streaming:", event.payload.chunk);
+});
+
+// Send events
+sync.send({
+  type: "state:update",
+  payload: { path: "user.preferences", value: { theme: "dark" } },
+});
+```
+
+### Prompt Building
+
+Dynamic prompt construction with templates:
+
+```typescript
+import { PromptTemplate, PromptBuilder } from "stanley-agent/prompts";
+
+// Template-based prompts
+const template = new PromptTemplate(`
+You are analyzing {{symbol}} for {{timeframe}} outlook.
+
+{{#section:portfolio}}
+`);
+
+template.setVariable("symbol", { required: true });
+template.setVariable("timeframe", { default: "medium-term" });
+template.addSection({
+  name: "portfolio",
+  content: "Portfolio context here",
+  condition: (ctx) => ctx.hasPortfolio,
+});
+
+const prompt = template.render({ symbol: "AAPL", hasPortfolio: true });
+
+// Builder-based prompts
+const builder = new PromptBuilder()
+  .setSystemPrompt("You are Stanley, an investment analyst.")
+  .addContext("Current market conditions: bullish")
+  .addToolDescription("get_market_data", "Fetch real-time prices")
+  .addInstruction("Be concise and data-driven");
+
+const fullPrompt = builder.build();
+```
+
+### Configuration Options
+
+```typescript
+// Full configuration example
+const config = {
+  // Context bridge
+  context: {
+    maxTokens: 8000,
+    cacheTtl: 60000,
+    enableParallel: true,
+  },
+
+  // Session management
+  session: {
+    storagePath: "~/.stanley/sessions.json",
+    maxSessions: 100,
+    sessionTimeout: 86400000,
+  },
+
+  // Memory store
+  memory: {
+    namespace: "stanley",
+    persistPath: "~/.stanley/memory.json",
+    autoSave: true,
+  },
+
+  // Real-time sync
+  sync: {
+    url: "ws://localhost:8080/sync",
+    reconnectInterval: 5000,
+    maxReconnectAttempts: 5,
+    heartbeatInterval: 30000,
+  },
+};
+```
 
 ## Troubleshooting
 

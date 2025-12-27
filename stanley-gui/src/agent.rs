@@ -5,8 +5,12 @@
 //! - Tool call visualization and status
 //! - Markdown rendering for responses
 //! - Real-time message streaming
+//! - WebSocket sync with Stanley agent
 
 use crate::api::StanleyClient;
+use crate::sync::{
+    ConnectionStatus, SyncClient, SyncClientState, SyncEvent, SyncEventType,
+};
 use crate::theme::Theme;
 use gpui::prelude::*;
 use gpui::*;
@@ -173,6 +177,10 @@ pub struct AgentState {
     pub system_prompt: String,
     /// Agent capabilities description
     pub capabilities: Vec<String>,
+    /// Sync client state for WebSocket communication
+    pub sync_state: SyncClientState,
+    /// Recent sync events from agent
+    pub sync_events: Vec<SyncEvent>,
 }
 
 impl Default for AgentState {
@@ -203,6 +211,8 @@ impl Default for AgentState {
                 "Research Reports".to_string(),
                 "SEC Filings".to_string(),
             ],
+            sync_state: SyncClientState::default(),
+            sync_events: Vec::new(),
         }
     }
 }
@@ -273,6 +283,148 @@ impl AgentState {
         self.add_assistant_message(
             "Conversation cleared. How can I help you?".to_string()
         );
+    }
+
+    // =========================================================================
+    // Sync Methods
+    // =========================================================================
+
+    /// Handle incoming sync event from WebSocket
+    pub fn handle_sync_event(&mut self, event: SyncEvent) {
+        // Add to recent events
+        if self.sync_events.len() >= 50 {
+            self.sync_events.remove(0);
+        }
+        self.sync_events.push(event.clone());
+
+        // Handle specific event types
+        match event.event_type {
+            SyncEventType::AgentQueryComplete => {
+                // Agent finished processing a query
+                if let Some(data) = &event.data {
+                    if let Some(content) = data.get("content").and_then(|v| v.as_str()) {
+                        self.add_assistant_message(content.to_string());
+                    }
+                }
+                self.finish_streaming();
+            }
+            SyncEventType::AgentToolCall => {
+                // Agent is calling a tool
+                if let Some(data) = &event.data {
+                    let tool_name = data.get("toolName")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown")
+                        .to_string();
+                    let tool_id = data.get("toolId")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or(&event.id)
+                        .to_string();
+                    let arguments = data.get("arguments")
+                        .map(|v| v.to_string())
+                        .unwrap_or_default();
+
+                    self.add_tool_call(ToolCall::new(tool_id, tool_name, arguments));
+                }
+            }
+            SyncEventType::AgentToolResult => {
+                // Tool execution completed
+                if let Some(data) = &event.data {
+                    let tool_id = data.get("toolId")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let result = data.get("result")
+                        .map(|v| v.to_string());
+                    let success = data.get("success")
+                        .and_then(|v| v.as_bool())
+                        .unwrap_or(true);
+
+                    let status = if success {
+                        ToolStatus::Success
+                    } else {
+                        ToolStatus::Error(
+                            data.get("error")
+                                .and_then(|v| v.as_str())
+                                .unwrap_or("Unknown error")
+                                .to_string()
+                        )
+                    };
+
+                    self.update_tool_status(&tool_id, status, result);
+                }
+            }
+            SyncEventType::ResearchComplete => {
+                // Research query completed
+                if let Some(data) = &event.data {
+                    let symbol = data.get("symbol")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("N/A");
+                    let summary = data.get("summary")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Research completed.");
+
+                    self.add_assistant_message(
+                        format!("Research complete for {}:\n\n{}", symbol, summary)
+                    );
+                }
+            }
+            SyncEventType::AlertTriggered => {
+                // Alert was triggered
+                if let Some(data) = &event.data {
+                    let message = data.get("message")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Alert triggered");
+                    let severity = data.get("severity")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("info");
+
+                    self.add_assistant_message(
+                        format!("[{}] {}", severity.to_uppercase(), message)
+                    );
+                }
+            }
+            _ => {
+                // Other events are stored but don't affect chat
+            }
+        }
+    }
+
+    /// Get sync connection status
+    pub fn sync_status(&self) -> ConnectionStatus {
+        self.sync_state.status
+    }
+
+    /// Update sync connection status
+    pub fn set_sync_status(&mut self, status: ConnectionStatus) {
+        self.sync_state.status = status;
+    }
+
+    /// Get recent sync events
+    pub fn get_sync_events(&self) -> &[SyncEvent] {
+        &self.sync_events
+    }
+
+    /// Get sync events by type
+    pub fn get_sync_events_by_type(&self, event_type: SyncEventType) -> Vec<&SyncEvent> {
+        self.sync_events
+            .iter()
+            .filter(|e| e.event_type == event_type)
+            .collect()
+    }
+
+    /// Clear sync events
+    pub fn clear_sync_events(&mut self) {
+        self.sync_events.clear();
+    }
+
+    /// Create a view opened event for syncing
+    pub fn create_view_opened_event(&self) -> SyncEvent {
+        SyncEvent::view_opened("agent", "agent", None)
+    }
+
+    /// Create a symbol selected event for syncing
+    pub fn create_symbol_selected_event(&self, symbol: &str, previous: Option<&str>) -> SyncEvent {
+        SyncEvent::symbol_selected(symbol, "agent", previous)
     }
 }
 

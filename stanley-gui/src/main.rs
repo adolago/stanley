@@ -15,6 +15,7 @@ mod components;
 mod notes;
 mod notes_editor;
 mod portfolio;
+mod sync;
 mod theme;
 
 // Tests temporarily disabled due to duplicate method definitions
