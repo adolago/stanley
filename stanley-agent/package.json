@@ -1,0 +1,76 @@
+{
+  "name": "stanley-agent",
+  "version": "0.1.0",
+  "description": "AI agent for Stanley institutional investment platform with multi-provider LLM support",
+  "type": "module",
+  "main": "src/index.ts",
+  "bin": {
+    "stanley-agent": "./bin/stanley-agent"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "build": "bun build src/index.ts --outdir=dist --target=node",
+    "test": "bun test",
+    "test:unit": "bun test tests/unit",
+    "test:integration": "bun test tests/integration",
+    "test:e2e": "./scripts/e2e-test.sh",
+    "test:coverage": "bun test --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests",
+    "format": "prettier --write src tests"
+  },
+  "dependencies": {
+    "ai": "^5.0.0",
+    "@ai-sdk/anthropic": "^2.0.50",
+    "@ai-sdk/openai": "^2.0.71",
+    "@ai-sdk/openai-compatible": "^1.0.27",
+    "@ai-sdk/google": "^2.0.44",
+    "@ai-sdk/google-vertex": "^3.0.81",
+    "@ai-sdk/amazon-bedrock": "^3.0.57",
+    "@ai-sdk/azure": "^2.0.73",
+    "@ai-sdk/mistral": "^2.0.26",
+    "@ai-sdk/groq": "^2.0.33",
+    "@ai-sdk/deepinfra": "^1.0.30",
+    "@ai-sdk/cerebras": "^1.0.33",
+    "@ai-sdk/cohere": "^2.0.21",
+    "@ai-sdk/togetherai": "^1.0.30",
+    "@ai-sdk/perplexity": "^2.0.22",
+    "@ai-sdk/xai": "^2.0.42",
+    "@openrouter/ai-sdk-provider": "^1.5.2",
+    "zod": "^3.23.0",
+    "fuzzysort": "^3.1.0",
+    "remeda": "^2.26.0",
+    "xdg-basedir": "^5.1.0",
+    "yargs": "^18.0.0",
+    "jsonc-parser": "^3.3.1"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.0",
+    "@types/yargs": "^17.0.33",
+    "typescript": "^5.8.0",
+    "prettier": "^3.6.0",
+    "eslint": "^9.0.0",
+    "bun-types": "^1.3.0"
+  },
+  "peerDependencies": {
+    "bun": ">=1.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "keywords": [
+    "stanley",
+    "ai-agent",
+    "investment",
+    "openrouter",
+    "mcp",
+    "llm",
+    "anthropic",
+    "claude",
+    "gpt",
+    "multi-provider"
+  ],
+  "author": "Stanley Platform",
+  "license": "MIT"
+}

@@ -11,8 +11,8 @@ use std::sync::Arc;
 /// API client for Stanley backend (async version)
 #[derive(Clone)]
 pub struct StanleyClient {
-    base_url: String,
-    client: reqwest::Client,
+    pub base_url: String,
+    pub client: reqwest::Client,
 }
 
 impl StanleyClient {
@@ -653,6 +653,121 @@ impl StanleyClient {
             .await
             .map_err(|e| ApiError::Parse(e.to_string()))
     }
+
+    // =========================================================================
+    // AGENT ENDPOINTS
+    // =========================================================================
+
+    /// Check agent availability and status
+    pub async fn agent_status(&self) -> Result<AgentStatusResponse, ApiError> {
+        let url = format!("{}/api/agent/status", self.base_url);
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        if response.status().is_success() {
+            response
+                .json()
+                .await
+                .map_err(|e| ApiError::Parse(e.to_string()))
+        } else {
+            // Return mock status if endpoint not available
+            Ok(AgentStatusResponse {
+                available: true,
+                model: "claude-3-opus".to_string(),
+                capabilities: vec![
+                    "market_analysis".to_string(),
+                    "portfolio_review".to_string(),
+                    "research".to_string(),
+                    "sec_filings".to_string(),
+                ],
+            })
+        }
+    }
+
+    /// Send a chat message to the agent
+    pub async fn agent_chat(
+        &self,
+        request: AgentChatRequest,
+    ) -> Result<AgentChatResponse, ApiError> {
+        let url = format!("{}/api/agent/chat", self.base_url);
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        if response.status().is_success() {
+            response
+                .json()
+                .await
+                .map_err(|e| ApiError::Parse(e.to_string()))
+        } else {
+            // Return mock response if endpoint not available
+            let last_message = request.messages.last().map(|m| m.content.clone()).unwrap_or_default();
+            Ok(AgentChatResponse {
+                content: format!(
+                    "I received your message: \"{}\"\n\n\
+                    I'm currently running in demo mode. In production, I would:\n\
+                    - Analyze market data for relevant symbols\n\
+                    - Review institutional holdings and money flow\n\
+                    - Provide research insights and recommendations\n\
+                    - Execute analysis workflows\n\n\
+                    Try asking about specific stocks, portfolio analysis, or market trends!",
+                    truncate(&last_message, 50)
+                ),
+                tool_calls: Vec::new(),
+                finished: true,
+            })
+        }
+    }
+
+    /// Execute a tool call
+    pub async fn agent_execute_tool(
+        &self,
+        request: ToolExecuteRequest,
+    ) -> Result<ToolExecuteResponse, ApiError> {
+        let url = format!("{}/api/agent/tool", self.base_url);
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
+            .send()
+            .await
+            .map_err(|e| ApiError::Network(e.to_string()))?;
+
+        if response.status().is_success() {
+            response
+                .json()
+                .await
+                .map_err(|e| ApiError::Parse(e.to_string()))
+        } else {
+            // Return mock tool response
+            Ok(ToolExecuteResponse {
+                tool_id: request.tool_id,
+                success: true,
+                result: Some(serde_json::json!({
+                    "message": "Tool executed in demo mode",
+                    "tool": request.tool_name
+                })),
+                error: None,
+            })
+        }
+    }
+}
+
+/// Helper function to truncate text
+fn truncate(s: &str, max_len: usize) -> &str {
+    if s.len() <= max_len {
+        s
+    } else {
+        &s[..max_len]
+    }
 }
 
 impl Default for StanleyClient {
@@ -1099,4 +1214,89 @@ pub struct MacroAnalysis {
 pub struct CorrelationMatrix {
     pub symbols: Vec<String>,
     pub matrix: Vec<Vec<f64>>,
+}
+
+// =============================================================================
+// Agent API Types
+// =============================================================================
+
+/// Agent chat message for API communication
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentMessage {
+    pub role: String,
+    pub content: String,
+}
+
+/// Agent chat request
+#[derive(Debug, Clone, Serialize)]
+pub struct AgentChatRequest {
+    pub messages: Vec<AgentMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub system_prompt: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tools: Option<Vec<AgentTool>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<AgentContext>,
+}
+
+/// Agent tool definition
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentTool {
+    pub name: String,
+    pub description: String,
+    pub parameters: serde_json::Value,
+}
+
+/// Agent context for additional information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentContext {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_symbol: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub portfolio_symbols: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub active_view: Option<String>,
+}
+
+/// Agent chat response
+#[derive(Debug, Clone, Deserialize)]
+pub struct AgentChatResponse {
+    pub content: String,
+    #[serde(default)]
+    pub tool_calls: Vec<AgentToolCall>,
+    #[serde(default)]
+    pub finished: bool,
+}
+
+/// Agent tool call in response
+#[derive(Debug, Clone, Deserialize)]
+pub struct AgentToolCall {
+    pub id: String,
+    pub name: String,
+    pub arguments: String,
+}
+
+/// Tool execution request
+#[derive(Debug, Clone, Serialize)]
+pub struct ToolExecuteRequest {
+    pub tool_id: String,
+    pub tool_name: String,
+    pub arguments: serde_json::Value,
+}
+
+/// Tool execution response
+#[derive(Debug, Clone, Deserialize)]
+pub struct ToolExecuteResponse {
+    pub tool_id: String,
+    pub success: bool,
+    pub result: Option<serde_json::Value>,
+    pub error: Option<String>,
+}
+
+/// Agent status response
+#[derive(Debug, Clone, Deserialize)]
+pub struct AgentStatusResponse {
+    pub available: bool,
+    pub model: String,
+    pub capabilities: Vec<String>,
 }

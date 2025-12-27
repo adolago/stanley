@@ -1,10 +1,14 @@
 //! Main application state and rendering for Stanley GUI
 
+use crate::agent::{render_agent_panel, AgentState};
 use crate::api::{
     EquityFlowResponse, InstitutionalHolder, MarketData, NoteResponse, PortfolioHolding,
     SectorFlow, StanleyClient,
 };
 use crate::commodities::{render_commodities, CommoditiesState};
+use crate::notes_editor::{
+    load_note_summaries, render_notes_editor, NotesEditorState,
+};
 use crate::portfolio::{
     render_portfolio_content, Holding, LoadState as PortfolioLoadState, RiskMetrics,
     SectorAllocation,
@@ -109,6 +113,12 @@ pub struct StanleyApp {
     api_client: Arc<StanleyClient>,
     /// API connection status
     api_connected: LoadingState<bool>,
+    /// Notes editor state for markdown editing
+    notes_editor_state: NotesEditorState,
+    /// Agent panel state
+    agent_state: AgentState,
+    /// Agent input text buffer
+    agent_input: String,
 }
 
 /// Notes panel tabs
@@ -118,6 +128,8 @@ pub enum NotesTab {
     Theses,
     Trades,
     Search,
+    /// Markdown editor for notes
+    Editor,
 }
 
 /// Investment thesis note data
@@ -322,6 +334,7 @@ pub enum ActiveView {
     Research,
     Commodities,
     Notes,
+    Agent,
 }
 
 /// Available time periods for chart display
@@ -390,7 +403,13 @@ impl StanleyApp {
             institutional: LoadingState::NotStarted,
             api_client,
             api_connected: LoadingState::NotStarted,
+            notes_editor_state: NotesEditorState::new(),
+            agent_state: AgentState::new(),
+            agent_input: String::new(),
         };
+
+        // Load notes from disk
+        app.load_notes_from_disk();
 
         // Start loading data from API
         app.check_api_health(cx);
@@ -1137,6 +1156,13 @@ impl StanleyApp {
         self.check_api_health(cx);
     }
 
+    /// Load notes from disk into notes editor state
+    fn load_notes_from_disk(&mut self) {
+        self.notes_editor_state.loading = true;
+        self.notes_editor_state.all_notes = load_note_summaries();
+        self.notes_editor_state.loading = false;
+    }
+
     pub fn set_active_view(&mut self, view: ActiveView, cx: &mut Context<Self>) {
         self.active_view = view;
         // Load view-specific data when switching views
@@ -1147,6 +1173,10 @@ impl StanleyApp {
             && matches!(self.portfolio_holdings, PortfolioLoadState::NotLoaded)
         {
             self.load_portfolio_data(cx);
+        }
+        // Refresh notes list when switching to Notes view
+        if view == ActiveView::Notes {
+            self.load_notes_from_disk();
         }
         cx.notify();
     }
@@ -1280,6 +1310,7 @@ impl StanleyApp {
             .child(self.nav_item("Research", ActiveView::Research, cx))
             .child(self.nav_item("Commodities", ActiveView::Commodities, cx))
             .child(self.nav_item("Notes", ActiveView::Notes, cx))
+            .child(self.nav_item("AI Agent", ActiveView::Agent, cx))
     }
 
     fn nav_item(&self, label: &str, view: ActiveView, cx: &mut Context<Self>) -> impl IntoElement {
@@ -1600,8 +1631,19 @@ impl StanleyApp {
             ActiveView::Notes => self.render_notes_panel(cx),
             ActiveView::Commodities => self.render_commodities_view(cx),
             ActiveView::Portfolio => self.render_portfolio_view(),
+            ActiveView::Agent => self.render_agent_view(cx),
             _ => self.render_dashboard_content(),
         }
+    }
+
+    fn render_agent_view(&self, cx: &mut Context<Self>) -> Div {
+        render_agent_panel(
+            &self.theme,
+            &self.agent_state,
+            &self.agent_input,
+            &self.api_client,
+            cx,
+        )
     }
 
     fn render_commodities_view(&self, cx: &mut Context<Self>) -> Div {
@@ -2146,6 +2188,18 @@ impl StanleyApp {
     // Notes Panel Rendering
 
     fn render_notes_panel(&self, cx: &mut Context<Self>) -> Div {
+        // If Editor tab is selected, render the full notes editor view
+        if self.notes_active_tab == NotesTab::Editor {
+            return div()
+                .flex_grow()
+                .flex()
+                .flex_col()
+                // Minimal header with tab switcher
+                .child(self.render_notes_header(cx))
+                // Full editor takes remaining space
+                .child(render_notes_editor(&self.theme, &self.notes_editor_state));
+        }
+
         let show_trade_stats = self.notes_active_tab == NotesTab::Trades;
 
         let mut panel = div()
@@ -2162,6 +2216,7 @@ impl StanleyApp {
                 NotesTab::Theses => self.render_theses_list(cx),
                 NotesTab::Trades => self.render_trades_list(cx),
                 NotesTab::Search => self.render_notes_search(cx),
+                NotesTab::Editor => div(), // Handled above, unreachable
             });
 
         // Trade statistics card (shown for trades tab)
@@ -2221,6 +2276,7 @@ impl StanleyApp {
             .child(self.notes_tab_button("Theses", NotesTab::Theses, cx))
             .child(self.notes_tab_button("Trades", NotesTab::Trades, cx))
             .child(self.notes_tab_button("Search", NotesTab::Search, cx))
+            .child(self.notes_tab_button("Editor", NotesTab::Editor, cx))
     }
 
     fn notes_tab_button(
