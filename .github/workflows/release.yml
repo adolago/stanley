@@ -53,7 +53,7 @@ jobs:
         run: twine check dist/*
 
       - name: Upload Python package
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: python-package
           path: dist/
@@ -121,7 +121,7 @@ jobs:
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Upload binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.asset_name }}
           path: stanley-gui/target/${{ matrix.target }}/release/${{ matrix.artifact }}
