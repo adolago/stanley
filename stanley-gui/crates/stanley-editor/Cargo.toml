@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0 OR GPL-3.0-or-later
+# Based on Zed's editor crate (https://github.com/zed-industries/zed)
+# Original work Copyright 2024 Zed Industries Inc.
+# Modifications Copyright 2024 Stanley Contributors
+
+[package]
+name = "stanley-editor"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0 OR GPL-3.0-or-later"
+description = "Standalone text editor component extracted from Zed's editor crate for Stanley GUI"
+repository = "https://github.com/your-org/stanley"
+
+[lib]
+path = "src/lib.rs"
+doctest = false
+
+[features]
+default = []
+test-support = ["gpui/test-support"]
+
+[dependencies]
+# Core GPUI dependency - matching Stanley GUI version
+gpui = { git = "https://github.com/zed-industries/zed", branch = "main", default-features = false, features = ["wayland", "font-kit"] }
+
+# Essential utilities
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+smallvec = { version = "1.11", features = ["union"] }
+parking_lot = "0.12"
+itertools = "0.12"
+log = "0.4"
+anyhow = "1.0"
+unicode-segmentation = "1.10"
+
+# Collections
+indexmap = "2.1"
+
+[dev-dependencies]
+pretty_assertions = "1.4"
